@@ -1,0 +1,38 @@
+# The main entry point of your workflow.
+# After configuring, running snakemake -n in a clone of this repository should successfully execute a dry-run of the workflow.
+import os
+import pandas as pd
+# from sympy import expand
+
+## can I load my config file please
+configfile: "config/config.json"
+
+# report: "report/workflow.rst"
+
+# Allow users to fix the underlying OS via singularity.
+# singularity: "docker://continuumio/miniconda3"
+
+include: "rules/cNMF_pipeline.smk"
+
+
+
+rule all:
+	input:
+		usages = expand(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.usages.k_{k}.dt_{threshold}.consensus.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+		# cNMF_Results = expand(os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"), folder = config["cNMF_gene_selection"], sample=sampleName, k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+		# cNMF_Analysis = expand(os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/cNMFAnalysis.k_{k}.dt_{threshold}.RData"), folder = config["cNMF_gene_selection"], sample=sampleName, k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+		# findK_plot = expand(os.path.join(config["scratchDir"],"{folder}_acrossK/{sample}/{sample}.k_selection.png"), folder = config["cNMF_gene_selection"], sample=sampleName),
+		# enhancer_motif_enrichment = expand(os.path.join(config["figDir"], "{sample}/{folder}/K{k}/{sample}_K{k}_dt_{threshold}_zscore.enhancer.motif.enrichment.by.count.ttest_motif.thr.10e-6.pdf"), folder = config["cNMF_gene_selection"], sample=sampleName, k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+		# heatmap = expand(os.path.join(config["figDir"], "{sample}/{folder}/K{k}/{sample}_K{k}_dt_{threshold}_minGuidePerPtb_{guide_count_thr}.minCellPerGuide_{cell_count_thr}_p.adjust.sig.ptbd.gene_fill.log2fc_heatmap.pdf"), folder = config["cNMF_gene_selection"], sample=sampleName, k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], guide_count_thr = config["guide_count_thr"], cell_count_thr = config["cell_count_thr"]),
+		
+		# aggregated_output = expand(os.path.join(config["analysisDir"], "{sample}/{folder}/acrossK/aggregated.outputs.findK.RData"), folder = config["cNMF_gene_selection"], sample=sampleName),
+ 		
+ 		
+ 		clustering_plot = expand(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.clustering.k_{k}.dt_{threshold}.png"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]])
+ 		
+
+
+
+
+
+ 		
