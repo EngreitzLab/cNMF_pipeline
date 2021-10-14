@@ -13,6 +13,20 @@ run_index_list = [n for n in range(config["run_per_worker"])]
 # 	run:
 
 ## need a rule to convert txt to h5ad or RDS to h5ad
+rule txt_to_h5ad:
+	input:
+		mtx_txt_file = os.path.join(config["input_h5ad_mtxDir"], "{sample}.txt")
+	output:
+		h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
+		gene_name_txt = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad.all.genes.txt")
+	shell:
+		" bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		python workflow/scripts/txt_to_h5ad.py \
+		--txtPath {input.mtx_txt_file} \
+		--output_h5ad_mtx {output.h5ad_mtx} \
+		--output_gene_name_txt {output.gene_name_txt} ' "
+
 
 rule prepare_varGenes_cNMF:
 	input:
@@ -53,7 +67,7 @@ rule prepare_varGenes_cNMF:
 rule prepare_geneSet_cNMF:
 	input:
 		h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
-		genes = os.path.join(config["dataDir"],"{sample}.h5ad.{gene_selection_method}.genes.txt")
+		genes = os.path.join(config["input_h5ad_mtxDir"],"{sample}.h5ad.{gene_selection_method}.genes.txt")
 	output:
 		tpm_h5ad = os.path.join(config["scratchDir"],"{gene_selection_method}_genes/K{k}/worker{workerIndex}/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
 		tpm_stats = os.path.join(config["scratchDir"],"{gene_selection_method}_genes/K{k}/worker{workerIndex}/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz"),
