@@ -12,25 +12,69 @@ run_index_list = [n for n in range(config["run_per_worker"])]
 # 	output:
 # 	run:
 
-## need a rule to convert txt to h5ad or RDS to h5ad
-rule txt_to_h5ad:
+
+## todo: rethink the structure of UMAP part: what are the possible input file types?
+rule create_Seurat_Object:
 	input:
-		mtx_txt_file = os.path.join(config["input_h5ad_mtxDir"], "{sample}.txt")
+		mtx = os.path.join(config["dataDir"], "matrix.mtx.gz"),
+		features = os.path.join(config["dataDir"], "features.tsv.gz"),
+		barcodes = os.path.join(config["dataDir"], "barcodes.tsv.gz")
 	output:
-		h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
-		gene_name_txt = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad.all.genes.txt")
+		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
+	params:
+		time = "2:00:00",
+		mem_gb = "200",
+		datadir = config["dataDir"],
+		outdir = os.path.join(config["analysisDir"], "data")
 	shell:
-		" bash -c ' source $HOME/.bashrc; \
+		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
-		python workflow/scripts/txt_to_h5ad.py \
-		--txtPath {input.mtx_txt_file} \
-		--output_h5ad_mtx {output.h5ad_mtx} \
+		Rscript workflow/scripts/create_seurat_object.R \
+		--outdir {params.outdir}/ \
+		--datadir {params.datadir} \
+		--sampleName {wildcards.sample} \
+		' "
+
+
+## convert Seurat Object to h5ad file
+rule Seurat_Object_to_h5ad:
+	input:
+		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
+	output:
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
+		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
+	params:
+		time = "2:00:00",
+		mem_gb = "64"
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		Rscript workflow/scripts/seurat_to_h5ad.R \
+		--inputSeuratObject {input.seurat_object} \
+		--output_h5ad {output.h5ad_mtx} \
 		--output_gene_name_txt {output.gene_name_txt} ' "
+
+
+# ## need a rule to convert txt to h5ad or RDS to h5ad
+# rule txt_to_h5ad:
+# 	input:
+# 		mtx_txt_file = os.path.join(config["input_h5ad_mtxDir"], "{sample}.txt")
+# 	output:
+# 		h5ad_mtx = os.path.join(config["analysisDir"], "{sample}.h5ad"),
+# 		gene_name_txt = os.path.join(config["analysisDir"], "{sample}.h5ad.all.genes.txt")
+# 	shell:
+# 		" bash -c ' source $HOME/.bashrc; \
+# 		conda activate cnmf_env; \
+# 		python workflow/scripts/txt_to_h5ad.py \
+# 		--txtPath {input.mtx_txt_file} \
+# 		--output_h5ad_mtx {output.h5ad_mtx} \
+# 		--output_gene_name_txt {output.gene_name_txt} ' "
 
 
 rule prepare_varGenes_cNMF:
 	input:
-		h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad")
+		# h5ad = os.path.join(config["analysisDir"], "{folder}/{sample}/{sample}.h5ad")
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad")
 	output:
 		tpm_h5ad = os.path.join(config["scratchDir"],"top{num_genes}VariableGenes/K{k}/worker{workerIndex}/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
 		tpm_stats = os.path.join(config["scratchDir"],"top{num_genes}VariableGenes/K{k}/worker{workerIndex}/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz"),
@@ -45,9 +89,9 @@ rule prepare_varGenes_cNMF:
 		run_per_worker = config["run_per_worker"],
 		total_workers = config["total_workers"],
 		outdir = os.path.join(config["scratchDir"], "top{num_genes}VariableGenes/K{k}/worker{workerIndex}/")
-	resources: 
-		mem_mb=128*1000,
-		time = "3:00:00"
+	# resources: 
+	# 	mem_mb=128*1000,
+	# 	time = "3:00:00"
 	# threads: config["total_workers"]
 	shell:
 		" bash -c ' source $HOME/.bashrc; \
@@ -66,8 +110,10 @@ rule prepare_varGenes_cNMF:
 
 rule prepare_geneSet_cNMF:
 	input:
-		h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
-		genes = os.path.join(config["input_h5ad_mtxDir"],"{sample}.h5ad.{gene_selection_method}.genes.txt")
+		# h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
+		# genes = os.path.join(config["input_h5ad_mtxDir"],"{sample}.h5ad.{gene_selection_method}.genes.txt")
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
+		genes = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
 	output:
 		tpm_h5ad = os.path.join(config["scratchDir"],"{gene_selection_method}_genes/K{k}/worker{workerIndex}/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
 		tpm_stats = os.path.join(config["scratchDir"],"{gene_selection_method}_genes/K{k}/worker{workerIndex}/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz"),
@@ -82,9 +128,9 @@ rule prepare_geneSet_cNMF:
 		run_per_worker = config["run_per_worker"],
 		total_workers = config["total_workers"],
 		outdir = os.path.join(config["scratchDir"], "{gene_selection_method}_genes/K{k}/worker{workerIndex}/")
-	resources: 
-		mem_mb=128*1000,
-		time = "3:00:00"
+	# resources: 
+	# 	mem_mb=128*1000,
+	# 	time = "3:00:00"
 	# threads: config["total_workers"]
 	shell:
 		" bash -c ' source $HOME/.bashrc; \
@@ -149,10 +195,10 @@ rule run_cNMF: # we don't know which worker will be working on which run, and sn
 		total_workers = config["total_workers"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["scratchDir"],"{folder}/K{k}/worker{workerIndex}/")
-	resources: 
-		mem_mb=get_cNMF_memory_slurm,
-		time = get_cNMF_time,
-		partition = get_cNMF_partition_slurm
+	# resources: 
+	# 	mem_mb=get_cNMF_memory_slurm,
+	# 	time = get_cNMF_time,
+	# 	partition = get_cNMF_partition_slurm
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -173,9 +219,9 @@ rule pool_together_results:
 		outdir = os.path.join(config["scratchDir"],"{folder}_combined/K{k}"),
 		num_workers = config["total_workers"],
 		run_per_worker = config["run_per_worker"]
-	resources: 
-		mem_mb=64*1000,
-		time = "3:00:00"
+	# resources: 
+	# 	mem_mb=64*1000,
+	# 	time = "3:00:00"
 	run:
 		cmd = "mkdir -p " + os.path.join(params.inputdir, wildcards.sample, "cnmf_tmp")
 		shell(cmd)
@@ -190,7 +236,8 @@ rule pool_together_results:
 
 rule prepare_combine_varGene: # this step causes snakemake hanging at "Building DAG of jobs..."
 	input:
-		h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
+		# h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
 		pooled_individual_runs = expand(os.path.join(config["scratchDir"],"top{{num_genes}}VariableGenes_combined/K{{k}}/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{{k}}.iter_{pooled_run_index}.df.npz"), pooled_run_index = [n for n in range(config["num_runs"])])
 	output:
 		tpm_h5ad = os.path.join(config["scratchDir"],"top{num_genes}VariableGenes_combined/K{k}/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
@@ -205,9 +252,9 @@ rule prepare_combine_varGene: # this step causes snakemake hanging at "Building 
 		seed = config["seed"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["scratchDir"], "top{num_genes}VariableGenes_combined/K{k}")
-	resources: 
-		mem_mb=64*1000,
-		time = "3:00:00"
+	# resources: 
+	# 	mem_mb=64*1000,
+	# 	time = "3:00:00"
 	shell:
 		" bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -225,9 +272,11 @@ rule prepare_combine_varGene: # this step causes snakemake hanging at "Building 
 
 rule prepare_combine_geneSet: # this step causes snakemake hanging at "Building DAG of jobs..."
 	input:
-		h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
+		# h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
 		pooled_individual_runs = expand(os.path.join(config["scratchDir"],"{{gene_selection_method}}_genes_combined/K{{k}}/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{{k}}.iter_{pooled_run_index}.df.npz"), pooled_run_index = [n for n in range(config["num_runs"])]),
-		genes = os.path.join(config["dataDir"],"{sample}.h5ad.{gene_selection_method}.genes.txt")
+		# genes = os.path.join(config["dataDir"],"{sample}.h5ad.{gene_selection_method}.genes.txt")
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
+		genes = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
 	output:
 		tpm_h5ad = os.path.join(config["scratchDir"],"{gene_selection_method}_genes_combined/K{k}/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
 		tpm_stats = os.path.join(config["scratchDir"],"{gene_selection_method}_genes_combined/K{k}/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz"),
@@ -241,9 +290,9 @@ rule prepare_combine_geneSet: # this step causes snakemake hanging at "Building 
 		seed = config["seed"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["scratchDir"], "{gene_selection_method}_genes_combined/K{k}")
-	resources: 
-		mem_mb=160*1000,
-		time = "3:00:00"
+	# resources: 
+	# 	mem_mb=160*1000,
+	# 	time = "3:00:00"
 	shell:
 		" bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -276,9 +325,9 @@ rule combine_runs_varGenes:
 		time = "3:00:00",
 		mem_gb = "64",
 		outdir = os.path.join(config["scratchDir"],"{folder}_combined/K{k}/")
-	resources: 
-		mem_mb=64*1000,
-		time = "3:00:00"
+	# resources: 
+	# 	mem_mb=64*1000,
+	# 	time = "3:00:00"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -292,14 +341,14 @@ rule aggregate_combined_runs:
 		merged_result = os.path.join(config["scratchDir"],"{folder}_combined/K{k}/{sample}/cnmf_tmp/{sample}.spectra.k_{k}.merged.df.npz")
 	output:
 		merged_copied_result = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.spectra.k_{k}.merged.df.npz")
-	resources: time_min = 60
+	# resources: time_min = 60
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
 		outdir = config["scratchDir"]
-	resources: 
-		mem_mb=64*1000,
-		time = "3:00:00"
+	# resources: 
+	# 	mem_mb=64*1000,
+	# 	time = "3:00:00"
 	run:
 		cmd = "mkdir -p " + os.path.join(params.outdir, wildcards.folder + "_acrossK", wildcards.sample, "cnmf_tmp")
 		shell(cmd)
@@ -310,7 +359,8 @@ rule aggregate_combined_runs:
 
 rule prepare_findK_varGene:
 	input:
-		h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad")
+		# h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad")
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad")
 		# merged_copied_result = expand(os.path.join(config["scratchDir"],"top{{num_genes}}VariableGenes_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=config["k"])
 	output:
 		tpm_h5ad = os.path.join(config["scratchDir"],"top{num_genes}VariableGenes_acrossK/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
@@ -327,9 +377,9 @@ rule prepare_findK_varGene:
 		outdir = os.path.join(config["scratchDir"], "top{num_genes}VariableGenes_acrossK"),
 		klist = " ".join(config["k"])
 	threads: config["total_workers"]
-	resources: 
-		mem_mb=64*1000,
-		time = "3:00:00"
+	# resources: 
+	# 	mem_mb=64*1000,
+	# 	time = "3:00:00"
 	shell:
 		" bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -347,8 +397,10 @@ rule prepare_findK_varGene:
 
 rule prepare_findK_geneSet:
 	input:
-		h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
-		genes = os.path.join(config["dataDir"],"{sample}.h5ad.{gene_selection_method}.genes.txt")
+		# h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
+		# genes = os.path.join(config["dataDir"],"{sample}.h5ad.{gene_selection_method}.genes.txt")
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
+		genes = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
 		# merged_copied_result = expand(os.path.join(config["scratchDir"],"top{{num_genes}}VariableGenes_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=config["k"])
 	output:
 		tpm_h5ad = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
@@ -365,9 +417,9 @@ rule prepare_findK_geneSet:
 		outdir = os.path.join(config["analysisDir"], "{gene_selection_method}_genes_acrossK"),
 		klist = " ".join(config["k"])
 	threads: config["total_workers"]
-	resources: 
-		mem_mb=128*1000,
-		time = "3:00:00"
+	# resources: 
+	# 	mem_mb=128*1000,
+	# 	time = "3:00:00"
 	shell:
 		" bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -407,14 +459,14 @@ rule findK_cNMF:
 		merged_copied_result = expand(os.path.join(config["analysisDir"],"{{folder}}_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=config["k"])
 	output:
 		plot = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.k_selection.png")
-	resources: mem_mb=32000
+	# resources: mem_mb=32000
 	params:
 		time = "24:00:00",
 		mem_gb = get_findK_cNMF_mem_gb,
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK")
-	resources: 
-		mem_mb=get_findK_cNMF_mem_gb_slurm,
-		time = "24:00:00"
+	# resources: 
+	# 	mem_mb=get_findK_cNMF_mem_gb_slurm,
+	# 	time = "24:00:00"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -459,19 +511,19 @@ rule get_concensus_factors:
 		spectra_score = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_score.k_{k}.dt_{threshold}.txt"),
 		spectra_consensus = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.spectra.k_{k}.dt_{threshold}.consensus.txt"),
 		usages = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.usages.k_{k}.dt_{threshold}.consensus.txt")
-	resources: mem_mb=96000
+	# resources: mem_mb=96000
 	params:
 		time = get_concensus_factors_time,
 		mem_gb = "196", # 96 for top 3000 genes
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK")
-	resources: 
-		mem_mb=196000,
-		time = get_concensus_factors_time_slurm
+	# resources: 
+	# 	mem_mb=196000,
+	# 	time = get_concensus_factors_time_slurm
 	run:
 		threshold_here = wildcards.threshold.replace("_",".")
 		shell("bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
-		python workflow/scripts/cNMF/cnmf.py consensus \
+		python workflow/scripts/cNMF/cnmf.modified.py consensus \
 		--output-dir {params.outdir} \
 		--name {wildcards.sample} \
 		--components {wildcards.k} \
@@ -490,9 +542,9 @@ rule get_concensus_factors_plot:
 		# dummy_file = os.path.join(config["scratchDir"],"{sample}/cnmf_tmp/{sample}.dummy.k_{k}.dt_{threshold}.txt")
 	output:
 		clustering_plot = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.clustering.k_{k}.dt_{threshold}.png")
-	resources: 
-		mem_mb=128000,
-		time = get_concensus_factors_time_slurm
+	# resources: 
+	# 	mem_mb=128000,
+	# 	time = get_concensus_factors_time_slurm
 	params:
 		time = get_concensus_factors_time,
 		mem_gb = "128", # 96 for top 3000 genes
@@ -501,7 +553,7 @@ rule get_concensus_factors_plot:
 		threshold_here = wildcards.threshold.replace("_",".")
 		shell("bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
-		python workflow/scripts/cNMF/cnmf.py consensus \
+		python workflow/scripts/cNMF/cnmf.modified.py consensus \
 		--output-dir {params.outdir} \
 		--name {wildcards.sample} \
 		--components {wildcards.k} \
@@ -532,48 +584,56 @@ def get_topicModelAnlaysis_partition_slurm(wildcards):
 		return "owners,normal"
 
 
-# ## todo: rethink the structure of UMAP part: what are the possible input file types?
-# rule create_Seurat_Object:
-# 	input:
-# 		mtx_RDS = config["inputRDSmtx"]
-# 	output:
-# 		seurat_object = os.path.join(config["analysisDir"], "{sample}/{folder}/{sample}.SeuratObject.RDS")
-# 	params:
-# 		time = "2:00:00",
-# 		mem_gb = "200",
-# 		analysisdir = config["analysisDir"]
-# 	shell:
-# 		"bash -c ' source $HOME/.bashrc; \
-# 		conda activate cnmf_env; \
-# 		Rscript workflow/scripts/create_seurat_object.R \
-# 		--outdir {params.outdir}/ \
-# 		--datadir {params.}
-# 		' "
 
+## same here: do we need a separate step to create the Seurat Object?
+rule calc_UMAP:
+	input:
+		input_seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
+	output:
+		seurat_object_withUMAP = os.path.join(config["analysisDir"], "data/{sample}.withUMAP_SeuratObject.RDS")
+	params:
+		time = "6:00:00",
+		mem_gb = "200",
+		analysisdir = config["analysisDir"],
+		datadir = config["dataDir"],
+		outdir = os.path.join(config["analysisDir"], "data")
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		Rscript workflow/scripts/calcUMAP.only.R \
+			--outdir {params.outdir}/ \
+			--inputSeuratObject {input.input_seurat_object} \
+			--sampleName {wildcards.sample} \
+			--maxMt 50 \
+			--maxCount 25000 \
+			--minUniqueGenes 0 \
+			--UMAP.resolution 0.6' " ## can make this a wildcard
 
-# ## same here: do we need a separate step to create the Seurat Object?
-# rule calc_UMAP:
-# 	input:
-# 		input_seurat_object = os.path.join(config["analysisDir"], "{sample}/{folder}/{sample}.SeuratObject.RDS")
-# 	output:
-# 		seurat_object_withUMAP = os.path.join(config["analysisDir"], "{sample}/{folder}/{sample}.withUMAP.SeuratObject.RDS")
-# 	params:
-# 		time = "6:00:00",
-# 		mem_gb = "200",
-# 		figdir = config["figDir"],
-# 		analysisdir = config["analysisDir"],
-# 		datadir = config["dataDir"]
-# 	shell:
-# 		"bash -c ' source $HOME/.bashrc; \
-# 		conda activate cnmf_env; \
-# 		Rscript workflow/scripts/calcUMAP.only.R \
-# 			--outdir {params.outdir}/ \
-# 			--inputSeuratObject {input.input_Seurat_object} \
-# 			--sampleName {wildcards.sample} \
-# 			--maxMt 50 \
-# 			--maxCount 25000 \
-# 			--minUniqueGenes 0 \
-# 			--UMAP.resolution 0.6' " ## can make this a wildcard
+rule plot_UMAP:
+	input:
+		seurat_object_withUMAP = os.path.join(config["analysisDir"], "data/{sample}.withUMAP_SeuratObject.RDS"),
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+	output:
+		factor_expression_UMAP = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_Factor.Expression.UMAP.pdf")
+	params:
+		time = "6:00:00",
+		mem_gb = "200",
+		datadir = config["dataDir"],
+		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
+		figdir = os.path.join(config["figDir"], "{folder}"), 
+		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
+		threshold = get_cNMF_filter_threshold_double
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		Rscript workflow/scripts/cNMF_UMAP_plot.R \
+		--sampleName {wildcards.sample} \
+		--inputSeuratObject {input.seurat_object_withUMAP} \
+		--figdir {params.figdir}/ \
+		--outdir {params.analysisdir} \
+		--K.val {wildcards.k} \
+		--density.thr {params.threshold} \
+		--recompute F ' "
 
 
 # rule FIMO: # refer to /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/
@@ -587,26 +647,26 @@ rule analysis:
 	input:
 		mtx_RDS = config["inputRDSmtx"], # os.path.join(config["dataDir"],"aggregated.{sample}.mtx.cell_x_gene.RDS"),
 		#todo: add input files
-		spectra_tpm = os.path.join(config["scratchDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_tpm.k_{k}.dt_{threshold}.txt"),
-		spectra_zscore = os.path.join(config["scratchDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_score.k_{k}.dt_{threshold}.txt"),
-		spectra_consensus = os.path.join(config["scratchDir"],"{folder}_acrossK/{sample}/{sample}.spectra.k_{k}.dt_{threshold}.consensus.txt")
+		spectra_tpm = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_tpm.k_{k}.dt_{threshold}.txt"),
+		spectra_zscore = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_score.k_{k}.dt_{threshold}.txt"),
+		spectra_consensus = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.spectra.k_{k}.dt_{threshold}.consensus.txt")
 	output:
 		#todo: add output files
-		cNMF_Results = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
 		# cNMF_Analysis = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/cNMFAnalysis.k_{k}.dt_{threshold}.RData")
 	params:
-		time = "6:00:00",
-		mem_gb = "200",
+		time = "3:00:00",
+		mem_gb = "64",
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
 		# barcode = os.path.join(config["barcodeDir"], "{sample}.barcodes.tsv"),
 		threshold = get_cNMF_filter_threshold_double
 		# subsample_type = config["subsample_type"]
-	resources:
-		mem_mb=get_topicModelAnalysis_memory_slurm,
-		time = get_topicModelAnalysis_time_slurm, ## 6 hours
-		partition = get_topicModelAnlaysis_partition_slurm  
+	# resources:
+	# 	mem_mb=get_topicModelAnalysis_memory_slurm,
+	# 	time = get_topicModelAnalysis_time_slurm, ## 6 hours
+	# 	partition = get_topicModelAnlaysis_partition_slurm  
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -622,6 +682,111 @@ rule analysis:
 		--motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
 		--motif.promoter.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv \
 		' "
+
+
+rule topic_plot: 
+	input:
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+	output:
+		topic_zscore_top50 = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top50GeneInTopics.zscore.pdf"),
+		topic_raw_score_top50 = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top50GeneInTopics.rawWeight.pdf"),
+		topic_raw_score_top10 = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top10GeneInTopics.rawWeight.pdf"),
+		topic_zcore_top10 = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top10GeneInTopics.zscore.pdf")
+	params:
+		time = "3:00:00",
+		mem_gb = "64",
+		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
+		figdir = os.path.join(config["figDir"], "{folder}"), 
+		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
+		threshold = get_cNMF_filter_threshold_double
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		Rscript workflow/scripts/cNMF_analysis_topic_plot.R \
+		--sampleName {wildcards.sample} \
+		--figdir {params.figdir}/ \
+		--outdir {params.analysisdir} \
+		--K.val {wildcards.k} \
+		--density.thr {params.threshold} \
+		--recompute F ' "
+
+
+rule motif_enrichment_analysis:
+	input:
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+	output: 
+		motif_enrichment = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData")
+	params:
+		time = "6:00:00",
+		mem_gb = "64",
+		figdir = os.path.join(config["figDir"], "{folder}"), 
+		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
+		threshold = get_cNMF_filter_threshold_double
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		Rscript workflow/scripts/cNMF_analysis_motif.enrichment.R \
+		--sampleName {wildcards.sample} \
+		--figdir {params.figdir}/ \
+		--outdir {params.analysisdir} \
+		--K.val {wildcards.k} \
+		--density.thr {params.threshold} \
+		--recompute F \
+		--motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
+		--motif.promoter.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv \
+		' "
+
+
+rule motif_enrichment_analysis_plot:
+	input:
+		motif_enrichment = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData")
+	output:
+		motif_plot = expand(os.path.join(config["figDir"], "{{folder}}/{{sample}}/K{{k}}/{{sample}}_K{{k}}_dt_{{threshold}}_zscore{ep_type}.motif.enrichment{test_type_and_threshold}.pdf"), ep_type = ["enhancer", "promoter"], test_type_and_threshold = ["", "_motif.thr.10e-6", ".by.count.ttest", ".motif.enrichment.by.count.ttest_motif.thr.10e-6", ".motif.enrichment.by.count.ttest.labelPos", ".motif.enrichment.by.count.ttest_motif.thr.10e-6.labelPos"])
+	params:
+		time = "3:00:00",
+		mem_gb = "64",
+		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
+		figdir = os.path.join(config["figDir"], "{folder}"), 
+		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
+		threshold = get_cNMF_filter_threshold_double
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		Rscript workflow/scripts/cNMF_analysis_motif.enrichment_plot.R \
+		--sampleName {wildcards.sample} \
+		--figdir {params.figdir}/ \
+		--outdir {params.analysisdir} \
+		--K.val {wildcards.k} \
+		--density.thr {params.threshold} \
+		--recompute F ' "
+
+
+rule fgsea:
+	input:
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+	output:
+		fgsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{{k}}/threshold_{{threshold}}/fgsea/fgsea_all_pathways_df_{ranking_type}_k_{{k}}.dt_{{threshold}}.RData"), ranking_type=["raw.score", "z.score"])
+	params:
+		time = "6:00:00",
+		mem_gb = "64",
+		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
+		figdir = os.path.join(config["figDir"], "{folder}"), 
+		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
+		threshold = get_cNMF_filter_threshold_double
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		Rscript workflow/scripts/cNMF_analysis_fgsea.R \
+		--topic.model.result.dir {params.outdir} \
+		--sampleName {wildcards.sample} \
+		--figdir {params.figdir}/ \
+		--outdir {params.analysisdir} \
+		--K.val {wildcards.k} \
+		--density.thr {params.threshold} \
+		--recompute F ' "
+	
+
+
 
 
 # rule clusterTopics:
