@@ -807,30 +807,32 @@ rule fgsea:
 # 		--sampleName {sample} \
 # 		--density.thr 0.2 \
 # 		--cluster.topic.expression T "
-#
-#
-# rule aggregate_over_K:
-# 	input:
-# 		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{sample}}/{{folder}}/K{k}/threshold_0_2/cNMF_results.k_{k}.dt_0_2.RData"), k=config["k"])
-# 		# cNMF_Analysis = expand(os.path.join(config["analysisDir"], "{{sample}}/{{folder}}/K{k}/threshold_0_2/cNMFAnalysis.k_{k}.dt_0_2.RData"), k=config["k"])
-# 	output:
-# 		aggregated_output = os.path.join(config["analysisDir"], "{sample}/{folder}/acrossK/aggregated.outputs.findK.RData")
-# 	params:
-# 		figdir = config["figDir"],
-# 		analysisdir = config["analysisDir"],
-# 		datadir = config["dataDir"],
-# 		klist_comma = ",".join(config["k"])
-# 	shell:
-# 		"bash -c ' source $HOME/.bashrc; \
-# 		conda activate cnmf_env; \
-# 		Rscript workflow/scripts/aggregate_across_K.R \
-# 		--figdir {params.figdir} \
-# 		--outdir {params.analysisdir} \
-# 		--datadir {params.datadir} \
-# 		--sampleName {wildcards.sample} \
-# 		--sep F \
-# 		--K.list {params.klist_comma} \
-# 		--K.table {params.analysisdir}/{wildcards.sample}/K.spectra.threshold.table.txt ' " ## how to create this automatically?
+
+
+
+rule aggregate_over_K:
+	input:
+		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_0_2/cNMF_results.k_{k}.dt_0_2.RData"), k=config["k"])
+		# cNMF_Analysis = expand(os.path.join(config["analysisDir"], "{{sample}}/{{folder}}/K{k}/threshold_0_2/cNMFAnalysis.k_{k}.dt_0_2.RData"), k=config["k"])
+	output:
+		aggregated_output = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData")
+	params:
+		time = "3:00:00",
+		mem_gb = "64",
+		figdir = os.path.join(config["figDir"], "{folder}"),
+		analysisdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
+		datadir = config["dataDir"],
+		klist_comma = ",".join(config["k"])
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		Rscript workflow/scripts/aggregate_across_K.R \
+		--figdir {params.figdir} \
+		--outdir {params.analysisdir} \
+		--datadir {params.datadir} \
+		--sampleName {wildcards.sample} \
+		--K.list {params.klist_comma} \
+		--K.table {params.analysisdir}/{wildcards.sample}/K.spectra.threshold.table.txt ' " ## how to create this automatically?
 
 
 # rule findK_plot:

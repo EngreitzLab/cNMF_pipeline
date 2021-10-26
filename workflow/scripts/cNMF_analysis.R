@@ -2,15 +2,16 @@
 ## Helen Kang
 ## Topic Model Analysis Only (no plot output)
 ## 210503
-.libPaths("/home/groups/engreitz/Software/R_3.6.1")
+
+## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
 
 
 packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
-              "CountClust", "Hmisc", "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
-              "GGally","RNOmni","usedist","ggpubr","gridExtra","GSEA",
-              "org.Hs.eg.db","limma","clusterProfiler","fgsea", "conflicted",
-              "cluster","textshape","readxl", "IsoplotR", "wesanderson", 
-              "ggdist", "gghalves", "Seurat", "writexl")
+              "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
+              "ggpubr","gridExtra",
+              "org.Hs.eg.db","limma","fgsea", "conflicted",
+              "cluster","textshape","readxl", 
+              "ggdist", "gghalves", "Seurat", "writexl") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
 library(textshape)
 library(readxl)
 # library(Seurat)
