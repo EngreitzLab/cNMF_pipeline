@@ -1,0 +1,15 @@
+{
+		"total_workers": 10,
+		"seed": 14,
+		"num_runs": 10,
+		"run_per_worker": 1,
+   		"k": ["14"],
+		"thresholds": ["0.2"],
+		"outDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/outputs",
+		"analysisDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis",
+		"figDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures",
+		"dataDir": "",
+		"scratchDir": "/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/211011_Perturb-seq_Analysis_Pipeline_scratch",
+		"cNMF_gene_selection": ["all_genes"],
+		"sampleName": "FT005_007_010_fresh_3min"
+}
