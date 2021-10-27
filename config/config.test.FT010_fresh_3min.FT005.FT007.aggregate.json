@@ -8,7 +8,7 @@
 		"outDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/outputs",
 		"analysisDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis",
 		"figDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures",
-		"dataDir": "",
+		"dataDir": "NOTE: need to put {sample}.SeuratObject.RDS file in analysisDir/data/ in order to skip 'create_Seurat_Object' rule",
 		"scratchDir": "/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/211011_Perturb-seq_Analysis_Pipeline_scratch",
 		"cNMF_gene_selection": ["all_genes"],
 		"sampleName": "FT005_007_010_fresh_3min"
