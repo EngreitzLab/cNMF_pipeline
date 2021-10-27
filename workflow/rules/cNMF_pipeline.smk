@@ -820,19 +820,19 @@ rule aggregate_over_K:
 		time = "3:00:00",
 		mem_gb = "64",
 		figdir = os.path.join(config["figDir"], "{folder}"),
-		analysisdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
+		analysisdir = os.path.join(config["analysisDir"], "{folder}"),
 		datadir = config["dataDir"],
 		klist_comma = ",".join(config["k"])
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_env; \
+		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/aggregate_across_K.R \
 		--figdir {params.figdir} \
 		--outdir {params.analysisdir} \
 		--datadir {params.datadir} \
 		--sampleName {wildcards.sample} \
 		--K.list {params.klist_comma} \
-		--K.table {params.analysisdir}/{wildcards.sample}/K.spectra.threshold.table.txt ' " ## how to create this automatically?
+		--K.table {params.analysisdir}/K.spectra.threshold.table.txt ' " ## how to create this automatically?
 
 
 # rule findK_plot:
