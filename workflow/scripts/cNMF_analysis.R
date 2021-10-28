@@ -109,10 +109,10 @@ p.value.thr <- opt$adj.p.value.thr
 
  
 # create dir if not already
-check.dir <- c(OUTDIR, FIGDIR, paste0(FIGDIR,SAMPLE,"/"), paste0(FIGDIR,SAMPLE,"/K",k,"/"), paste0(OUTDIR,SAMPLE,"/"), OUTDIRSAMPLE, FIGDIRSAMPLE, FGSEADIR, FGSEAFIG)
+check.dir <- c(OUTDIR, FIGDIR, OUTDIRSAMPLE, FIGDIRSAMPLE, FGSEADIR, FGSEAFIG)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
 
-palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
+## palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
 # selected.gene <- c("EDN1", "NOS3", "TP53", "GOSR2", "CDKN1A")
 # # ABC genes
 # gene.set <- c("INPP5B", "SF3A3", "SERPINH1", "NR2C1", "FGD6", "VEZT", "SMAD3", "AAGAB", "GOSR2", "ATP5G1", "ANGPTL4", "SRBD1", "PRKCE", "DAGLB") # ABC_0.015_CAD_pp.1_genes #200 gene library
@@ -310,13 +310,15 @@ palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
     theta.path <- paste0(TMDIR, "/", SAMPLE, ".gene_spectra_tpm.k_", k, ".dt_", DENSITY.THRESHOLD,".txt")
     theta.zscore.path <- paste0(TMDIR, "/", SAMPLE, ".gene_spectra_score.k_", k, ".dt_", DENSITY.THRESHOLD,".txt")
     print(theta.path)
-    browser()
-    theta.raw <- read.delim(theta.path, header=T, stringsAsFactors=F, check.names=F) %>% select(-"")
+    theta.raw <- read.delim(theta.path, header=T, stringsAsFactors=F, check.names=F, row.names=1)
+    ## theta.raw <- read.delim(theta.path, header=T, stringsAsFactors=F, check.names=F) %>% select(-``)
+    print("finished reading raw weights for topics")
     tmp.theta <- theta.raw
     tmp.theta[tmp.theta==0] <- min(tmp.theta[tmp.theta > 0])/100
     theta <- tmp.theta %>% apply(1, function(x) x/sum(x)) %>% `colnames<-`(c(1:k))
-    theta.raw <- theta.raw %>% t() %>% as.data.frame() %>% `colnames<-`(c(1:k)) 
-    theta.zscore <- read.delim(theta.zscore.path, header=T, stringsAsFactors=F, check.names=F) %>% select(-"") %>% t() %>% `colnames<-`(c(1:k))
+    theta.raw <- theta.raw %>% t() %>% as.data.frame() %>% `colnames<-`(c(1:k))
+    print("loading topic z-score (specificity score)")
+    theta.zscore <- read.delim(theta.zscore.path, header=T, stringsAsFactors=F, check.names=F, row.names=1) %>% t() %>% `colnames<-`(c(1:k))
     tmp <- rownames(theta) %>% strsplit(., split=":") %>% sapply("[[",1)
     tmpp <- data.frame(table(tmp)) %>% subset(Freq > 1)  # keep row names that have duplicated gene names but different ENSG names
     tmp.copy <- tmp
@@ -331,13 +333,14 @@ palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
     ## theta.zscore <- truncate.theta.names(theta.zscore)
     omega.path <- paste0(TMDIR, "/", SAMPLE, ".usages.k_", k, ".dt_", DENSITY.THRESHOLD, ".consensus.txt")
     print(omega.path)
-    omega.original <- omega <- read.delim(omega.path, header=T, stringsAsFactors=F, check.names=F) %>% `rownames<-`(.[,1]) %>% select(-"") %>% apply(1, function(x) x/sum(x)) %>% t()
+    omega.original <- omega <- read.delim(omega.path, header=T, stringsAsFactors=F, check.names=F, row.names = 1)  %>% apply(1, function(x) x/sum(x)) %>% t()
     colnames(omega) <- paste0("topic_",colnames(omega))
     # barcode.names <- read.table(opt$barcode.names, header=F, stringsAsFactors=F) %>% `colnames<-`("long.CBC")
     # rownames(omega) <- rownames(omega.original) <- barcode.names %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
     # omega <- adjust.multiTargetGuide.rownames(omega)
     # barcode.names <- data.frame(long.CBC=rownames(omega)) %>% separate(col="long.CBC", into=c("Gene.full.name", "Guide", "CBC"), sep=":", remove=F) %>% mutate(Gene = gsub("_multiTarget|-TSS", "", Gene.full.name))
 
+    print("save the data")
     # ensembl.theta.zscore.names <- mapIds(org.Hs.eg.db, keys = rownames(theta.zscore), keytype = "SYMBOL", column="ENSEMBL")
     # ensembl.theta.zscore.names[ensembl.theta.zscore.names %>% is.na] <- rownames(theta.zscore)[ensembl.theta.zscore.names %>% is.na]
     # theta.zscore.ensembl <- theta.zscore
