@@ -85,7 +85,8 @@ if(opt$recompute | !file.exists(outSeuratObjectPath)) {
     tokeep <- which(!(grepl("^LINC|^[A-Za-z][A-Za-z][0-9][0-9][0-9][0-9][0-9][0-9]\\.", s %>% rownames)))
     s.subset <- s[tokeep,]
     s.subset <- subset(s.subset, subset= nCount_RNA > 200 & nFeature_RNA > 200) # remove cells with less than 200 UMIs and less than 200 genes
-    tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, sum) > 10) # keep genes detected in more than 10 cells
+    ## tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, sum) > 10) # keep genes detected in more than 10 UMIs
+    tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, function(x) ((x > 0) %>% as.numeric %>% sum > 10)))
     s.subset <- s.subset[tokeep,]
 
     s <- s.subset

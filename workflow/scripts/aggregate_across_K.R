@@ -45,8 +45,8 @@ opt <- parse_args(OptionParser(option_list=option.list))
 
 opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes"
 opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/all_genes/"
-opt$datadir <- "/oak/stanford/groups/engreitz/Users/kangh/process_sequencing_data/210912_FT010_fresh_Telo_sortedEC/multiome_FT010_fresh_2min/outs/filtered_feature_bc_matrix"
-opt$sampleName <- "FT010_fresh_2min"
+## opt$datadir <- "/oak/stanford/groups/engreitz/Users/kangh/process_sequencing_data/210912_FT010_fresh_Telo_sortedEC/multiome_FT010_fresh_2min/outs/filtered_feature_bc_matrix"
+opt$sampleName <- "FT010_fresh_3min"
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
 
@@ -193,15 +193,15 @@ for (n in 1:nrow(K.spectra.threshold)) {
     ## theta.raw
     ## theta.raw.list[[n]] <- theta.raw %>% as.data.frame %>% `colnames<-`(paste0("factor_", colnames(.))) %>% mutate(Gene=rownames(.)) %>% melt(value.name="weight", id.vars="Gene", variable.name="Factor") %>% mutate(K=k)
     theta.raw.list[[n]] <- theta.raw %>% `colnames<-`(paste0("K",k,"_factor_", colnames(.)))
-    ## theta.KL
-    ## load KL score
-    file.name <- paste0(OUTDIRSAMPLE, "/topic.KL.score_", SUBSCRIPT.SHORT, ".txt") %>% gsub("_k_", "_K", .)
-    if(file.exists(file.name)) {
-        print(paste0("Loading ", file.name))
-        theta.KL.list[[n]] <- read.table(file.name, header=T, stringsAsFactors=F)
-    } else {
-        print(paste0(file.name, " does not exist."))
-    }
+    ## ## theta.KL
+    ## ## load KL score
+    ## file.name <- paste0(OUTDIRSAMPLE, "/topic.KL.score_", SUBSCRIPT.SHORT, ".txt") %>% gsub("_k_", "_K", .)
+    ## if(file.exists(file.name)) {
+    ##     print(paste0("Loading ", file.name))
+    ##     theta.KL.list[[n]] <- read.table(file.name, header=T, stringsAsFactors=F)
+    ## } else {
+    ##     print(paste0(file.name, " does not exist."))
+    ## }
     
     # ## motif enrichment file (old.211025)
     # file.name <- paste0(OUTDIRSAMPLE,"/cNMFAnalysis.factorMotifEnrichment.",SUBSCRIPT.SHORT, ".RData")
@@ -236,12 +236,14 @@ for (n in 1:nrow(K.spectra.threshold)) {
     if ( motif.enrichment.variables.missing > 0 ) {
         warning(paste0(motif.enrichment.variables[!(motif.enrichment.variables %in% ls())], " not available"))
     } else {
-            all.promoter.ttest.df.list[[i]] <- all.promoter.ttest.df %>% mutate(K = k)
-            all.promoter.ttest.df.10en6.list[[i]] <- all.promoter.ttest.df.10en6 %>% mutate(K = k)
-            all.enhancer.ttest.df.list[[i]] <- all.enhancer.ttest.df %>% mutate(K = k)
-            all.enhancer.ttest.df.10en6.list[[i]] <- all.enhancer.ttest.df.10en6 %>% mutate(K = k)
-            all.promoter.fisher.df.list[[i]] <- all.promoter.fisher.df
-            all.enhancer.fisher.df.list[[i]] <- all.enhancer.fisher.df
+        promoter.fisher.df.list[[n]] <- all.promoter.fisher.df %>% mutate(K = k)
+        enhancer.fisher.df.list[[n]] <- all.enhancer.fisher.df %>% mutate(K = k)
+        all.promoter.ttest.df.list[[n]] <- all.promoter.ttest.df %>% mutate(K = k)
+        all.promoter.ttest.df.10en6.list[[n]] <- all.promoter.ttest.df.10en6 %>% mutate(K = k)
+        all.enhancer.ttest.df.list[[n]] <- all.enhancer.ttest.df %>% mutate(K = k)
+        all.enhancer.ttest.df.10en6.list[[n]] <- all.enhancer.ttest.df.10en6 %>% mutate(K = k)
+        all.promoter.fisher.df.list[[n]] <- all.promoter.fisher.df
+        all.enhancer.fisher.df.list[[n]] <- all.enhancer.fisher.df
     }
 
 
@@ -253,7 +255,7 @@ for (n in 1:nrow(K.spectra.threshold)) {
         file.name <- paste0(FGSEADIR,"/fgsea_",type,"_", SUBSCRIPT.SHORT, ".txt")
         if(file.exists(file.name)) {
             message("Loading ", file.name)
-            fgsea.df[[i]] <- read.table(file.name, header=T, stringsAsFactors = F) %>% mutate(type = type, K = k)
+            fgsea.df[[n]] <- read.table(file.name, header=T, stringsAsFactors = F) %>% mutate(type = type, K = k)
         } else {
             print(paste0(file.name, " file does not exist"))
         }

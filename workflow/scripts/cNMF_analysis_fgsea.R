@@ -79,7 +79,7 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$K.val <- 60
 
 
-mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
+## mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
@@ -198,7 +198,7 @@ for (type in c("raw.score", "z.score")){ # "raw.score", "z.score"
         }
         fgsea.df.list[[msigdb.index]] <- do.call(rbind, fgseaRes.df) %>% mutate(database = msigdb.pathway, padj.over.topics = p.adjust(pval))
         ## save fgseaRes list
-        save(fgseaRes, file=paste0(FGSEADIR,"/fgsea_",msigdb.pathway,"_",type,"_", SUBSCRIPT, ".RData"))
+        save(fgseaRes, file=paste0(FGSEADIR,"/fgsea_",msigdb.pathway,"_",type,"_", SUBSCRIPT.SHORT, ".RData"))
     }
     fgsea.df <- do.call(rbind, fgsea.df.list)
     save(fgsea.df, file=paste0(FGSEADIR,"/fgsea_all_pathways_df_",type, "_", SUBSCRIPT.SHORT, ".RData"))

@@ -813,8 +813,8 @@ rule fgsea:
 rule aggregate_over_K:
 	input:
 		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_0_2/cNMF_results.k_{k}.dt_0_2.RData"), k=config["k"]),
-		fgsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{{k}}/threshold_{{threshold}}/fgsea/fgsea_all_pathways_df_{ranking_type}_k_{k}.dt_{{threshold}}.RData"), ranking_type=["raw.score", "z.score"], k=config["k"]),
-		motif_enrichment = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{{threshold}}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{{threshold}}.RData"), k=config["k"])
+		fgsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/fgsea/fgsea_all_pathways_df_{ranking_type}_k_{k}.dt_{threshold}.RData"), ranking_type=["raw.score", "z.score"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+		motif_enrichment = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData"), k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]])
 		# cNMF_Analysis = expand(os.path.join(config["analysisDir"], "{{sample}}/{{folder}}/K{k}/threshold_0_2/cNMFAnalysis.k_{k}.dt_0_2.RData"), k=config["k"])
 	output:
 		aggregated_output = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData")
@@ -837,24 +837,27 @@ rule aggregate_over_K:
 		--K.table {params.analysisdir}/K.spectra.threshold.table.txt ' " ## how to create this automatically?
 
 
-# rule findK_plot:
-# 	input:
-# 		toplot = os.path.join(config["analysisDir"], "{sample}/{folder}/acrossK/aggregated.outputs.findK.RData")
-# 	output:
-# 		html_path = os.path.join(config["figDir"], "{sample}/{folder}/acrossK/findK.html")
-# 	params:
-# 		GO_threshold = 0.1
-# 	shell:
-# 		"bash -c ' source $HOME/.bashrc; \
-# 		conda activate cnmf_env; \
-# 		Rscript workflow/scripts/findK.plots.sherlock.R \
-# 		--figdir \
-# 		--outdir \
-# 		--reference.table \
-# 		--sampleName {widcards.sample} \
-# 		--p.adj.threshold 0.1 \
-# 		--aggregated.data {input.toplot} \
-# 		' "
+rule findK_plot:
+	input:
+		toplot = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData")
+	output:
+		GO_raw_plot = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/GO.enrichment.on.raw.score.ranking.threshold0.1.pdf")
+	params:
+		time = "3:00:00",
+		mem_gb = "64",
+		figdir = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/"),
+		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/"),
+		GO_threshold = 0.1
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_analysis_R; \
+		Rscript workflow/scripts/cNMF_findK_plots.R \
+		--figdir {params.figdir} \
+		--outdir {params.analysisdir} \
+		--sampleName {widcards.sample} \
+		--p.adj.threshold 0.1 \
+		--aggregated.data {input.toplot} \
+		' "
 
 
 

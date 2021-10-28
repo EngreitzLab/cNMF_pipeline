@@ -4,7 +4,16 @@
 ## 210503
 
 ## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
-
+library(conflicted)
+conflict_prefer("combine", "dplyr")
+conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
+conflict_prefer("melt", "reshape2") 
+conflict_prefer("slice", "dplyr")
+conflict_prefer("summarize", "dplyr")
+conflict_prefer("filter", "dplyr")
+conflict_prefer("list", "base")
+conflict_prefer("desc", "dplyr")
+conflict_prefer("select", "dplyr")
 
 packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
               "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
@@ -12,17 +21,7 @@ packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", 
               "org.Hs.eg.db","limma","fgsea", "conflicted",
               "cluster","textshape","readxl", 
               "ggdist", "gghalves", "Seurat", "writexl") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
-# library(Seurat)
 xfun::pkg_attach(packages)
-conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
-conflict_prefer("melt", "reshape2") 
-conflict_prefer("slice", "dplyr")
-conflict_prefer("summarize", "dplyr")
-conflict_prefer("filter", "dplyr")
-conflict_prefer("combine", "dplyr")
-conflict_prefer("list", "base")
-conflict_prefer("desc", "dplyr")
-
 
 ## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
@@ -311,6 +310,7 @@ palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
     theta.path <- paste0(TMDIR, "/", SAMPLE, ".gene_spectra_tpm.k_", k, ".dt_", DENSITY.THRESHOLD,".txt")
     theta.zscore.path <- paste0(TMDIR, "/", SAMPLE, ".gene_spectra_score.k_", k, ".dt_", DENSITY.THRESHOLD,".txt")
     print(theta.path)
+    browser()
     theta.raw <- read.delim(theta.path, header=T, stringsAsFactors=F, check.names=F) %>% select(-"")
     tmp.theta <- theta.raw
     tmp.theta[tmp.theta==0] <- min(tmp.theta[tmp.theta > 0])/100
