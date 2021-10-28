@@ -2,7 +2,7 @@
 ## Helen Kang
 ## 210613
 
-.libPaths("/home/groups/engreitz/Software/R_3.6.1")
+## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
 
 suppressPackageStartupMessages(library(optparse))
 

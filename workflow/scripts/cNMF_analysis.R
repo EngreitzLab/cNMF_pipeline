@@ -12,8 +12,6 @@ packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", 
               "org.Hs.eg.db","limma","fgsea", "conflicted",
               "cluster","textshape","readxl", 
               "ggdist", "gghalves", "Seurat", "writexl") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
-library(textshape)
-library(readxl)
 # library(Seurat)
 xfun::pkg_attach(packages)
 conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
@@ -26,7 +24,7 @@ conflict_prefer("list", "base")
 conflict_prefer("desc", "dplyr")
 
 
-source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
+## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
 option.list <- list(
   make_option("--figdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes/", help="Figure directory"),

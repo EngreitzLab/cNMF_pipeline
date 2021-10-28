@@ -2,7 +2,7 @@
 ## Helen Kang
 ## 210613
 
-.libPaths("/home/groups/engreitz/Software/R_3.6.1")
+## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
 
 suppressPackageStartupMessages(library(optparse))
 
@@ -19,7 +19,7 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$datadir <- "/oak/stanford/groups/engreitz/Users/katherine/perturb-seq/data/pilot_low_moi"
 ## opt$sampleName <- "lowmoi"
 
-library(SeuratObject)
+## library(SeuratObject)
 library(Seurat)
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(ggplot2))
@@ -30,7 +30,7 @@ suppressPackageStartupMessages(library(ggrepel))
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 13), axis.title = element_text(size = 15), plot.title = element_text(hjust = 0.5))
 
-source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
+## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
 
 #######################################################################

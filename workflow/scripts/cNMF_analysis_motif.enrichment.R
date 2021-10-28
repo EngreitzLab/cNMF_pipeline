@@ -2,17 +2,30 @@
 ## Helen Kang
 ## Topic Model Analysis Only (no plot output)
 ## 210503
-.libPaths("/home/groups/engreitz/Software/R_3.6.1")
+
+## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
+
+
+
+## Helen Kang
+## Topic Model Analysis Only (no plot output)
+## 210503
+
+## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
 
 
 packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
-              "CountClust", "Hmisc", "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
-              "GGally","RNOmni","usedist","ggpubr","gridExtra","GSEA",
-              "org.Hs.eg.db","limma","clusterProfiler","fgsea", "conflicted",
-              "cluster","textshape","readxl", "IsoplotR", "wesanderson", 
-              "ggdist", "gghalves", "Seurat", "writexl")
-library(textshape)
-library(readxl)
+              "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
+              "ggpubr","gridExtra",
+              "org.Hs.eg.db","limma","fgsea", "conflicted",
+              "cluster","textshape","readxl", 
+              "ggdist", "gghalves", "writexl") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
+## packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
+##               "CountClust", "Hmisc", "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
+##               "GGally","RNOmni","usedist","ggpubr","gridExtra","GSEA",
+##               "org.Hs.eg.db","limma","clusterProfiler","fgsea", "conflicted",
+##               "cluster","textshape","readxl", "IsoplotR", "wesanderson", 
+##               "ggdist", "gghalves", "Seurat", "writexl")
 # library(Seurat)
 xfun::pkg_attach(packages)
 conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
@@ -25,7 +38,7 @@ conflict_prefer("list", "base")
 conflict_prefer("desc", "dplyr")
 
 
-source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
+## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
 option.list <- list(
   make_option("--figdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes/", help="Figure directory"),
@@ -119,7 +132,7 @@ print(cNMF.result.file)
 if(file.exists(cNMF.result.file)) {
     print("loading cNMF result file")
     load(cNMF.result.file)
-
+}
  
 
 
