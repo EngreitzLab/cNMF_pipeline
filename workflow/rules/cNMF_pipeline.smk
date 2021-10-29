@@ -458,7 +458,8 @@ rule findK_cNMF:
 		overdispersed_genes = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.overdispersed_genes.txt"),
 		merged_copied_result = expand(os.path.join(config["analysisDir"],"{{folder}}_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=config["k"])
 	output:
-		plot = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.k_selection.png")
+		plot = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.k_selection.png"),
+		plot_new_location = os.path.join(config["figDir"],"{folder}/{sample}/acrossK/{sample}.k_selection.png")
 	# resources: mem_mb=32000
 	params:
 		time = "24:00:00",
@@ -470,7 +471,8 @@ rule findK_cNMF:
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
-		python workflow/scripts/cNMF/cnmf.py k_selection_plot --output-dir {params.outdir} --name {wildcards.sample} ' "
+		python workflow/scripts/cNMF/cnmf.modified.py k_selection_plot --output-dir {params.outdir} --name {wildcards.sample}; \
+		cp {output.plot} {output.plot_new_location} ' "
 
 
 def get_concensus_factors_time(wildcards):
@@ -709,6 +711,24 @@ rule topic_plot:
 		--K.val {wildcards.k} \
 		--density.thr {params.threshold} \
 		--recompute F ' "
+
+
+# rule get_ABC_enhancer_fasta:
+# 	input:
+# 	output:
+# 	params:
+# 	shell:
+
+
+# rule FIMO_ABC_enhancers:
+# 	input:
+# 	output:
+# 	params:
+# 	shell: ## need FIMO wrapper
+# 		"bash -c ' source ~/.bashrc; \
+# 		fimo -oc ${FIMO_OUTDIR}/ --verbosity 1 \
+# 		--thresh ${threshold} data/motif/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme ${TOPDATADIRABC}/${sample}_Predictions.AvgHiC.ABC0.015.minus150.fa; \                                                                                                                      
+#         echo ${FIMO_OUTDIR}/fimo.tsv | tr "|" "\t" > ${FIMO_OUTDIR}/fimo.formatted.tsv ' "
 
 
 rule motif_enrichment_analysis:
