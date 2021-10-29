@@ -2,7 +2,7 @@
 ## Helen Kang
 ## 210613
 
-.libPaths("/home/groups/engreitz/Software/R_3.6.1")
+## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
 
 suppressPackageStartupMessages(library(optparse))
 
@@ -19,7 +19,7 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$datadir <- "/oak/stanford/groups/engreitz/Users/katherine/perturb-seq/data/pilot_low_moi"
 ## opt$sampleName <- "lowmoi"
 
-library(SeuratObject)
+## library(SeuratObject)
 library(Seurat)
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(ggplot2))
@@ -30,7 +30,7 @@ suppressPackageStartupMessages(library(ggrepel))
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 13), axis.title = element_text(size = 15), plot.title = element_text(hjust = 0.5))
 
-source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
+## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
 
 #######################################################################
@@ -85,7 +85,8 @@ if(opt$recompute | !file.exists(outSeuratObjectPath)) {
     tokeep <- which(!(grepl("^LINC|^[A-Za-z][A-Za-z][0-9][0-9][0-9][0-9][0-9][0-9]\\.", s %>% rownames)))
     s.subset <- s[tokeep,]
     s.subset <- subset(s.subset, subset= nCount_RNA > 200 & nFeature_RNA > 200) # remove cells with less than 200 UMIs and less than 200 genes
-    tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, sum) > 10) # keep genes detected in more than 10 cells
+    ## tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, sum) > 10) # keep genes detected in more than 10 UMIs
+    tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, function(x) ((x > 0) %>% as.numeric %>% sum > 10)))
     s.subset <- s.subset[tokeep,]
 
     s <- s.subset

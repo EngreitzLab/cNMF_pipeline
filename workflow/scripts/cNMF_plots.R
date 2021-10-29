@@ -12,7 +12,7 @@ packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", 
               "ggdist", "patchwork", "gghalves", "Seurat", "writexl")
 library(textshape)
 library(readxl)
-packages <- c("optparse","dplyr", "ggplot2", "reshape2", "ggrepel")
+packages <- c("optparse","dplyr", "ggplot2", "reshape2", "ggrepel", "conflicted")
 ## library(Seurat)
 xfun::pkg_attach(packages)
 conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
