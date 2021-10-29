@@ -28,7 +28,7 @@ rule create_Seurat_Object:
 		outdir = os.path.join(config["analysisDir"], "data")
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_env; \
+		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/create_seurat_object.R \
 		--outdir {params.outdir}/ \
 		--datadir {params.datadir} \
@@ -48,7 +48,7 @@ rule Seurat_Object_to_h5ad:
 		mem_gb = "64"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_env; \
+		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/seurat_to_h5ad.R \
 		--inputSeuratObject {input.seurat_object} \
 		--output_h5ad {output.h5ad_mtx} \
@@ -458,7 +458,8 @@ rule findK_cNMF:
 		overdispersed_genes = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.overdispersed_genes.txt"),
 		merged_copied_result = expand(os.path.join(config["analysisDir"],"{{folder}}_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=config["k"])
 	output:
-		plot = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.k_selection.png")
+		plot = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.k_selection.png"),
+		plot_new_location = os.path.join(config["figDir"],"{folder}/{sample}/acrossK/{sample}.k_selection.png")
 	# resources: mem_mb=32000
 	params:
 		time = "24:00:00",
@@ -470,7 +471,8 @@ rule findK_cNMF:
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
-		python workflow/scripts/cNMF/cnmf.py k_selection_plot --output-dir {params.outdir} --name {wildcards.sample} ' "
+		python workflow/scripts/cNMF/cnmf.modified.py k_selection_plot --output-dir {params.outdir} --name {wildcards.sample}; \
+		cp {output.plot} {output.plot_new_location} ' "
 
 
 def get_concensus_factors_time(wildcards):
@@ -599,7 +601,7 @@ rule calc_UMAP:
 		outdir = os.path.join(config["analysisDir"], "data")
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_env; \
+		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/calcUMAP.only.R \
 			--outdir {params.outdir}/ \
 			--inputSeuratObject {input.input_seurat_object} \
@@ -625,7 +627,7 @@ rule plot_UMAP:
 		threshold = get_cNMF_filter_threshold_double
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_env; \
+		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/cNMF_UMAP_plot.R \
 		--sampleName {wildcards.sample} \
 		--inputSeuratObject {input.seurat_object_withUMAP} \
@@ -669,7 +671,7 @@ rule analysis:
 	# 	partition = get_topicModelAnlaysis_partition_slurm  
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_env; \
+		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/cNMF_analysis.R \
 		--topic.model.result.dir {params.outdir} \
 		--sampleName {wildcards.sample} \
@@ -701,7 +703,7 @@ rule topic_plot:
 		threshold = get_cNMF_filter_threshold_double
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_env; \
+		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/cNMF_analysis_topic_plot.R \
 		--sampleName {wildcards.sample} \
 		--figdir {params.figdir}/ \
@@ -709,6 +711,24 @@ rule topic_plot:
 		--K.val {wildcards.k} \
 		--density.thr {params.threshold} \
 		--recompute F ' "
+
+
+# rule get_ABC_enhancer_fasta:
+# 	input:
+# 	output:
+# 	params:
+# 	shell:
+
+
+# rule FIMO_ABC_enhancers:
+# 	input:
+# 	output:
+# 	params:
+# 	shell: ## need FIMO wrapper
+# 		"bash -c ' source ~/.bashrc; \
+# 		fimo -oc ${FIMO_OUTDIR}/ --verbosity 1 \
+# 		--thresh ${threshold} data/motif/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme ${TOPDATADIRABC}/${sample}_Predictions.AvgHiC.ABC0.015.minus150.fa; \                                                                                                                      
+#         echo ${FIMO_OUTDIR}/fimo.tsv | tr "|" "\t" > ${FIMO_OUTDIR}/fimo.formatted.tsv ' "
 
 
 rule motif_enrichment_analysis:
@@ -724,7 +744,7 @@ rule motif_enrichment_analysis:
 		threshold = get_cNMF_filter_threshold_double
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_env; \
+		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/cNMF_analysis_motif.enrichment.R \
 		--sampleName {wildcards.sample} \
 		--figdir {params.figdir}/ \
@@ -741,7 +761,7 @@ rule motif_enrichment_analysis_plot:
 	input:
 		motif_enrichment = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData")
 	output:
-		motif_plot = expand(os.path.join(config["figDir"], "{{folder}}/{{sample}}/K{{k}}/{{sample}}_K{{k}}_dt_{{threshold}}_zscore{ep_type}.motif.enrichment{test_type_and_threshold}.pdf"), ep_type = ["enhancer", "promoter"], test_type_and_threshold = ["", "_motif.thr.10e-6", ".by.count.ttest", ".motif.enrichment.by.count.ttest_motif.thr.10e-6", ".motif.enrichment.by.count.ttest.labelPos", ".motif.enrichment.by.count.ttest_motif.thr.10e-6.labelPos"])
+		motif_plot = expand(os.path.join(config["figDir"], "{{folder}}/{{sample}}/K{{k}}/{{sample}}_K{{k}}_dt_{{threshold}}_zscore.{ep_type}.motif.enrichment{test_type_and_threshold}.pdf"), ep_type = ["enhancer", "promoter"], test_type_and_threshold = ["", "_motif.thr.10e-6", ".by.count.ttest", ".by.count.ttest_motif.thr.10e-6", ".by.count.ttest.labelPos", ".by.count.ttest_motif.thr.10e-6.labelPos"])
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
@@ -751,7 +771,7 @@ rule motif_enrichment_analysis_plot:
 		threshold = get_cNMF_filter_threshold_double
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_env; \
+		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/cNMF_analysis_motif.enrichment_plot.R \
 		--sampleName {wildcards.sample} \
 		--figdir {params.figdir}/ \
@@ -775,7 +795,7 @@ rule fgsea:
 		threshold = get_cNMF_filter_threshold_double
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_env; \
+		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/cNMF_analysis_fgsea.R \
 		--topic.model.result.dir {params.outdir} \
 		--sampleName {wildcards.sample} \
@@ -812,7 +832,9 @@ rule fgsea:
 
 rule aggregate_over_K:
 	input:
-		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_0_2/cNMF_results.k_{k}.dt_0_2.RData"), k=config["k"])
+		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_0_2/cNMF_results.k_{k}.dt_0_2.RData"), k=config["k"]),
+		fgsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/fgsea/fgsea_all_pathways_df_{ranking_type}_k_{k}.dt_{threshold}.RData"), ranking_type=["raw.score", "z.score"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+		motif_enrichment = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData"), k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]])
 		# cNMF_Analysis = expand(os.path.join(config["analysisDir"], "{{sample}}/{{folder}}/K{k}/threshold_0_2/cNMFAnalysis.k_{k}.dt_0_2.RData"), k=config["k"])
 	output:
 		aggregated_output = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData")
@@ -835,24 +857,27 @@ rule aggregate_over_K:
 		--K.table {params.analysisdir}/K.spectra.threshold.table.txt ' " ## how to create this automatically?
 
 
-# rule findK_plot:
-# 	input:
-# 		toplot = os.path.join(config["analysisDir"], "{sample}/{folder}/acrossK/aggregated.outputs.findK.RData")
-# 	output:
-# 		html_path = os.path.join(config["figDir"], "{sample}/{folder}/acrossK/findK.html")
-# 	params:
-# 		GO_threshold = 0.1
-# 	shell:
-# 		"bash -c ' source $HOME/.bashrc; \
-# 		conda activate cnmf_env; \
-# 		Rscript workflow/scripts/findK.plots.sherlock.R \
-# 		--figdir \
-# 		--outdir \
-# 		--reference.table \
-# 		--sampleName {widcards.sample} \
-# 		--p.adj.threshold 0.1 \
-# 		--aggregated.data {input.toplot} \
-# 		' "
+rule findK_plot:
+	input:
+		toplot = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData")
+	output:
+		GO_raw_plot = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/GO.enrichment.on.raw.score.ranking.threshold0.1.pdf")
+	params:
+		time = "3:00:00",
+		mem_gb = "64",
+		figdir = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/"),
+		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/"),
+		GO_threshold = 0.1
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_analysis_R; \
+		Rscript workflow/scripts/cNMF_findK_plots.R \
+		--figdir {params.figdir} \
+		--outdir {params.analysisdir} \
+		--sampleName {wildcards.sample} \
+		--p.adj.threshold 0.1 \
+		--aggregated.data {input.toplot} \
+		' "
 
 
 

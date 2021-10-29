@@ -2,7 +2,7 @@
 ## Helen Kang
 ## 210613
 
-.libPaths("/home/groups/engreitz/Software/R_3.6.1")
+## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
 
 suppressPackageStartupMessages(library(optparse))
 
@@ -54,6 +54,14 @@ anndata <- import("anndata", convert = FALSE) ## load AnnData module
 ## load Seruat Object
 s <- readRDS(opt$inputSeuratObject)
 
+## filter genes and cells again, for the cases when input file is Seurat Object and create_seurat_object step is skipped
+## remove non-protein coding genes and genes detected in fewer than 10 cells
+tokeep <- which(!(grepl("^LINC|^[A-Za-z][A-Za-z][0-9][0-9][0-9][0-9][0-9][0-9]\\.", s %>% rownames)))
+s.subset <- s[tokeep,]
+s.subset <- subset(s.subset, subset= nCount_RNA > 200 & nFeature_RNA > 200) # remove cells with less than 200 UMIs and less than 200 genes
+## tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, sum) > 10) # keep genes detected in more than 10 UMIs
+tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, function(x) ((x > 0) %>% as.numeric %>% sum > 10)))
+s.subset <- s.subset[tokeep,]
 
 
 adata <- anndata$AnnData(

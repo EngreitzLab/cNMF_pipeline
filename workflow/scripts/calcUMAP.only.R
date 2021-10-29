@@ -2,7 +2,7 @@
 ## Helen Kang
 ## 210519
 
-.libPaths("/home/groups/engreitz/Software/R_3.6.1")
+## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
 
 suppressPackageStartupMessages(library(optparse))
 
@@ -30,7 +30,7 @@ suppressPackageStartupMessages(library(tidyr))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(ggrepel))
 
-source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
+## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 13), axis.title = element_text(size = 15), plot.title = element_text(hjust = 0.5)) 
 
@@ -72,7 +72,7 @@ s[["percent.ribo"]] <- PercentageFeatureSet(s, pattern = "^RPS|^RPL")
 
 
 ## plot QC
-s.meta <- SeuratObject::FetchData(s, colnames(s[[]]))  ## This weird Seurat syntax gets the list of all metadata vars and then fetches a matrix of the data
+## s.meta <- SeuratObject::FetchData(s, colnames(s[[]]))  ## This weird Seurat syntax gets the list of all metadata vars and then fetches a matrix of the data
 # plotSingleCellStats(s.meta, mtMax=NULL, nCountMax=NULL, paste0(FIGDIRSAMPLE,"/QC.single.cell.stats.UMAPres.", opt$UMAP.resolution, ".pdf"))
 
 # saveRDS(s, paste0(OUTDIRSAMPLE,"/", SAMPLE, ".withUMAP.", opt$UMAP.resolution, ".SeuratObject.RDS")) 

@@ -1,17 +1,18 @@
 ## Helen Kang
 ## Topic Model Analysis 
 ## 210503
-.libPaths("/home/groups/engreitz/Software/R_3.6.1")
+
+## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
 
 
-packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
-              "CountClust", "Hmisc", "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
-              "GGally","RNOmni","usedist","ggpubr","gridExtra","GSEA",
-              "org.Hs.eg.db","limma","clusterProfiler","fgsea", "conflicted",
-              "cluster","textshape","readxl", "IsoplotR", "wesanderson", 
-              "ggdist", "patchwork", "gghalves", "Seurat", "writexl")
-library(textshape)
-library(readxl)
+## packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
+##               "CountClust", "Hmisc", "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
+##               "GGally","RNOmni","usedist","ggpubr","gridExtra","GSEA",
+##               "org.Hs.eg.db","limma","clusterProfiler","fgsea", "conflicted",
+##               "cluster","textshape","readxl", "IsoplotR", "wesanderson", 
+##               "ggdist", "patchwork", "gghalves", "Seurat", "writexl")
+## library(textshape)
+## library(readxl)
 packages <- c("optparse","dplyr", "ggplot2", "reshape2", "ggrepel", "conflicted")
 ## library(Seurat)
 xfun::pkg_attach(packages)
@@ -25,7 +26,7 @@ conflict_prefer("list", "base")
 conflict_prefer("desc", "dplyr")
 
 
-source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
+## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
 option.list <- list(
   make_option("--figdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes/", help="Figure directory"),

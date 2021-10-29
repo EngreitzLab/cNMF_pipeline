@@ -2,18 +2,20 @@
 ## Helen Kang
 ## Topic Model Analysis Only (no plot output)
 ## 210503
-.libPaths("/home/groups/engreitz/Software/R_3.6.1")
+
+## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
 
 
-packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
-              "CountClust", "Hmisc", "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
-              "GGally","RNOmni","usedist","ggpubr","gridExtra","GSEA",
-              "org.Hs.eg.db","limma","clusterProfiler","fgsea", "conflicted",
-              "cluster","textshape","readxl", "IsoplotR", "wesanderson", 
-              "ggdist", "gghalves", "Seurat", "writexl")
-library(textshape)
-library(readxl)
-# library(Seurat)
+## packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
+##               "CountClust", "Hmisc", "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
+##               "GGally","RNOmni","usedist","ggpubr","gridExtra","GSEA",
+##               "org.Hs.eg.db","limma","clusterProfiler","fgsea", "conflicted",
+##               "cluster","textshape","readxl", "IsoplotR", "wesanderson", 
+##               "ggdist", "gghalves", "Seurat", "writexl")
+## library(textshape)
+## library(readxl)
+## # library(Seurat)
+packages <- c("optparse", "data.table", "reshape2", "fgsea", "conflicted", "readxl", "writexl", "org.Hs.eg.db", "tidyr", "dplyr")
 xfun::pkg_attach(packages)
 conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
 conflict_prefer("melt", "reshape2") 
@@ -25,7 +27,7 @@ conflict_prefer("list", "base")
 conflict_prefer("desc", "dplyr")
 
 
-source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
+## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
 option.list <- list(
   make_option("--figdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes/", help="Figure directory"),
@@ -77,7 +79,7 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$K.val <- 60
 
 
-mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
+## mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
@@ -88,15 +90,15 @@ TMDIR=opt$topic.model.result.dir
 k <- opt$K.val
 DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
 FIGDIR=opt$figdir
-FIGDIRSAMPLE=paste0(FIGDIR, SAMPLE, "/K",k,"/")
+FIGDIRSAMPLE=paste0(FIGDIR, "/", SAMPLE, "/K",k,"/")
 FIGDIRTOP=paste0(FIGDIRSAMPLE,"/",SAMPLE,"_K",k,"_dt_", DENSITY.THRESHOLD,"_")
-OUTDIRSAMPLE=paste0(OUTDIR, SAMPLE, "/K",k,"/threshold_", DENSITY.THRESHOLD, "/")
+OUTDIRSAMPLE=paste0(OUTDIR, "/", SAMPLE, "/K",k,"/threshold_", DENSITY.THRESHOLD, "/")
 FGSEADIR=paste0(OUTDIRSAMPLE,"/fgsea/")
 FGSEAFIG=paste0(FIGDIRSAMPLE,"/fgsea/")
 
 ## subscript for files
 SUBSCRIPT.SHORT=paste0("k_", k, ".dt_", DENSITY.THRESHOLD)
-SUBSCRIPT=paste0("k_", k,".dt_",DENSITY.THRESHOLD,".minGuidePerPtb_",opt$guide.count.thr,".minCellPerGuide_", opt$cell.count.thr)
+# SUBSCRIPT=paste0("k_", k,".dt_",DENSITY.THRESHOLD,".minGuidePerPtb_",opt$guide.count.thr,".minCellPerGuide_", opt$cell.count.thr)
 
 ## adjusted p-value threshold
 fdr.thr <- opt$adj.p.value.thr
@@ -125,6 +127,8 @@ print(cNMF.result.file)
 if(file.exists(cNMF.result.file)) {
     print("loading cNMF result file")
     load(cNMF.result.file)
+}
+
 
 ##########################################################################
 ## GSEA
@@ -194,12 +198,12 @@ for (type in c("raw.score", "z.score")){ # "raw.score", "z.score"
         }
         fgsea.df.list[[msigdb.index]] <- do.call(rbind, fgseaRes.df) %>% mutate(database = msigdb.pathway, padj.over.topics = p.adjust(pval))
         ## save fgseaRes list
-        save(fgseaRes, file=paste0(FGSEADIR,"/fgsea_",msigdb.pathway,"_",type,"_", SUBSCRIPT, ".RData"))
+        save(fgseaRes, file=paste0(FGSEADIR,"/fgsea_",msigdb.pathway,"_",type,"_", SUBSCRIPT.SHORT, ".RData"))
     }
     fgsea.df <- do.call(rbind, fgsea.df.list)
-    save(fgsea.df, file=paste0(FGSEADIR,"/fgsea_all_pathways_df_",type, "_", SUBSCRIPT, ".RData"))
-    write.table(fgsea.df, file=paste0(FGSEADIR, "/fgsea_", type, "_", SUBSCRIPT, ".txt"), row.names=F, quote=F, sep="\t")
-    write.table(fgsea.df %>% subset(padj < 0.1), file=paste0(FGSEADIR, "/fgsea_", type, "_p.adj.0.1_", SUBSCRIPT, ".txt"), row.names=F, quote=F, sep="\t")
+    save(fgsea.df, file=paste0(FGSEADIR,"/fgsea_all_pathways_df_",type, "_", SUBSCRIPT.SHORT, ".RData"))
+    write.table(fgsea.df, file=paste0(FGSEADIR, "/fgsea_", type, "_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep="\t")
+    write.table(fgsea.df %>% subset(padj < 0.1), file=paste0(FGSEADIR, "/fgsea_", type, "_p.adj.0.1_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep="\t")
 }
 
 

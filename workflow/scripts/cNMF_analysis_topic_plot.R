@@ -1,7 +1,8 @@
 ## Helen Kang
 ## Topic Model Analysis 
 ## 210503
-.libPaths("/home/groups/engreitz/Software/R_3.6.1")
+
+## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
 
 
 # packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
@@ -25,7 +26,7 @@ conflict_prefer("list", "base")
 conflict_prefer("desc", "dplyr")
 
 
-source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
+## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
 option.list <- list(
   make_option("--figdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes/", help="Figure directory"),
