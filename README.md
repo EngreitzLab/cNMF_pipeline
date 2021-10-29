@@ -1,1 +1,1 @@
-# cNMF_pipeline
+# cNMF pipeline
