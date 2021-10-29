@@ -5,29 +5,7 @@
 
 ## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
 
-
-
-## Helen Kang
-## Topic Model Analysis Only (no plot output)
-## 210503
-
-## .libPaths("/home/groups/engreitz/Software/R_3.6.1")
-
-
-packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
-              "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
-              "ggpubr","gridExtra",
-              "org.Hs.eg.db","limma","fgsea", "conflicted",
-              "cluster","textshape","readxl", 
-              "ggdist", "gghalves", "writexl") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
-## packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
-##               "CountClust", "Hmisc", "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
-##               "GGally","RNOmni","usedist","ggpubr","gridExtra","GSEA",
-##               "org.Hs.eg.db","limma","clusterProfiler","fgsea", "conflicted",
-##               "cluster","textshape","readxl", "IsoplotR", "wesanderson", 
-##               "ggdist", "gghalves", "Seurat", "writexl")
-# library(Seurat)
-xfun::pkg_attach(packages)
+library(conflicted)
 conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
 conflict_prefer("melt", "reshape2") 
 conflict_prefer("slice", "dplyr")
@@ -36,43 +14,58 @@ conflict_prefer("filter", "dplyr")
 conflict_prefer("combine", "dplyr")
 conflict_prefer("list", "base")
 conflict_prefer("desc", "dplyr")
+packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
+              "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
+              "ggpubr","gridExtra",
+              "org.Hs.eg.db","limma","fgsea",
+              "cluster","textshape","readxl", 
+              "ggdist", "gghalves", "writexl") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
+## packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
+##               "CountClust", "Hmisc", "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
+##               "GGally","RNOmni","usedist","ggpubr","gridExtra","GSEA",
+##               "org.Hs.eg.db","limma","clusterProfiler","fgsea", "conflicted",
+##               "cluster","textshape","readxl", "IsoplotR", "wesanderson", 
+##               "ggdist", "gghalves", "Seurat", "writexl")
+                                        # library(Seurat)
+xfun::pkg_attach(packages)
+conflict_prefer("slice", "dplyr")
 
 
 ## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
 option.list <- list(
-  make_option("--figdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes/", help="Figure directory"),
-  make_option("--outdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/all_genes/", help="Output directory"),
-  # make_option("--olddatadir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/data/", help="Input 10x data directory"),
-  make_option("--datadir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/data/", help="Input 10x data directory"),
-  # make_option("--topic.model.result.dir", type="character", default="/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/210707_snakemake_maxParallel/all_genes_acrossK/2kG.library/", help="Topic model results directory"),
-  make_option("--sampleName", type="character", default="2kG.library", help="Name of Samples to be processed, separated by commas"),
-  # make_option("--sep", type="logical", default=F, help="Whether to separate replicates or samples"),
-  make_option("--K.list", type="character", default="2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,19,21,23,25", help="K values available for analysis"),
-  make_option("--K.val", type="numeric", default=60, help="K value to analyze"),
-  make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
-  make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
-  make_option("--ABCdir",type="character", default="/oak/stanford/groups/engreitz/Projects/ABC/200220_CAD/ABC_out/TeloHAEC_Ctrl/Neighborhoods/", help="Path to ABC enhancer directory"),
-  make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
-  # make_option("--raw.mtx.dir",type="character",default="stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/data/no_IL1B_filtered.normalized.ptb.by.gene.mtx.filtered.txt", help="input matrix to cNMF pipeline"),
-  # make_option("--raw.mtx.RDS.dir",type="character",default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/aggregated.2kG.library.mtx.cell_x_gene.RDS", help="input matrix to cNMF pipeline"), # the first lane: "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/aggregated.2kG.library.mtx.cell_x_gene.expandedMultiTargetGuide.RDS"
-  # make_option("--subsample.type", type="character", default="", help="Type of cells to keep. Currently only support ctrl"),
-  # make_option("--barcode.names", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/barcodes.tsv", help="barcodes.tsv for all cells"),
-  make_option("--reference.table", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/data/210702_2kglib_adding_more_brief_ca0713.xlsx"),
-  
-  ## fisher motif enrichment
-  ## make_option("--outputTable", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/outputs/no_IL1B/topic.top.100.zscore.gene.motif.table.k_14.df_0_2.txt", help="Output directory"),
-  ## make_option("--outputTableBinary", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210607_snakemake_output/outputs/no_IL1B/topic.top.100.zscore.gene.motif.table.binary.k_14.df_0_2.txt", help="Output directory"),
-  ## make_option("--outputEnrichment", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210607_snakemake_output/outputs/no_IL1B/topic.top.100.zscore.gene.motif.fisher.enrichment.k_14.df_0_2.txt", help="Output directory"),
-  make_option("--motif.promoter.background", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv", help="All promoter's motif matches"),
-  make_option("--motif.enhancer.background", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv", help="All enhancer's motif matches specific to {no,plus}_IL1B"),
-  make_option("--enhancer.fimo.threshold", type="character", default="1.0E-4", help="Enhancer fimo motif match threshold"),
+    make_option("--figdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes/", help="Figure directory"),
+    make_option("--outdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/all_genes/", help="Output directory"),
+                                        # make_option("--olddatadir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/data/", help="Input 10x data directory"),
+    make_option("--datadir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/data/", help="Input 10x data directory"),
+                                        # make_option("--topic.model.result.dir", type="character", default="/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/210707_snakemake_maxParallel/all_genes_acrossK/2kG.library/", help="Topic model results directory"),
+    make_option("--sampleName", type="character", default="FT010_fresh_4min", help="Name of Samples to be processed, separated by commas"),
+                                        # make_option("--sep", type="logical", default=F, help="Whether to separate replicates or samples"),
+    make_option("--K.list", type="character", default="2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,19,21,23,25", help="K values available for analysis"),
+    make_option("--K.val", type="numeric", default=20, help="K value to analyze"),
+    make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
+    make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
+    make_option("--ABCdir",type="character", default="/oak/stanford/groups/engreitz/Projects/ABC/200220_CAD/ABC_out/TeloHAEC_Ctrl/Neighborhoods/", help="Path to ABC enhancer directory"),
+    make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
+                                        # make_option("--raw.mtx.dir",type="character",default="stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/data/no_IL1B_filtered.normalized.ptb.by.gene.mtx.filtered.txt", help="input matrix to cNMF pipeline"),
+                                        # make_option("--raw.mtx.RDS.dir",type="character",default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/aggregated.2kG.library.mtx.cell_x_gene.RDS", help="input matrix to cNMF pipeline"), # the first lane: "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/aggregated.2kG.library.mtx.cell_x_gene.expandedMultiTargetGuide.RDS"
+                                        # make_option("--subsample.type", type="character", default="", help="Type of cells to keep. Currently only support ctrl"),
+                                        # make_option("--barcode.names", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/barcodes.tsv", help="barcodes.tsv for all cells"),
+    make_option("--reference.table", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/data/210702_2kglib_adding_more_brief_ca0713.xlsx"),
+    
+    ## fisher motif enrichment
+    ## make_option("--outputTable", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/outputs/no_IL1B/topic.top.100.zscore.gene.motif.table.k_14.df_0_2.txt", help="Output directory"),
+    ## make_option("--outputTableBinary", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210607_snakemake_output/outputs/no_IL1B/topic.top.100.zscore.gene.motif.table.binary.k_14.df_0_2.txt", help="Output directory"),
+    ## make_option("--outputEnrichment", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210607_snakemake_output/outputs/no_IL1B/topic.top.100.zscore.gene.motif.fisher.enrichment.k_14.df_0_2.txt", help="Output directory"),
+    make_option("--motif.promoter.background", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv", help="All promoter's motif matches"),
+    make_option("--motif.enhancer.background", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv", help="All enhancer's motif matches specific to {no,plus}_IL1B"),
+    make_option("--enhancer.fimo.threshold", type="character", default="1.0E-4", help="Enhancer fimo motif match threshold"),
 
-  #summary plot parameters
-  make_option("--test.type", type="character", default="per.guide.wilcoxon", help="Significance test to threshold perturbation results"),
-  make_option("--adj.p.value.thr", type="numeric", default=0.1, help="adjusted p-value threshold"),
-  make_option("--recompute", type="logical", default=F, help="T for recomputing statistical tests and F for not recompute")
-  
+                                        #summary plot parameters
+    make_option("--test.type", type="character", default="per.guide.wilcoxon", help="Significance test to threshold perturbation results"),
+    make_option("--adj.p.value.thr", type="numeric", default=0.1, help="adjusted p-value threshold"),
+    make_option("--recompute", type="logical", default=F, help="T for recomputing statistical tests and F for not recompute")
+    
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
@@ -95,9 +88,9 @@ mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.titl
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
 OUTDIR=opt$outdir
-# TMDIR=opt$topic.model.result.dir
-# SEP=opt$sep
-# K.list <- strsplit(opt$K.list,",") %>% unlist() %>% as.numeric()
+                                        # TMDIR=opt$topic.model.result.dir
+                                        # SEP=opt$sep
+                                        # K.list <- strsplit(opt$K.list,",") %>% unlist() %>% as.numeric()
 k <- opt$K.val
 DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
 FIGDIR=opt$figdir
@@ -109,31 +102,31 @@ FGSEAFIG=paste0(FIGDIRSAMPLE,"/fgsea/")
 
 ## subscript for files
 SUBSCRIPT.SHORT=paste0("k_", k, ".dt_", DENSITY.THRESHOLD)
-SUBSCRIPT=paste0("k_", k,".dt_",DENSITY.THRESHOLD,".minGuidePerPtb_",opt$guide.count.thr,".minCellPerGuide_", opt$cell.count.thr)
+## SUBSCRIPT=paste0("k_", k,".dt_",DENSITY.THRESHOLD,".minGuidePerPtb_",opt$guide.count.thr,".minCellPerGuide_", opt$cell.count.thr)
 
 ## adjusted p-value threshold
 fdr.thr <- opt$adj.p.value.thr
 p.value.thr <- opt$adj.p.value.thr
 
 
- 
-# create dir if not already
+
+                                        # create dir if not already
 check.dir <- c(OUTDIR, FIGDIR, paste0(FIGDIR,SAMPLE,"/"), paste0(FIGDIR,SAMPLE,"/K",k,"/"), paste0(OUTDIR,SAMPLE,"/"), OUTDIRSAMPLE, FIGDIRSAMPLE, FGSEADIR, FGSEAFIG)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
 
-palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
+## palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
 
 
 ######################################################################
 ## Load topic model results
-    
+
 cNMF.result.file <- paste0(OUTDIRSAMPLE,"/cNMF_results.",SUBSCRIPT.SHORT, ".RData")
 print(cNMF.result.file)
 if(file.exists(cNMF.result.file)) {
     print("loading cNMF result file")
     load(cNMF.result.file)
 }
- 
+
 
 
 file.name <- paste0(OUTDIRSAMPLE,"/cNMFAnalysis.factorMotifEnrichment.",SUBSCRIPT.SHORT,".RData")
@@ -143,10 +136,10 @@ if(file.exists((file.name))) {
     print(paste0("loading ", file.name))
 }
 motif.enrichment.variables <- c("all.enhancer.fisher.df", "all.promoter.fisher.df", 
-    "promoter.wide", "enhancer.wide", "promoter.wide.binary", "enhancer.wide.binary",
-     "enhancer.wide.10en6", "enhancer.wide.binary.10en6", "all.enhancer.fisher.df.10en6",
-     "promoter.wide.10en6", "promoter.wide.binary.10en6", "all.promoter.fisher.df.10en6",
-     "all.promoter.ttest.df", "all.promoter.ttest.df.10en6", "all.enhancer.ttest.df", "all.enhancer.ttest.df.10en6")
+                                "promoter.wide", "enhancer.wide", "promoter.wide.binary", "enhancer.wide.binary",
+                                "enhancer.wide.10en6", "enhancer.wide.binary.10en6", "all.enhancer.fisher.df.10en6",
+                                "promoter.wide.10en6", "promoter.wide.binary.10en6", "all.promoter.fisher.df.10en6",
+                                "all.promoter.ttest.df", "all.promoter.ttest.df.10en6", "all.enhancer.ttest.df", "all.enhancer.ttest.df.10en6")
 motif.enrichment.variables.missing <- (!(motif.enrichment.variables %in% ls())) %>% as.numeric %>% sum 
 if ( motif.enrichment.variables.missing > 0 | opt$recompute ) {
     
@@ -158,8 +151,8 @@ if ( motif.enrichment.variables.missing > 0 | opt$recompute ) {
     promoter.region.hg38 <- promoter.region.hg38.original %>% mutate(expressed = (gene %in% expressed.genes) ) %>% filter(expressed)
 
     ## background stats
-        print(opt$motif.promoter.background)
-        motif.background <- read.delim(file=paste0(ifelse(opt$motif.promoter.background!="", opt$motif.promoter.background, "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv")), header=T, stringsAsFactors=F) %>% filter(!grepl("#", motif_id))  # 30 seconds
+    print(opt$motif.promoter.background)
+    motif.background <- read.delim(file=paste0(ifelse(opt$motif.promoter.background!="", opt$motif.promoter.background, "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv")), header=T, stringsAsFactors=F) %>% filter(!grepl("#", motif_id))  # 30 seconds
     colnames(motif.background)[colnames(motif.background) == "strand"] <- "motif.matched.strand"
 
     print("start compiling Fisher Exact Test table")
@@ -169,7 +162,7 @@ if ( motif.enrichment.variables.missing > 0 | opt$recompute ) {
     top.gene.regions <- all.gene.regions %>% group_by(topic) %>% arrange(desc(zscore)) %>% slice(1:100)
 
 
-    ##### This is working! #####
+##### This is working! #####
     gene.motif.list.to.tbl <- function(gene.rank.df, motif.background) {
         ## INPUT
         ## gene.rank.df: table with columns "gene" and "topic".
@@ -178,7 +171,7 @@ if ( motif.enrichment.variables.missing > 0 | opt$recompute ) {
         ## OUTPUT
         ## list contains a count table and a binary count table with all genes on the rows and all features (motifs and topics) on the columns
         
-        # try to make it faster by first merging KL gene regions and all promoter motif matches, then spread
+                                        # try to make it faster by first merging KL gene regions and all promoter motif matches, then spread
         ## gene.rank.df <- top.gene.regions # to be passed into the function
         long <- merge(gene.rank.df, motif.background, by.x="gene", by.y="sequence_name", all=T) # two minutes
         ## tbl <- long %>% group_by(motif_id, topic) %>% summarize(count=n()) # 5 seconds ish
@@ -195,7 +188,7 @@ if ( motif.enrichment.variables.missing > 0 | opt$recompute ) {
     if(file.exists(promoter.wide.path) & file.exists(promoter.wide.binary.path) & !opt$recompute) { 
         promoter.wide <- read.delim(promoter.wide.path, stringsAsFactors=F) 
         promoter.wide.binary <- read.delim(promoter.wide.binary.path, stringsAsFactors=F) 
-        } else {
+    } else {
         wide.list <- gene.motif.list.to.tbl(top.gene.regions, motif.background) 
         promoter.wide <- wide.list[[1]]
         promoter.wide.binary <- wide.list[[2]]
@@ -274,7 +267,7 @@ if ( motif.enrichment.variables.missing > 0 | opt$recompute ) {
                            topic.count=top.gene.count %>% length,
                            enrichment=top.gene.mean/global.mean,
                            enrichment.log2fc=log2(enrichment)
-                        )                
+                           )                
             }))
         })) %>% mutate(p.adjust = p.adjust(p.value, method="BH"))##here210813
         ## adjust -Inf and +Inf for log2FC
@@ -310,12 +303,12 @@ if ( motif.enrichment.variables.missing > 0 | opt$recompute ) {
     
     ##  motif enrichment 
     ## load enhancer motif matches
-        print(opt$motif.enhancer.background)
-        motif.background <- read.delim(file=paste0(ifelse(opt$motif.enhancer.background!="", opt$motif.enhancer.background, "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv")), header=F, stringsAsFactors=F) %>%
+    print(opt$motif.enhancer.background)
+    motif.background <- read.delim(file=paste0(ifelse(opt$motif.enhancer.background!="", opt$motif.enhancer.background, "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv")), header=F, stringsAsFactors=F) %>%
         `colnames<-`(c("motif_id", "motif_alt_id", "enhancer_region", "enhancer_type", "gene_region","sequence_name","start","stop","strand","score","p-value","q-value","matched_sequence")) %>% filter(!grepl("#|motif_id", motif_id))  # more than 30 seconds, minutes?
     colnames(motif.background)[colnames(motif.background) == "strand"] <- "motif.matched.strand"
-        motif.background <- motif.background %>% filter(!grepl("promoter", enhancer_type))
-        
+    motif.background <- motif.background %>% filter(!grepl("promoter", enhancer_type))
+    
     print("start compiling enhancer Fisher Exact Test table")
 
     enhancer.wide.path <- paste0(OUTDIRSAMPLE,"/topic.top.100.zscore.gene.ABC.enhancer.motif.table.", SUBSCRIPT.SHORT, ".txt")
@@ -390,12 +383,6 @@ if ( motif.enrichment.variables.missing > 0 | opt$recompute ) {
          promoter.wide.10en6, promoter.wide.binary.10en6, all.promoter.fisher.df.10en6,
          all.promoter.ttest.df, all.promoter.ttest.df.10en6,
          all.enhancer.ttest.df, all.enhancer.ttest.df.10en6,
-     file=paste0(file.name))
-
-
-    
-}
+         file=paste0(file.name))
 
 }
-
-

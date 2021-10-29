@@ -854,7 +854,7 @@ rule findK_plot:
 		Rscript workflow/scripts/cNMF_findK_plots.R \
 		--figdir {params.figdir} \
 		--outdir {params.analysisdir} \
-		--sampleName {widcards.sample} \
+		--sampleName {wildcards.sample} \
 		--p.adj.threshold 0.1 \
 		--aggregated.data {input.toplot} \
 		' "

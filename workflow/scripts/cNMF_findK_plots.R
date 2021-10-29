@@ -38,6 +38,12 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$aggregated.data <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/all_genes/FT010_fresh_2min/acrossK/aggregated.outputs.findK.RData"
 
 
+## for testing cNMF_pipeline with FT010_fresh_4min
+opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes/FT010_fresh_4min/acrossK/"
+opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/all_genes/FT010_fresh_4min/acrossK/"
+opt$sampleName <- "FT010_fresh_4min"
+opt$aggregated.data <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/all_genes/FT010_fresh_4min/acrossK/aggregated.outputs.findK.RData"
+
 
 ## Directories and Constants
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
@@ -395,38 +401,38 @@ print(p)
 dev.off()
 
 
-## cluster theta.zscore across topics
-theta.zscore.df.wide <- theta.zscore.df %>% mutate(K_Factor = paste0("K",K,"_",Factor)) %>% select(Gene, weight, K_Factor) %>% spread(key = "K_Factor", value = "weight")
-write.table(theta.zscore.df.wide, paste0(OUTDIR, "topic.zscore.Pearson.corr.txt"), row.names=F, quote=F, sep="\t")
-theta.zscore.df.wide.mtx <- theta.zscore.df.wide %>% `rownames<-`(.$Gene) %>% select(-Gene) %>% as.matrix()
-d <- cor(theta.zscore.df.wide.mtx, method="pearson")
-m <- as.matrix(d)
+## ## cluster theta.zscore across topics
+## theta.zscore.df.wide <- theta.zscore.df %>% mutate(K_Factor = paste0("K",K,"_",Factor), Gene = rownames(.)) %>% select(Gene, weight, K_Factor) %>% spread(key = "K_Factor", value = "weight")
+## write.table(theta.zscore.df.wide, paste0(OUTDIR, "topic.zscore.Pearson.corr.txt"), row.names=F, quote=F, sep="\t")
+## theta.zscore.df.wide.mtx <- theta.zscore.df.wide %>% `rownames<-`(.$Gene) %>% select(-Gene) %>% as.matrix()
+## d <- cor(theta.zscore.df.wide.mtx, method="pearson")
+## m <- as.matrix(d)
 
-## Function for plotting heatmap  # new version (adjusted font size)
-plotHeatmap <- function(mtx, labCol, title, margins=c(12,6), ...) { #original
-  heatmap.2(
-    mtx %>% t(), 
-    Rowv=T, 
-    Colv=T,
-    trace='none',
-    key=T,
-    col=palette,
-    labCol=labCol,
-    margins=margins, 
-    cex.main=0.8, 
-    cexCol=1/(ncol(mtx)^(1/3)), cexRow=1/(ncol(mtx)^(1/3)), #4.8/sqrt(nrow(mtx))
-    main=title,
-    ...
-  )
-}
+## ## Function for plotting heatmap  # new version (adjusted font size)
+## plotHeatmap <- function(mtx, labCol, title, margins=c(12,6), ...) { #original
+##   heatmap.2(
+##     mtx %>% t(), 
+##     Rowv=T, 
+##     Colv=T,
+##     trace='none',
+##     key=T,
+##     col=palette,
+##     labCol=labCol,
+##     margins=margins, 
+##     cex.main=0.8, 
+##     cexCol=1/(ncol(mtx)^(1/3)), cexRow=1/(ncol(mtx)^(1/3)), #4.8/sqrt(nrow(mtx))
+##     main=title,
+##     ...
+##   )
+## }
 
 
-pdf(file=paste0(FIGDIR,"/cluster.topic.zscore.by.Pearson.corr.pdf"), width=30, height=30)
-plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
-dev.off()
-png(file=paste0(FIGDIR, "/cluster.topic.zscore.by.Pearson.corr.png"), width=3000, height=3000)
-plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
-dev.off()
+## pdf(file=paste0(FIGDIR,"/cluster.topic.zscore.by.Pearson.corr.pdf"), width=30, height=30)
+## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
+## dev.off()
+## png(file=paste0(FIGDIR, "/cluster.topic.zscore.by.Pearson.corr.png"), width=3000, height=3000)
+## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
+## dev.off()
 
 ## ## higher values of K
 ## index <- which(theta.zscore.df.wide.mtx %>% colnames() %>% strsplit(split="_") %>% sapply("[[",1) %>% gsub("K","",.) >= 30)
@@ -488,209 +494,209 @@ dev.off()
 
 
 
-```{r "lenient, K=14, scatter plot between number of no_IL1B edgeR DE genes and number of significant topics"}
-threshold=0.1
-## adjusted p-value
-p <- edgeR.test.df %>% subset(K == 14 & cutoff.type == "lenient") %>% ggplot(aes(x=NoI.num.genes, y=topic.count, color=test.type)) + geom_point() + mytheme +
-  ylab(paste0("Number of Significant Topics (adjusted p-value < ", threshold, ")")) +
-  xlab(paste0("p.01_lfc1.15 number of DE genes"))
-print(p)
-```
+## ```{r "lenient, K=14, scatter plot between number of no_IL1B edgeR DE genes and number of significant topics"}
+## threshold=0.1
+## ## adjusted p-value
+## p <- edgeR.test.df %>% subset(K == 14 & cutoff.type == "lenient") %>% ggplot(aes(x=NoI.num.genes, y=topic.count, color=test.type)) + geom_point() + mytheme +
+##   ylab(paste0("Number of Significant Topics (adjusted p-value < ", threshold, ")")) +
+##   xlab(paste0("p.01_lfc1.15 number of DE genes"))
+## print(p)
+## ```
 
-```{r "strict K=14 scatter plot between number of no_IL1B edgeR DE genes and number of significant topics"}
+## ```{r "strict K=14 scatter plot between number of no_IL1B edgeR DE genes and number of significant topics"}
 
-p <- edgeR.test.df %>% subset(K == 14 & cutoff.type == "strict") %>% ggplot(aes(x=NoI.num.genes, y=topic.count, color=test.type)) + geom_point() + mytheme +
-  ylab(paste0("Number of Significant Topics (adjusted p-value < ", threshold, ")")) +
-  xlab(paste0("p.001_lfc1.2 number of DE genes"))
-print(p)
-## fdr
-```
-
-
-<br>
-Number of strict DE genes in each perturbation CDF
-Then subset to perturbation with <150 DE genes to see the distribution more closely
-<br>
-```{r number of strice DE genes in each perturbation CDF, warning=F,  fig.show="hold", out.width="50%"}
-p <- edgeR.DE %>% subset(cutoff.type == "strict") %>% ggplot(aes(x=NoI.num.genes)) + stat_ecdf() + mytheme +
-  xlab("Number of DE genes") + ylab("Fraction of Perturbations")
-print(p)
+## p <- edgeR.test.df %>% subset(K == 14 & cutoff.type == "strict") %>% ggplot(aes(x=NoI.num.genes, y=topic.count, color=test.type)) + geom_point() + mytheme +
+##   ylab(paste0("Number of Significant Topics (adjusted p-value < ", threshold, ")")) +
+##   xlab(paste0("p.001_lfc1.2 number of DE genes"))
+## print(p)
+## ## fdr
+## ```
 
 
-p <- edgeR.DE %>% subset(cutoff.type == "strict" & NoI.num.genes < 150) %>% ggplot(aes(x=NoI.num.genes)) + stat_ecdf() + mytheme +
-  xlab("Number of DE genes") + ylab("Fraction of Perturbations")
-print(p)
-
-```
-<br>
-Number of lenient DE genes in each perturbation CDF
-Subset to perturbation with <500 DE genes to see the distribution more closely 
-<br>
-```{r number of lenient DE genes in each perturbation CDF, warning=F, fig.show="hold", out.width="50%"}
-p <- edgeR.DE %>% subset(cutoff.type == "lenient") %>% ggplot(aes(x=NoI.num.genes)) + stat_ecdf() + mytheme +
-  xlab("Number of DE genes") + ylab("Fraction of Perturbations")
-print(p)
-
-p <- edgeR.DE %>% subset(cutoff.type == "lenient" & NoI.num.genes < 500) %>% ggplot(aes(x=NoI.num.genes)) + stat_ecdf() + mytheme +
-  xlab("Number of DE genes") + ylab("Fraction of Perturbations")
-print(p)
-
-```
-
-
-<br>
-pick the cut-off at 30 DE genes for the strict p-value and logFC condition
-<br>
-```{r pickCutOff}
-cut.off <- 30
-```
-
-<br>
-Number of perturbation with large number of edgeR DE genes (p < 0.001, logFC > 1.2) that also has significant topics
-<br>
-```{r percent strict DE + topic model matches versus K}
-total <- edgeR.DE$Gene %>% unique() %>% length() # total number of perturbations
-thresholded.DE <- edgeR.DE %>% subset(cutoff.type == "strict" & NoI.num.genes > cut.off) 
-
-# significant by adjusted p-value
-all.test.df.sig <- all.test.df %>% subset(adjusted.p.value < threshold)
-match.DE.test <- merge(thresholded.DE, all.test.df.sig, by="Gene")
-
-# how many perturbations are signficiant by EdgeR and past threshold, and at the same time has at least one DE topic?
-match.DE.test.summary <- match.DE.test %>% group_by(test.type, K) %>% summarize(num.matched.genes = n()) %>% mutate(fraction.matched.genes = num.matched.genes / total)
-
-# plot 
-K <- match.DE.test.summary %>% pull(K) %>% unique() # K for x tick labels
-p <- match.DE.test.summary %>% ggplot(aes(x=K, y=num.matched.genes, color=test.type)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Number of perturbations")) + mytheme +
-  ggtitle(paste0("Perturbations with > ", cut.off, " DE genes (p < 0.001, logFC > 1.2) \nand have at least one DE topic (adjusted p-value < ", threshold, ")")) +
-  scale_x_continuous("K", labels = as.character(K), breaks = K)
-print(p)
-```
-<br>
-Fraction of perturbation with large number of edgeR DE genes (p < 0.001, logFC > 1.2) that also has significant topics
-<br>
-```{r Fraction of perturbations with > 30 DE gene and at least one DE topic}
-p <- match.DE.test.summary %>% ggplot(aes(x=K, y=fraction.matched.genes, color=test.type)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Fraction of perturbations")) + mytheme +
-  ggtitle(paste0("Perturbations with > ", cut.off, " DE genes (p < 0.001, logFC > 1.2) \nand have at least one DE topic (adjusted p-value < ", threshold, ")")) +
-  scale_x_continuous("K", labels = as.character(K), breaks = K)
-print(p)
-```
-
-
-<br> 
-Cut off at 20 DE genes from EdgeR
-<br>
-```{r cut.off at > 20 strict category DE genes }
-cut.off <- 20
-total <- edgeR.DE$Gene %>% unique() %>% length() # total number of perturbations
-thresholded.DE <- edgeR.DE %>% subset(cutoff.type == "strict" & NoI.num.genes > cut.off) 
-
-# significant by adjusted p-value
-all.test.df.sig <- all.test.df %>% subset(adjusted.p.value < threshold)
-match.DE.test <- merge(thresholded.DE, all.test.df.sig, by="Gene")
-
-# how many perturbations are signficiant by EdgeR and past threshold, and at the same time has at least one DE topic?
-match.DE.test.summary <- match.DE.test %>% group_by(test.type, K) %>% summarize(num.matched.genes = n()) %>% mutate(fraction.matched.genes = num.matched.genes / total)
-K <- match.DE.test.summary %>% pull(K) %>% unique() # K for x tick labels
-p <- match.DE.test.summary %>% ggplot(aes(x=K, y=fraction.matched.genes, color=test.type)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Fraction of perturbations")) + mytheme +
-  ggtitle(paste0("Perturbations with > ", cut.off, " DE genes (p < 0.001, logFC > 1.2) \nand have at least one DE topic (adjusted p-value < ", threshold, ")")) +
-  scale_x_continuous("K", labels = as.character(K), breaks = K)
-print(p)
-```
-
-
-<br>
-Percent of perturbation with large number of edgeR DE genes (p < 0.01, logFC > 1.15) that also has significant topics
-<br>
-```{r percent lenient DE + topic model matches versus K}
-cut.off <- 200
-total <- edgeR.DE$Gene %>% unique() %>% length() # total number of perturbations
-thresholded.DE <- edgeR.DE %>% subset(cutoff.type == "lenient" & NoI.num.genes > cut.off) 
-
-# significant by adjusted p-value
-all.test.df.sig <- all.test.df %>% subset(adjusted.p.value < threshold)
-match.DE.test <- merge(thresholded.DE, all.test.df.sig, by="Gene")
-
-# how many perturbations are signficiant by EdgeR and past threshold, and at the same time has at least one DE topic?
-match.DE.test.summary <- match.DE.test %>% group_by(test.type, K) %>% summarize(num.matched.genes = n()) %>% mutate(fraction.matched.genes = num.matched.genes / total)
-
-# plot 
-K <- match.DE.test.summary %>% pull(K) %>% unique() # K for x tick labels
-p <- match.DE.test.summary %>% ggplot(aes(x=K, y=fraction.matched.genes, color=test.type)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Fraction of perturbations")) + mytheme +
-  ggtitle(paste0("Perturbations with > ", cut.off, " DE genes (p < 0.01, logFC > 1.15) \nand have at least one DE topic (adjusted p-value < ", threshold, ")")) +
-  scale_x_continuous("K", labels = as.character(K), breaks = K)
-print(p)
-```
-
-
-<br>
-Percent of perturbation with at least one Seurat DE gene (p.adj < 0.1, FC > 1.5) that also has significant topics
-<br>
-```{r percent lenient Seurat DE + topic model matches versus K}
-de.markers.sig.strict <- de.markers %>% subset(p_val_adj < 0.1 & abs(avg_logFC) > 0.69)
-de.markers.sig.lenient <- de.markers %>% subset(p_val_adj < 0.15 & abs(avg_logFC) > 0.4)
-
-
-
-```
-
-
-
-## ## FGSEA top pathways for each topic in each K
-## ## top fgsea pathways for raw score
-## threshold <- opt$p.adj.threshold
-## fgsea.results.df.edited <- fgsea.results.df %>% group_by(K, database) %>% mutate(padj.over.K = p.adjust(pval))
-## sig.fgsea.results.raw.df <- fgsea.results.df.edited %>% subset(padj.over.topics < threshold & type == "raw.score") 
-## sig.fgsea.results.zscore.df <- fgsea.results.df.edited %>% subset(padj.over.topics < threshold & type == "z.score")
-## toPlot.raw <- sig.fgsea.results.raw.df %>% group_by(K, topic, database) %>% arrange(padj.over.topics) %>% slice(1:10)
-## toPlot.raw$padj.over.K <- as.numeric(toPlot.raw$padj.over.topics)
-## toPlot.zscore <- sig.fgsea.results.zscore.df %>% group_by(K, topic, database) %>% arrange(padj.over.topics) %>% slice(1:10)
-
-## # make plots for all K, topic, and database
-## pdf(file=paste0(FIGDIR,"/Top.FGSEA.MSigDB.pathway.list_p.adj.", threshold, ".pdf"))
-## for (k in toPlot.raw$K %>% unique()) {
-## # for (k in c(14)) {
-##   for (t in toPlot.raw$topic %>% unique() %>% sort()) {
-##     for (db in toPlot.raw$database %>% unique()) {
-##       if(nrow(toPlot.raw %>% subset(K == k & topic == t & database == db)) > 0){
-##         p <- toPlot.raw %>% subset(K == k & topic == t & database == db) %>% arrange(padj.over.K) %>% ggplot(aes(x=pathway, y=padj.over.topics)) + geom_col() + mytheme + coord_flip() +
-##           ggtitle(paste0("K = ", k, ", Topic ", t, ", database: ", db, "\nFGSEA from raw weights"))
-##         print(p)
-##       }
-##       if(nrow(toPlot.zscore %>% subset(K == k & topic == t & database == db) > 0)){
-##         p <- toPlot.zscore %>% subset(K == k & topic == t & database == db) %>% arrange(padj.over.K) %>% ggplot(aes(x=pathway, y=padj.over.topics)) + geom_col() + mytheme + coord_flip()  +
-##           ggtitle(paste0("K = ", k, ", Topic ", t, ", database: ", db, "\nFGSEA from z-score (set of specific genes)"))
-##         print(p)
-##       }
-##     }
-##   }
-## }
-## dev.off()
-
-
-
-## ## FGSEA top pathways for each topic in each K
 ## <br>
-## Number of Enriched and Significant GSEA pathways per K
+## Number of strict DE genes in each perturbation CDF
+## Then subset to perturbation with <150 DE genes to see the distribution more closely
 ## <br>
-## ```{r top fgsea pathways for raw score, fig.show="hold", out.width="50%"}
+## ```{r number of strice DE genes in each perturbation CDF, warning=F,  fig.show="hold", out.width="50%"}
+## p <- edgeR.DE %>% subset(cutoff.type == "strict") %>% ggplot(aes(x=NoI.num.genes)) + stat_ecdf() + mytheme +
+##   xlab("Number of DE genes") + ylab("Fraction of Perturbations")
+## print(p)
+
+
+## p <- edgeR.DE %>% subset(cutoff.type == "strict" & NoI.num.genes < 150) %>% ggplot(aes(x=NoI.num.genes)) + stat_ecdf() + mytheme +
+##   xlab("Number of DE genes") + ylab("Fraction of Perturbations")
+## print(p)
+
+## ```
+## <br>
+## Number of lenient DE genes in each perturbation CDF
+## Subset to perturbation with <500 DE genes to see the distribution more closely 
+## <br>
+## ```{r number of lenient DE genes in each perturbation CDF, warning=F, fig.show="hold", out.width="50%"}
+## p <- edgeR.DE %>% subset(cutoff.type == "lenient") %>% ggplot(aes(x=NoI.num.genes)) + stat_ecdf() + mytheme +
+##   xlab("Number of DE genes") + ylab("Fraction of Perturbations")
+## print(p)
+
+## p <- edgeR.DE %>% subset(cutoff.type == "lenient" & NoI.num.genes < 500) %>% ggplot(aes(x=NoI.num.genes)) + stat_ecdf() + mytheme +
+##   xlab("Number of DE genes") + ylab("Fraction of Perturbations")
+## print(p)
+
+## ```
+
+
+## <br>
+## pick the cut-off at 30 DE genes for the strict p-value and logFC condition
+## <br>
+## ```{r pickCutOff}
+## cut.off <- 30
+## ```
+
+## <br>
+## Number of perturbation with large number of edgeR DE genes (p < 0.001, logFC > 1.2) that also has significant topics
+## <br>
+## ```{r percent strict DE + topic model matches versus K}
+## total <- edgeR.DE$Gene %>% unique() %>% length() # total number of perturbations
+## thresholded.DE <- edgeR.DE %>% subset(cutoff.type == "strict" & NoI.num.genes > cut.off) 
+
+## # significant by adjusted p-value
+## all.test.df.sig <- all.test.df %>% subset(adjusted.p.value < threshold)
+## match.DE.test <- merge(thresholded.DE, all.test.df.sig, by="Gene")
+
+## # how many perturbations are signficiant by EdgeR and past threshold, and at the same time has at least one DE topic?
+## match.DE.test.summary <- match.DE.test %>% group_by(test.type, K) %>% summarize(num.matched.genes = n()) %>% mutate(fraction.matched.genes = num.matched.genes / total)
+
+## # plot 
+## K <- match.DE.test.summary %>% pull(K) %>% unique() # K for x tick labels
+## p <- match.DE.test.summary %>% ggplot(aes(x=K, y=num.matched.genes, color=test.type)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Number of perturbations")) + mytheme +
+##   ggtitle(paste0("Perturbations with > ", cut.off, " DE genes (p < 0.001, logFC > 1.2) \nand have at least one DE topic (adjusted p-value < ", threshold, ")")) +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K)
+## print(p)
+## ```
+## <br>
+## Fraction of perturbation with large number of edgeR DE genes (p < 0.001, logFC > 1.2) that also has significant topics
+## <br>
+## ```{r Fraction of perturbations with > 30 DE gene and at least one DE topic}
+## p <- match.DE.test.summary %>% ggplot(aes(x=K, y=fraction.matched.genes, color=test.type)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Fraction of perturbations")) + mytheme +
+##   ggtitle(paste0("Perturbations with > ", cut.off, " DE genes (p < 0.001, logFC > 1.2) \nand have at least one DE topic (adjusted p-value < ", threshold, ")")) +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K)
+## print(p)
+## ```
+
+
+## <br> 
+## Cut off at 20 DE genes from EdgeR
+## <br>
+## ```{r cut.off at > 20 strict category DE genes }
+## cut.off <- 20
+## total <- edgeR.DE$Gene %>% unique() %>% length() # total number of perturbations
+## thresholded.DE <- edgeR.DE %>% subset(cutoff.type == "strict" & NoI.num.genes > cut.off) 
+
+## # significant by adjusted p-value
+## all.test.df.sig <- all.test.df %>% subset(adjusted.p.value < threshold)
+## match.DE.test <- merge(thresholded.DE, all.test.df.sig, by="Gene")
+
+## # how many perturbations are signficiant by EdgeR and past threshold, and at the same time has at least one DE topic?
+## match.DE.test.summary <- match.DE.test %>% group_by(test.type, K) %>% summarize(num.matched.genes = n()) %>% mutate(fraction.matched.genes = num.matched.genes / total)
+## K <- match.DE.test.summary %>% pull(K) %>% unique() # K for x tick labels
+## p <- match.DE.test.summary %>% ggplot(aes(x=K, y=fraction.matched.genes, color=test.type)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Fraction of perturbations")) + mytheme +
+##   ggtitle(paste0("Perturbations with > ", cut.off, " DE genes (p < 0.001, logFC > 1.2) \nand have at least one DE topic (adjusted p-value < ", threshold, ")")) +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K)
+## print(p)
+## ```
+
+
+## <br>
+## Percent of perturbation with large number of edgeR DE genes (p < 0.01, logFC > 1.15) that also has significant topics
+## <br>
+## ```{r percent lenient DE + topic model matches versus K}
+## cut.off <- 200
+## total <- edgeR.DE$Gene %>% unique() %>% length() # total number of perturbations
+## thresholded.DE <- edgeR.DE %>% subset(cutoff.type == "lenient" & NoI.num.genes > cut.off) 
+
+## # significant by adjusted p-value
+## all.test.df.sig <- all.test.df %>% subset(adjusted.p.value < threshold)
+## match.DE.test <- merge(thresholded.DE, all.test.df.sig, by="Gene")
+
+## # how many perturbations are signficiant by EdgeR and past threshold, and at the same time has at least one DE topic?
+## match.DE.test.summary <- match.DE.test %>% group_by(test.type, K) %>% summarize(num.matched.genes = n()) %>% mutate(fraction.matched.genes = num.matched.genes / total)
+
+## # plot 
+## K <- match.DE.test.summary %>% pull(K) %>% unique() # K for x tick labels
+## p <- match.DE.test.summary %>% ggplot(aes(x=K, y=fraction.matched.genes, color=test.type)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Fraction of perturbations")) + mytheme +
+##   ggtitle(paste0("Perturbations with > ", cut.off, " DE genes (p < 0.01, logFC > 1.15) \nand have at least one DE topic (adjusted p-value < ", threshold, ")")) +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K)
+## print(p)
+## ```
+
+
+## <br>
+## Percent of perturbation with at least one Seurat DE gene (p.adj < 0.1, FC > 1.5) that also has significant topics
+## <br>
+## ```{r percent lenient Seurat DE + topic model matches versus K}
+## de.markers.sig.strict <- de.markers %>% subset(p_val_adj < 0.1 & abs(avg_logFC) > 0.69)
+## de.markers.sig.lenient <- de.markers %>% subset(p_val_adj < 0.15 & abs(avg_logFC) > 0.4)
+
+
 
 ## ```
 
 
 
+## ## ## FGSEA top pathways for each topic in each K
+## ## ## top fgsea pathways for raw score
+## ## threshold <- opt$p.adj.threshold
+## ## fgsea.results.df.edited <- fgsea.results.df %>% group_by(K, database) %>% mutate(padj.over.K = p.adjust(pval))
+## ## sig.fgsea.results.raw.df <- fgsea.results.df.edited %>% subset(padj.over.topics < threshold & type == "raw.score") 
+## ## sig.fgsea.results.zscore.df <- fgsea.results.df.edited %>% subset(padj.over.topics < threshold & type == "z.score")
+## ## toPlot.raw <- sig.fgsea.results.raw.df %>% group_by(K, topic, database) %>% arrange(padj.over.topics) %>% slice(1:10)
+## ## toPlot.raw$padj.over.K <- as.numeric(toPlot.raw$padj.over.topics)
+## ## toPlot.zscore <- sig.fgsea.results.zscore.df %>% group_by(K, topic, database) %>% arrange(padj.over.topics) %>% slice(1:10)
+
+## ## # make plots for all K, topic, and database
+## ## pdf(file=paste0(FIGDIR,"/Top.FGSEA.MSigDB.pathway.list_p.adj.", threshold, ".pdf"))
+## ## for (k in toPlot.raw$K %>% unique()) {
+## ## # for (k in c(14)) {
+## ##   for (t in toPlot.raw$topic %>% unique() %>% sort()) {
+## ##     for (db in toPlot.raw$database %>% unique()) {
+## ##       if(nrow(toPlot.raw %>% subset(K == k & topic == t & database == db)) > 0){
+## ##         p <- toPlot.raw %>% subset(K == k & topic == t & database == db) %>% arrange(padj.over.K) %>% ggplot(aes(x=pathway, y=padj.over.topics)) + geom_col() + mytheme + coord_flip() +
+## ##           ggtitle(paste0("K = ", k, ", Topic ", t, ", database: ", db, "\nFGSEA from raw weights"))
+## ##         print(p)
+## ##       }
+## ##       if(nrow(toPlot.zscore %>% subset(K == k & topic == t & database == db) > 0)){
+## ##         p <- toPlot.zscore %>% subset(K == k & topic == t & database == db) %>% arrange(padj.over.K) %>% ggplot(aes(x=pathway, y=padj.over.topics)) + geom_col() + mytheme + coord_flip()  +
+## ##           ggtitle(paste0("K = ", k, ", Topic ", t, ", database: ", db, "\nFGSEA from z-score (set of specific genes)"))
+## ##         print(p)
+## ##       }
+## ##     }
+## ##   }
+## ## }
+## ## dev.off()
 
 
 
-## ## 
-## <br>
-## <br>
-## ```{r }
-## ```
+## ## ## FGSEA top pathways for each topic in each K
+## ## <br>
+## ## Number of Enriched and Significant GSEA pathways per K
+## ## <br>
+## ## ```{r top fgsea pathways for raw score, fig.show="hold", out.width="50%"}
+
+## ## ```
+
+
+
+
+
+
+## ## ## 
+## ## <br>
+## ## <br>
+## ## ```{r }
+## ## ```
 
 
 
