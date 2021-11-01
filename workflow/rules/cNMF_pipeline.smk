@@ -375,7 +375,7 @@ rule prepare_findK_varGene:
 		seed = config["seed"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["scratchDir"], "top{num_genes}VariableGenes_acrossK"),
-		klist = " ".join(config["k"])
+		klist = " ".join(str(k) for k in config["k"])
 	threads: config["total_workers"]
 	# resources: 
 	# 	mem_mb=64*1000,
@@ -415,7 +415,7 @@ rule prepare_findK_geneSet:
 		seed = config["seed"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["analysisDir"], "{gene_selection_method}_genes_acrossK"),
-		klist = " ".join(config["k"])
+		klist = " ".join(str(k) for k in config["k"])
 	threads: config["total_workers"]
 	# resources: 
 	# 	mem_mb=128*1000,
@@ -456,7 +456,7 @@ rule findK_cNMF:
 		nmf_params = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.nmf_params.df.npz"),
 		norm_counts = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad"),
 		overdispersed_genes = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.overdispersed_genes.txt"),
-		merged_copied_result = expand(os.path.join(config["analysisDir"],"{{folder}}_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=config["k"])
+		merged_copied_result = expand(os.path.join(config["analysisDir"],"{{folder}}_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=[str(k) for k in config["k"]])
 	output:
 		plot = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.k_selection.png"),
 		plot_new_location = os.path.join(config["figDir"],"{folder}/{sample}/acrossK/{sample}.k_selection.png")
@@ -713,22 +713,26 @@ rule topic_plot:
 		--recompute F ' "
 
 
-# rule get_ABC_enhancer_fasta:
-# 	input:
-# 	output:
-# 	params:
-# 	shell:
+rule get_ABC_enhancer_fasta:
+	input:
+	output:
+	params:
+	shell:
+		"bash -c ' source ~/.bashrc; \
+		conda activate cnmf_env; \
+		workflow/scripts/fimo_motif_match.sh {input.coord} {input.fasta} {output.fasta} ' "
 
 
-# rule FIMO_ABC_enhancers:
-# 	input:
-# 	output:
-# 	params:
-# 	shell: ## need FIMO wrapper
-# 		"bash -c ' source ~/.bashrc; \
-# 		fimo -oc ${FIMO_OUTDIR}/ --verbosity 1 \
-# 		--thresh ${threshold} data/motif/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme ${TOPDATADIRABC}/${sample}_Predictions.AvgHiC.ABC0.015.minus150.fa; \                                                                                                                      
-#         echo ${FIMO_OUTDIR}/fimo.tsv | tr "|" "\t" > ${FIMO_OUTDIR}/fimo.formatted.tsv ' "
+rule FIMO_ABC_enhancers:
+	input:
+	output:
+	params:
+	shell: ## need FIMO wrapper
+		"bash -c ' source ~/.bashrc; \
+		conda activate cnmf_env; \
+		fimo -oc ${FIMO_OUTDIR}/ --verbosity 1 \
+		--thresh ${threshold} data/motif/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme ${TOPDATADIRABC}/${sample}_Predictions.AvgHiC.ABC0.015.minus150.fa; \
+		echo ${FIMO_OUTDIR}/fimo.tsv | tr \"|\" \"\\t\" > ${FIMO_OUTDIR}/fimo.formatted.tsv ' "
 
 
 rule motif_enrichment_analysis:
@@ -832,9 +836,9 @@ rule fgsea:
 
 rule aggregate_over_K:
 	input:
-		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_0_2/cNMF_results.k_{k}.dt_0_2.RData"), k=config["k"]),
-		fgsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/fgsea/fgsea_all_pathways_df_{ranking_type}_k_{k}.dt_{threshold}.RData"), ranking_type=["raw.score", "z.score"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
-		motif_enrichment = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData"), k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]])
+		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_0_2/cNMF_results.k_{k}.dt_0_2.RData"), k=[str(k) for k in config["k"]]),
+		fgsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/fgsea/fgsea_all_pathways_df_{ranking_type}_k_{k}.dt_{threshold}.RData"), ranking_type=["raw.score", "z.score"], k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+		motif_enrichment = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]])
 		# cNMF_Analysis = expand(os.path.join(config["analysisDir"], "{{sample}}/{{folder}}/K{k}/threshold_0_2/cNMFAnalysis.k_{k}.dt_0_2.RData"), k=config["k"])
 	output:
 		aggregated_output = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData")
@@ -844,7 +848,7 @@ rule aggregate_over_K:
 		figdir = os.path.join(config["figDir"], "{folder}"),
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"),
 		datadir = config["dataDir"],
-		klist_comma = ",".join(config["k"])
+		klist_comma = ",".join(str(k) for k in config["k"])
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
