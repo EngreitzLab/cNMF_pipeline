@@ -715,8 +715,13 @@ rule topic_plot:
 
 rule get_ABC_enhancer_fasta:
 	input:
+		fasta = config["fasta_file"],
+		coord = config["ABC_enhancers"]
 	output:
+		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa")
 	params:
+		time = "3:00:00",
+		mem_gb = "16"
 	shell:
 		"bash -c ' source ~/.bashrc; \
 		conda activate cnmf_env; \
@@ -725,19 +730,26 @@ rule get_ABC_enhancer_fasta:
 
 rule FIMO_ABC_enhancers:
 	input:
+		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa"),
+		motif_meme = os.path.join(config["motif_meme"])
 	output:
+		fimo_result = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.tsv"),
+		fimo_formatted = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
 	params:
+		time = "6:00:00",
+		mem_gb = "64",
+		fimo_outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out")
 	shell: ## need FIMO wrapper
 		"bash -c ' source ~/.bashrc; \
 		conda activate cnmf_env; \
-		fimo -oc ${FIMO_OUTDIR}/ --verbosity 1 \
-		--thresh ${threshold} data/motif/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme ${TOPDATADIRABC}/${sample}_Predictions.AvgHiC.ABC0.015.minus150.fa; \
-		echo ${FIMO_OUTDIR}/fimo.tsv | tr \"|\" \"\\t\" > ${FIMO_OUTDIR}/fimo.formatted.tsv ' "
+		fimo -oc ${params.fimo_outdir} --verbosity 1 --thresh 1.0E-4 {input.motif_meme} {input.fasta}; \
+		echo {output.fimo_result} | tr \"|\" \"\\t\" > {output.fimo_formatted} ' "
 
 
 rule motif_enrichment_analysis:
 	input:
-		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
+		fimo_formatted = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
 	output: 
 		motif_enrichment = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData")
 	params:
@@ -756,9 +768,11 @@ rule motif_enrichment_analysis:
 		--K.val {wildcards.k} \
 		--density.thr {params.threshold} \
 		--recompute F \
-		--motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
+		--motif.enhancer.background {input.fimo_formatted} \
 		--motif.promoter.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv \
 		' "
+		# --motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
+		
 
 
 rule motif_enrichment_analysis_plot:
