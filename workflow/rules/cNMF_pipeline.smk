@@ -7,10 +7,6 @@ import math
 threshold_txt = [ s.replace(".", "_") for s in config["thresholds"] ]
 # num_workers = math.ceil(config["num_runs"] / config["run_per_worker"])
 run_index_list = [n for n in range(config["run_per_worker"])]
-# rule read10X:
-# 	input:
-# 	output:
-# 	run:
 
 
 ## todo: rethink the structure of UMAP part: what are the possible input file types?
@@ -647,7 +643,7 @@ rule plot_UMAP:
 
 rule analysis:
 	input:
-		mtx_RDS = config["inputRDSmtx"], # os.path.join(config["dataDir"],"aggregated.{sample}.mtx.cell_x_gene.RDS"),
+		# mtx_RDS = config["inputRDSmtx"], # os.path.join(config["dataDir"],"aggregated.{sample}.mtx.cell_x_gene.RDS"),
 		#todo: add input files
 		spectra_tpm = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_tpm.k_{k}.dt_{threshold}.txt"),
 		spectra_zscore = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_score.k_{k}.dt_{threshold}.txt"),
@@ -679,7 +675,6 @@ rule analysis:
 		--outdir {params.analysisdir} \
 		--K.val {wildcards.k} \
 		--density.thr {params.threshold} \
-		--raw.mtx.RDS.dir {input.mtx_RDS} \
 		--recompute F \
 		--motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
 		--motif.promoter.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv \
