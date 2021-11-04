@@ -7,10 +7,6 @@ import math
 threshold_txt = [ s.replace(".", "_") for s in config["thresholds"] ]
 # num_workers = math.ceil(config["num_runs"] / config["run_per_worker"])
 run_index_list = [n for n in range(config["run_per_worker"])]
-# rule read10X:
-# 	input:
-# 	output:
-# 	run:
 
 
 ## todo: rethink the structure of UMAP part: what are the possible input file types?
@@ -375,7 +371,7 @@ rule prepare_findK_varGene:
 		seed = config["seed"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["scratchDir"], "top{num_genes}VariableGenes_acrossK"),
-		klist = " ".join(config["k"])
+		klist = " ".join(str(k) for k in config["k"])
 	threads: config["total_workers"]
 	# resources: 
 	# 	mem_mb=64*1000,
@@ -415,7 +411,7 @@ rule prepare_findK_geneSet:
 		seed = config["seed"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["analysisDir"], "{gene_selection_method}_genes_acrossK"),
-		klist = " ".join(config["k"])
+		klist = " ".join(str(k) for k in config["k"])
 	threads: config["total_workers"]
 	# resources: 
 	# 	mem_mb=128*1000,
@@ -456,7 +452,7 @@ rule findK_cNMF:
 		nmf_params = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.nmf_params.df.npz"),
 		norm_counts = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad"),
 		overdispersed_genes = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.overdispersed_genes.txt"),
-		merged_copied_result = expand(os.path.join(config["analysisDir"],"{{folder}}_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=config["k"])
+		merged_copied_result = expand(os.path.join(config["analysisDir"],"{{folder}}_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=[str(k) for k in config["k"]])
 	output:
 		plot = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.k_selection.png"),
 		plot_new_location = os.path.join(config["figDir"],"{folder}/{sample}/acrossK/{sample}.k_selection.png")
@@ -647,7 +643,7 @@ rule plot_UMAP:
 
 rule analysis:
 	input:
-		mtx_RDS = config["inputRDSmtx"], # os.path.join(config["dataDir"],"aggregated.{sample}.mtx.cell_x_gene.RDS"),
+		# mtx_RDS = config["inputRDSmtx"], # os.path.join(config["dataDir"],"aggregated.{sample}.mtx.cell_x_gene.RDS"),
 		#todo: add input files
 		spectra_tpm = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_tpm.k_{k}.dt_{threshold}.txt"),
 		spectra_zscore = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_score.k_{k}.dt_{threshold}.txt"),
@@ -679,7 +675,6 @@ rule analysis:
 		--outdir {params.analysisdir} \
 		--K.val {wildcards.k} \
 		--density.thr {params.threshold} \
-		--raw.mtx.RDS.dir {input.mtx_RDS} \
 		--recompute F \
 		--motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
 		--motif.promoter.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv \
@@ -715,25 +710,41 @@ rule topic_plot:
 
 # rule get_ABC_enhancer_fasta:
 # 	input:
+# 		fasta = config["fasta_file"],
+# 		coord = config["ABC_enhancers"]
 # 	output:
+# 		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa")
 # 	params:
+# 		time = "3:00:00",
+# 		mem_gb = "16"
 # 	shell:
+# 		"bash -c ' source ~/.bashrc; \
+# 		conda activate cnmf_env; \
+# 		bash workflow/scripts/fimo_motif_match.sh {input.coord} {input.fasta} {output.fasta} ' "
 
 
 # rule FIMO_ABC_enhancers:
 # 	input:
+# 		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa"),
+# 		motif_meme = os.path.join(config["motif_meme"])
 # 	output:
+# 		fimo_result = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.tsv"),
+# 		fimo_formatted = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
 # 	params:
+# 		time = "12:00:00",
+# 		mem_gb = "128",
+# 		fimo_outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out")
 # 	shell: ## need FIMO wrapper
 # 		"bash -c ' source ~/.bashrc; \
-# 		fimo -oc ${FIMO_OUTDIR}/ --verbosity 1 \
-# 		--thresh ${threshold} data/motif/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme ${TOPDATADIRABC}/${sample}_Predictions.AvgHiC.ABC0.015.minus150.fa; \                                                                                                                      
-#         echo ${FIMO_OUTDIR}/fimo.tsv | tr "|" "\t" > ${FIMO_OUTDIR}/fimo.formatted.tsv ' "
+# 		conda activate cnmf_env; \
+# 		fimo -oc {params.fimo_outdir} --verbosity 1 --thresh 1.0E-4 {input.motif_meme} {input.fasta}; \
+# 		echo {output.fimo_result} | tr \"|\" \"\\t\" > {output.fimo_formatted} ' "
 
 
 rule motif_enrichment_analysis:
 	input:
-		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
+		fimo_formatted = config["fimo_formatted"] # os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
 	output: 
 		motif_enrichment = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData")
 	params:
@@ -752,9 +763,11 @@ rule motif_enrichment_analysis:
 		--K.val {wildcards.k} \
 		--density.thr {params.threshold} \
 		--recompute F \
-		--motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
+		--motif.enhancer.background {input.fimo_formatted} \
 		--motif.promoter.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv \
 		' "
+		# --motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
+		
 
 
 rule motif_enrichment_analysis_plot:
@@ -832,9 +845,9 @@ rule fgsea:
 
 rule aggregate_over_K:
 	input:
-		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_0_2/cNMF_results.k_{k}.dt_0_2.RData"), k=config["k"]),
-		fgsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/fgsea/fgsea_all_pathways_df_{ranking_type}_k_{k}.dt_{threshold}.RData"), ranking_type=["raw.score", "z.score"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
-		motif_enrichment = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData"), k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]])
+		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_0_2/cNMF_results.k_{k}.dt_0_2.RData"), k=[str(k) for k in config["k"]]),
+		fgsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/fgsea/fgsea_all_pathways_df_{ranking_type}_k_{k}.dt_{threshold}.RData"), ranking_type=["raw.score", "z.score"], k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+		motif_enrichment = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]])
 		# cNMF_Analysis = expand(os.path.join(config["analysisDir"], "{{sample}}/{{folder}}/K{k}/threshold_0_2/cNMFAnalysis.k_{k}.dt_0_2.RData"), k=config["k"])
 	output:
 		aggregated_output = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData")
@@ -844,7 +857,7 @@ rule aggregate_over_K:
 		figdir = os.path.join(config["figDir"], "{folder}"),
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"),
 		datadir = config["dataDir"],
-		klist_comma = ",".join(config["k"])
+		klist_comma = ",".join(str(k) for k in config["k"])
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
