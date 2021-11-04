@@ -1,0 +1,19 @@
+{
+		"total_workers": 10,
+		"seed": 14,
+		"num_runs": 100,
+		"run_per_worker": 10,
+   		"k": [5, 8, 10, 14, 20, 30, 60],
+		"thresholds": ["0.2"],
+		"outDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/outputs",
+		"analysisDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis",
+		"figDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/figures",
+		"dataDir": "NOTE: need to put {sample}.SeuratObject.RDS file in analysisDir/data/ in order to skip 'create_Seurat_Object' rule",
+		"scratchDir": "/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/211101_20sample_snakemake",
+		"cNMF_gene_selection": ["all_genes"],
+		"motif_meme": "/oak/stanford/groups/engreitz/Data/motif/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme",
+		"fasta_file": "/oak/stanford/groups/engreitz/Data/hg19/Sequence/hg19.fa",
+		"fimo_formatted": "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv",
+		"ABC_enhancers": "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/data/ABC/TeloHAEC_Ctrl_Predictions.AvgHiC.ABC0.015.minus150.txt",
+		"sampleName": "FT005_007_010_fresh_3min"
+}
