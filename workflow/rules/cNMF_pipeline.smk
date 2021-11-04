@@ -708,43 +708,43 @@ rule topic_plot:
 		--recompute F ' "
 
 
-rule get_ABC_enhancer_fasta:
-	input:
-		fasta = config["fasta_file"],
-		coord = config["ABC_enhancers"]
-	output:
-		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa")
-	params:
-		time = "3:00:00",
-		mem_gb = "16"
-	shell:
-		"bash -c ' source ~/.bashrc; \
-		conda activate cnmf_env; \
-		workflow/scripts/fimo_motif_match.sh {input.coord} {input.fasta} {output.fasta} ' "
+# rule get_ABC_enhancer_fasta:
+# 	input:
+# 		fasta = config["fasta_file"],
+# 		coord = config["ABC_enhancers"]
+# 	output:
+# 		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa")
+# 	params:
+# 		time = "3:00:00",
+# 		mem_gb = "16"
+# 	shell:
+# 		"bash -c ' source ~/.bashrc; \
+# 		conda activate cnmf_env; \
+# 		bash workflow/scripts/fimo_motif_match.sh {input.coord} {input.fasta} {output.fasta} ' "
 
 
-rule FIMO_ABC_enhancers:
-	input:
-		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa"),
-		motif_meme = os.path.join(config["motif_meme"])
-	output:
-		fimo_result = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.tsv"),
-		fimo_formatted = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
-	params:
-		time = "6:00:00",
-		mem_gb = "64",
-		fimo_outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out")
-	shell: ## need FIMO wrapper
-		"bash -c ' source ~/.bashrc; \
-		conda activate cnmf_env; \
-		fimo -oc ${params.fimo_outdir} --verbosity 1 --thresh 1.0E-4 {input.motif_meme} {input.fasta}; \
-		echo {output.fimo_result} | tr \"|\" \"\\t\" > {output.fimo_formatted} ' "
+# rule FIMO_ABC_enhancers:
+# 	input:
+# 		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa"),
+# 		motif_meme = os.path.join(config["motif_meme"])
+# 	output:
+# 		fimo_result = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.tsv"),
+# 		fimo_formatted = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
+# 	params:
+# 		time = "12:00:00",
+# 		mem_gb = "128",
+# 		fimo_outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out")
+# 	shell: ## need FIMO wrapper
+# 		"bash -c ' source ~/.bashrc; \
+# 		conda activate cnmf_env; \
+# 		fimo -oc {params.fimo_outdir} --verbosity 1 --thresh 1.0E-4 {input.motif_meme} {input.fasta}; \
+# 		echo {output.fimo_result} | tr \"|\" \"\\t\" > {output.fimo_formatted} ' "
 
 
 rule motif_enrichment_analysis:
 	input:
 		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
-		fimo_formatted = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
+		fimo_formatted = config["fimo_formatted"] # os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
 	output: 
 		motif_enrichment = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData")
 	params:
