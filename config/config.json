@@ -5,7 +5,6 @@
 		"run_per_worker": 10,
    		"k": [5, 8, 10, 14, 20, 30, 60],
 		"thresholds": ["0.2"],
-		"outDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/outputs",
 		"analysisDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis",
 		"figDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/figures",
 		"dataDir": "NOTE: need to put {sample}.SeuratObject.RDS file in analysisDir/data/ in order to skip 'create_Seurat_Object' rule",

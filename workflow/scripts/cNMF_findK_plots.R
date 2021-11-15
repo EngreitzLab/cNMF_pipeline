@@ -401,38 +401,38 @@ print(p)
 dev.off()
 
 
-## ## cluster theta.zscore across topics
-## theta.zscore.df.wide <- theta.zscore.df %>% mutate(K_Factor = paste0("K",K,"_",Factor), Gene = rownames(.)) %>% select(Gene, weight, K_Factor) %>% spread(key = "K_Factor", value = "weight")
-## write.table(theta.zscore.df.wide, paste0(OUTDIR, "topic.zscore.Pearson.corr.txt"), row.names=F, quote=F, sep="\t")
-## theta.zscore.df.wide.mtx <- theta.zscore.df.wide %>% `rownames<-`(.$Gene) %>% select(-Gene) %>% as.matrix()
-## d <- cor(theta.zscore.df.wide.mtx, method="pearson")
-## m <- as.matrix(d)
+## cluster theta.zscore across topics
+theta.zscore.df.wide <- theta.zscore.df %>% mutate(K_Factor = paste0("K",K,"_",Factor), Gene = rownames(.)) %>% select(Gene, weight, K_Factor) %>% spread(key = "K_Factor", value = "weight")
+write.table(theta.zscore.df.wide, paste0(OUTDIR, "topic.zscore.Pearson.corr.txt"), row.names=F, quote=F, sep="\t")
+theta.zscore.df.wide.mtx <- theta.zscore.df.wide %>% `rownames<-`(.$Gene) %>% select(-Gene) %>% as.matrix()
+d <- cor(theta.zscore.df.wide.mtx, method="pearson")
+m <- as.matrix(d)
 
-## ## Function for plotting heatmap  # new version (adjusted font size)
-## plotHeatmap <- function(mtx, labCol, title, margins=c(12,6), ...) { #original
-##   heatmap.2(
-##     mtx %>% t(), 
-##     Rowv=T, 
-##     Colv=T,
-##     trace='none',
-##     key=T,
-##     col=palette,
-##     labCol=labCol,
-##     margins=margins, 
-##     cex.main=0.8, 
-##     cexCol=1/(ncol(mtx)^(1/3)), cexRow=1/(ncol(mtx)^(1/3)), #4.8/sqrt(nrow(mtx))
-##     main=title,
-##     ...
-##   )
-## }
+## Function for plotting heatmap  # new version (adjusted font size)
+plotHeatmap <- function(mtx, labCol, title, margins=c(12,6), ...) { #original
+  heatmap.2(
+    mtx %>% t(), 
+    Rowv=T, 
+    Colv=T,
+    trace='none',
+    key=T,
+    col=palette,
+    labCol=labCol,
+    margins=margins, 
+    cex.main=0.8, 
+    cexCol=1/(ncol(mtx)^(1/3)), cexRow=1/(ncol(mtx)^(1/3)), #4.8/sqrt(nrow(mtx))
+    main=title,
+    ...
+  )
+}
 
 
-## pdf(file=paste0(FIGDIR,"/cluster.topic.zscore.by.Pearson.corr.pdf"), width=30, height=30)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
-## dev.off()
-## png(file=paste0(FIGDIR, "/cluster.topic.zscore.by.Pearson.corr.png"), width=3000, height=3000)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
-## dev.off()
+pdf(file=paste0(FIGDIR,"/cluster.topic.zscore.by.Pearson.corr.pdf"), width=30, height=30)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
+dev.off()
+png(file=paste0(FIGDIR, "/cluster.topic.zscore.by.Pearson.corr.png"), width=3000, height=3000)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
+dev.off()
 
 ## ## higher values of K
 ## index <- which(theta.zscore.df.wide.mtx %>% colnames() %>% strsplit(split="_") %>% sapply("[[",1) %>% gsub("K","",.) >= 30)

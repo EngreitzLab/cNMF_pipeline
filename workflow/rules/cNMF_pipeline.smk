@@ -874,7 +874,8 @@ rule findK_plot:
 	input:
 		toplot = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData")
 	output:
-		GO_raw_plot = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/GO.enrichment.on.raw.score.ranking.threshold0.1.pdf")
+		GO_raw_plot = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/GO.enrichment.on.raw.score.ranking.threshold0.1.pdf"),
+		topic_clustering_plot = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/cluster.topic.zscore.by.Pearson.corr.pdf")
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
