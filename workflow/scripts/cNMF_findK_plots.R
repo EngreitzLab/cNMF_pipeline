@@ -45,6 +45,13 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$aggregated.data <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/all_genes/FT010_fresh_4min/acrossK/aggregated.outputs.findK.RData"
 
 
+## ## for testing findK_plots for scRNAseq_2kG_11AMDox_1
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/figures/all_genes/scRNAseq_2kG_11AMDox_1/acrossK/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/acrossK/"
+## opt$sampleName <- "scRNAseq_2kG_11AMDox_1"
+## opt$aggregated.data <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/acrossK/aggregated.outputs.findK.RData"
+
+
 ## Directories and Constants
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$datadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
@@ -401,11 +408,15 @@ print(p)
 dev.off()
 
 
-## cluster theta.zscore across topics
-theta.zscore.df.wide <- theta.zscore.df %>% mutate(K_Factor = paste0("K",K,"_",Factor), Gene = rownames(.)) %>% select(Gene, weight, K_Factor) %>% spread(key = "K_Factor", value = "weight")
-write.table(theta.zscore.df.wide, paste0(OUTDIR, "topic.zscore.Pearson.corr.txt"), row.names=F, quote=F, sep="\t")
-theta.zscore.df.wide.mtx <- theta.zscore.df.wide %>% `rownames<-`(.$Gene) %>% select(-Gene) %>% as.matrix()
-d <- cor(theta.zscore.df.wide.mtx, method="pearson")
+## ## cluster theta.zscore across topics
+## ## old 211115
+## theta.zscore.df.wide <- theta.zscore.df %>% mutate(K_Factor = paste0("K",K,"_",Factor), Gene = rownames(.)) %>% select(Gene, weight, K_Factor) %>% spread(key = "K_Factor", value = "weight")
+## write.table(theta.zscore.df.wide, paste0(OUTDIR, "topic.zscore.Pearson.corr.txt"), row.names=F, quote=F, sep="\t")
+## theta.zscore.df.wide.mtx <- theta.zscore.df.wide %>% `rownames<-`(.$Gene) %>% select(-Gene) %>% as.matrix()
+## d <- cor(theta.zscore.df.wide.mtx, method="pearson")
+## m <- as.matrix(d)
+
+d <- cor(theta.zscore.df, method="pearson")
 m <- as.matrix(d)
 
 ## Function for plotting heatmap  # new version (adjusted font size)
@@ -420,7 +431,8 @@ plotHeatmap <- function(mtx, labCol, title, margins=c(12,6), ...) { #original
     labCol=labCol,
     margins=margins, 
     cex.main=0.8, 
-    cexCol=1/(ncol(mtx)^(1/3)), cexRow=1/(ncol(mtx)^(1/3)), #4.8/sqrt(nrow(mtx))
+    cexCol=0.01 * ncol(mtx), cexRow=0.01 * ncol(mtx), #4.8/sqrt(nrow(mtx))
+    ## cexCol=1/(ncol(mtx)^(1/3)), cexRow=1/(ncol(mtx)^(1/3)), #4.8/sqrt(nrow(mtx))
     main=title,
     ...
   )
@@ -434,61 +446,59 @@ png(file=paste0(FIGDIR, "/cluster.topic.zscore.by.Pearson.corr.png"), width=3000
 plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
 dev.off()
 
-## ## higher values of K
-## index <- which(theta.zscore.df.wide.mtx %>% colnames() %>% strsplit(split="_") %>% sapply("[[",1) %>% gsub("K","",.) >= 30)
-## d <- cor(theta.zscore.df.wide.mtx[index,index], method="pearson")
-## m <- as.matrix(d)
-## pdf(file=paste0(FIGDIR,"/cluster.topic.zscore.by.Pearson.corr.K30_higher.pdf"), width=30, height=30)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
-## dev.off()
-## png(file=paste0(FIGDIR, "/cluster.topic.zscore.by.Pearson.corr.K30_higher.png"), width=3000, height=3000)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
-## dev.off()
+## higher values of K
+index <- which(theta.zscore.df %>% colnames() %>% strsplit(split="_") %>% sapply("[[",1) %>% gsub("K","",.) >= 30)
+d <- cor(theta.zscore.df[index,index], method="pearson")
+m <- as.matrix(d)
+pdf(file=paste0(FIGDIR,"/cluster.topic.zscore.by.Pearson.corr.K30_higher.pdf"), width=30, height=30)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
+dev.off()
+png(file=paste0(FIGDIR, "/cluster.topic.zscore.by.Pearson.corr.K30_higher.png"), width=3000, height=3000)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
+dev.off()
 
-## ## set correlation < 0.5 to zero to expand the color range
-## m[m<0.5] <- 0
-## pdf(file=paste0(FIGDIR,"/cluster.topic.zscore.by.Pearson.corr.K30_higher.threshold_cor_0.5.pdf"), width=30, height=30)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
-## dev.off()
-## png(file=paste0(FIGDIR, "/cluster.topic.zscore.by.Pearson.corr.K30_higher.threshold_cor_0.5.png"), width=3000, height=3000)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
-## dev.off()
-
-
+## set correlation < 0.5 to zero to expand the color range
+m[m<0.5] <- 0
+pdf(file=paste0(FIGDIR,"/cluster.topic.zscore.by.Pearson.corr.K30_higher.threshold_cor_0.5.pdf"), width=30, height=30)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
+dev.off()
+png(file=paste0(FIGDIR, "/cluster.topic.zscore.by.Pearson.corr.K30_higher.threshold_cor_0.5.png"), width=3000, height=3000)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
+dev.off()
 
 
-## theta.raw.df.wide <- theta.raw.df %>% mutate(K_Factor = paste0("K",K,"_",Factor)) %>% select(Gene, weight, K_Factor) %>% spread(key = "K_Factor", value = "weight")
-## theta.raw.df.wide.mtx <- theta.raw.df.wide %>% `rownames<-`(.$Gene) %>% select(-Gene) %>% as.matrix()
-## d <- cor(theta.raw.df.wide.mtx, method="pearson")
-## m <- as.matrix(d)
 
-## pdf(file=paste0(FIGDIR,"/cluster.topic.raw.by.Pearson.corr.pdf"), width=30, height=30)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
-## dev.off()
-## png(file=paste0(FIGDIR, "/cluster.topic.raw.by.Pearson.corr.png"), width=3000, height=3000)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
-## dev.off()
+## topic defined by raw weights
+d <- cor(theta.raw.df, method="pearson")
+m <- as.matrix(d)
+
+pdf(file=paste0(FIGDIR,"/cluster.topic.raw.by.Pearson.corr.pdf"), width=30, height=30)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
+dev.off()
+png(file=paste0(FIGDIR, "/cluster.topic.raw.by.Pearson.corr.png"), width=3000, height=3000)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
+dev.off()
 
 
-## ## higher values of K
-## index <- which(theta.raw.df.wide.mtx %>% colnames() %>% strsplit(split="_") %>% sapply("[[",1) %>% gsub("K","",.) >= 30)
-## d <- cor(theta.raw.df.wide.mtx[index,index], method="pearson")
-## m <- as.matrix(d)
-## pdf(file=paste0(FIGDIR,"/cluster.topic.raw.by.Pearson.corr.K30_higher.pdf"), width=30, height=30)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
-## dev.off()
-## png(file=paste0(FIGDIR, "/cluster.topic.raw.by.Pearson.corr.K30_higher.png"), width=3000, height=3000)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
-## dev.off()
+## higher values of K
+index <- which(theta.raw.df %>% colnames() %>% strsplit(split="_") %>% sapply("[[",1) %>% gsub("K","",.) >= 30)
+d <- cor(theta.raw.df[index,index], method="pearson")
+m <- as.matrix(d)
+pdf(file=paste0(FIGDIR,"/cluster.topic.raw.by.Pearson.corr.K30_higher.pdf"), width=30, height=30)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
+dev.off()
+png(file=paste0(FIGDIR, "/cluster.topic.raw.by.Pearson.corr.K30_higher.png"), width=3000, height=3000)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
+dev.off()
 
-## ## set correlation < 0.5 to zero to expand the color range
-## m[m<0.5] <- 0
-## pdf(file=paste0(FIGDIR,"/cluster.topic.raw.by.Pearson.corr.K30_higher.threshold_cor_0.5.pdf"), width=30, height=30)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
-## dev.off()
-## png(file=paste0(FIGDIR, "/cluster.topic.raw.by.Pearson.corr.K30_higher.threshold_cor_0.5.png"), width=3000, height=3000)
-## plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
-## dev.off()
+## set correlation < 0.5 to zero to expand the color range
+m[m<0.5] <- 0
+pdf(file=paste0(FIGDIR,"/cluster.topic.raw.by.Pearson.corr.K30_higher.threshold_cor_0.5.pdf"), width=30, height=30)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
+dev.off()
+png(file=paste0(FIGDIR, "/cluster.topic.raw.by.Pearson.corr.K30_higher.threshold_cor_0.5.png"), width=3000, height=3000)
+plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
+dev.off()
 
 
 
