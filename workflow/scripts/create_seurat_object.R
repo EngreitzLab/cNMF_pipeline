@@ -68,6 +68,7 @@ if(opt$recompute | !file.exists(outSeuratObjectPath)) {
 
 
     ## Create Seurat Object
+    message("creating Seurat object")
     s <- CreateSeuratObject(
         counts = gex.mtx,
         project = SAMPLE

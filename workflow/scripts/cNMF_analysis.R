@@ -341,25 +341,32 @@ invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recur
     # barcode.names <- data.frame(long.CBC=rownames(omega)) %>% separate(col="long.CBC", into=c("Gene.full.name", "Guide", "CBC"), sep=":", remove=F) %>% mutate(Gene = gsub("_multiTarget|-TSS", "", Gene.full.name))
 
     print("save the data")
-    # ensembl.theta.zscore.names <- mapIds(org.Hs.eg.db, keys = rownames(theta.zscore), keytype = "SYMBOL", column="ENSEMBL")
-    # ensembl.theta.zscore.names[ensembl.theta.zscore.names %>% is.na] <- rownames(theta.zscore)[ensembl.theta.zscore.names %>% is.na]
-    # theta.zscore.ensembl <- theta.zscore
-    # colnames(theta.zscore.ensembl) <- paste0("zscore_K", k, "_topic", colnames(theta.zscore.ensembl))
-    # theta.zscore.ensembl <- theta.zscore.ensembl %>% as.data.frame %>% mutate(ENSGID=ensembl.theta.zscore.names,.before=paste0("zscore_K",k,"_topic1"))
+    ensembl.theta.zscore.names <- mapIds(org.Hs.eg.db, keys = rownames(theta.zscore), keytype = "SYMBOL", column="ENSEMBL")
+    ensembl.theta.zscore.names[ensembl.theta.zscore.names %>% is.na] <- rownames(theta.zscore)[ensembl.theta.zscore.names %>% is.na]
+    theta.zscore.ensembl <- theta.zscore
+    colnames(theta.zscore.ensembl) <- paste0("zscore_K", k, "_topic", colnames(theta.zscore.ensembl))
+    theta.zscore.ensembl <- theta.zscore.ensembl %>% as.data.frame %>% mutate(ENSGID=ensembl.theta.zscore.names,.before=paste0("zscore_K",k,"_topic1"))
 
-    # ensembl.theta.raw.names <- mapIds(org.Hs.eg.db, keys = rownames(theta.raw), keytype = "SYMBOL", column="ENSEMBL")
-    # ensembl.theta.raw.names[ensembl.theta.raw.names %>% is.na] <- rownames(theta.raw)[ensembl.theta.raw.names %>% is.na]
-    # theta.raw.ensembl <- theta.raw
-    # colnames(theta.raw.ensembl) <- paste0("raw_K", k, "_topic", colnames(theta.raw.ensembl))
-    # theta.raw.ensembl <- theta.raw.ensembl %>% as.data.frame %>% mutate(ENSGID=ensembl.theta.raw.names,.before=paste0("raw_K",k,"_topic1"))
+    ensembl.theta.raw.names <- mapIds(org.Hs.eg.db, keys = rownames(theta.raw), keytype = "SYMBOL", column="ENSEMBL")
+    ensembl.theta.raw.names[ensembl.theta.raw.names %>% is.na] <- rownames(theta.raw)[ensembl.theta.raw.names %>% is.na]
+    theta.raw.ensembl <- theta.raw
+    colnames(theta.raw.ensembl) <- paste0("raw_K", k, "_topic", colnames(theta.raw.ensembl))
+    theta.raw.ensembl <- theta.raw.ensembl %>% as.data.frame %>% mutate(ENSGID=ensembl.theta.raw.names,.before=paste0("raw_K",k,"_topic1"))
+
+    ## normalize to zero mean + unit variance
+    theta.raw.ensembl.scaled <- theta.raw.ensembl %>% select(-ENSGID) %>% apply(2, scale)  %>% as.data.frame %>% mutate(ENSGID=ensembl.theta.zscore.names,.before=paste0("raw_K",k,"_topic1"))
+    theta.zscore.ensembl.scaled <- theta.zscore.ensembl %>% select(-ENSGID) %>% apply(2, scale) %>% as.data.frame %>% mutate(ENSGID=ensembl.theta.zscore.names,.before=paste0("zscore_K",k,"_topic1"))
+    
     
     save(theta, theta.raw, theta.zscore, omega, theta.path, omega.path, # barcode.names,
          file=cNMF.result.file)
 
     write.table(theta.zscore, file=paste0(OUTDIRSAMPLE, "/topic.zscore_",SUBSCRIPT.SHORT, ".txt"), row.names=T, quote=F, sep="\t")
     write.table(theta.raw, file=paste0(OUTDIRSAMPLE, "/topic.raw.score_",SUBSCRIPT.SHORT, ".txt"), row.names=T, quote=F, sep="\t")
-    # write.table(theta.zscore.ensembl, file=paste0(OUTDIRSAMPLE, "/topic.zscore.ensembl_",SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep="\t")
-    # write.table(theta.raw.ensembl, file=paste0(OUTDIRSAMPLE, "/topic.raw.ensembl_",SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep="\t")
+    write.table(theta.zscore.ensembl, file=paste0(OUTDIRSAMPLE, "/topic.zscore.ensembl_",SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep="\t")
+    write.table(theta.raw.ensembl, file=paste0(OUTDIRSAMPLE, "/topic.raw.ensembl_",SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep="\t")
+    write.table(theta.zscore.ensembl.scaled, file=paste0(OUTDIRSAMPLE, "/topic.zscore.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep = "\t")
+    write.table(theta.raw.ensembl.scaled, file=paste0(OUTDIRSAMPLE, "/topic.raw.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep = "\t")
  
 }  
 

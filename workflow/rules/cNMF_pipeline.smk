@@ -650,8 +650,12 @@ rule analysis:
 		spectra_consensus = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.spectra.k_{k}.dt_{threshold}.consensus.txt")
 	output:
 		#todo: add output files
-		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
 		# cNMF_Analysis = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/cNMFAnalysis.k_{k}.dt_{threshold}.RData")
+		cNMF_ENSG_topic_zscore = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/topic.zscore.ensembl_k_{k}.dt_{threshold}.txt"),
+		cNMF_ENSG_topic_zscore_scaled = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/topic.zscore.ensembl.scaled_k_{k}.dt_{threshold}.txt"),
+		cNMF_ENSG_topic_raw = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/topic.zscore.ensembl_k_{k}.dt_{threshold}.txt"),
+		cNMF_ENSG_topic_raw_scaled = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/topic.zscore.ensembl.scaled_k_{k}.dt_{threshold}.txt")
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
@@ -892,6 +896,79 @@ rule findK_plot:
 		--p.adj.threshold 0.1 \
 		--aggregated.data {input.toplot} \
 		' "
+
+
+### run PoPS and analysis
+
+rule munge_features_with_cNMF: ## need to test pops in cnmf_env
+	input:
+		cNMF_ENSG_topic_zscore_scaled = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/topic.zscore.ensembl.scaled_k_{k}.dt_{threshold}.txt")
+	output:
+		munged_features_cols = os.path.join(config["scratchDir"], "pops/features/pops_features_munged_cNMF/pops_features.cols.{index}.txt")
+	params:
+		time = "2:00:00",
+		mem_gb = "16",
+		raw_features_dir = os.path.join(config["scratchDir"], "pops/features/pops_features_raw"),
+		external_features = config["PoPS_raw_featureDir"],
+		gene_annot_path = config["PoPS_gene_annotation_path"],
+		munged_features_dir = os.path.join(config["scratchDir"], "pops/features/pops_features_munged_cNMF"),
+		magma_dir_prefix = config["magma_dir_prefix"]
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		mkdir -p $DATADIR/features/pops_features_munged_cNMF; \
+		cp {params.external_features}/* {params.raw_features_dir}/; \
+		cp {input.cNMF_ENSG_topic_zscore_scaled} {params.raw_features_dir}/; \
+		cd {parmas.munge_features_dir}; \
+		magma_prefix=$(basename {params.magma_dir_prefix}) \
+		python ${POPSDIR}/pops/munge_feature_directory.py \
+       		--gene_annot_path {params.gene_annot_path} \
+       		--feature_dir {params.raw_features_dir} \
+       		--save_prefix ${{magma_prefix}}_{wildcards.sample}_cNMF{wildcards.k} \
+       		--nan_policy zero  ' "
+
+
+rule run_PoPS_cNMF: ## num_feature_chunks: needs specification
+	input:
+
+	output:
+		coefs = os.path.join(),
+		marginals = os.path.join(),
+		preds = os.path.join()
+	params:
+		time = "2:00:00",
+		mem_gb = "32",
+		gene_annot_path = config["PoPS_gene_annotation_path"],
+		munged_features_dir = os.path.join(config["scratchDir"], "pops/features/pops_features_munged_cNMF"),
+		magma_dir_prefix = config["magma_dir_prefix"],
+		PoPS_control_features = config["PoPS_control_features"],
+		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/pops/output")
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		python ${POPSDIR}/pops/pops.py \
+			--gene_annot_path {params.gene_annot_path} \
+			--feature_mat_prefix {params.raw_features_dir}/{wildcards.sample}_cNMF \
+			--num_feature_chunks 12 \
+			--control_features_path {params.PoPS_control_features} \
+			--magma_prefix {params.magma_dir_prefix} \
+			--out_prefix {params.outdir}/{wildcards.prefix} \
+			--verbose ' "
+
+
+rule analyze_PoPS_results:
+	input:
+	output:
+	params:
+	shell:
+
+
+rule plots:
+	input:
+	output:
+	params:
+	shell:
+
 
 
 
