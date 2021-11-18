@@ -900,11 +900,15 @@ rule findK_plot:
 
 ### run PoPS and analysis
 
-rule munge_features_with_cNMF: ## need to test pops in cnmf_env
+
+## helper to get magma prefix
+
+
+checkpoint munge_features_with_cNMF: ## need to test pops in cnmf_env 
 	input:
 		cNMF_ENSG_topic_zscore_scaled = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/topic.zscore.ensembl.scaled_k_{k}.dt_{threshold}.txt")
 	output:
-		munged_features_cols = os.path.join(config["scratchDir"], "pops/features/pops_features_munged_cNMF/pops_features.cols.{index}.txt")
+		munged_features = directory(os.path.join(config["scratchDir"], "pops/features/pops_features_munged_cNMF"))
 	params:
 		time = "2:00:00",
 		mem_gb = "16",
@@ -926,6 +930,12 @@ rule munge_features_with_cNMF: ## need to test pops in cnmf_env
        		--feature_dir {params.raw_features_dir} \
        		--save_prefix ${{magma_prefix}}_{wildcards.sample}_cNMF{wildcards.k} \
        		--nan_policy zero  ' "
+
+
+## helper to get number of chunck pops mung_feature_directory.py created
+def get_pops_feature_chunk_number(wildcards):
+    checkpoint_output = checkpoints.munge_features_with_cNMF.get(**wildcards).output[0]
+    return len(glob_wildcards(os.path.join(checkpoint_output, "pops_features.cols{i}.txt")).i)
 
 
 rule run_PoPS_cNMF: ## num_feature_chunks: needs specification
