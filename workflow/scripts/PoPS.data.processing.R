@@ -119,93 +119,103 @@ write.table(preds.combined.df %>% apply(2, as.character), file=file.name, row.na
 file.name <- paste0(OUTDIR, "/", PREFIX, "_coefs.marginals.feature.outer.prod.RDS")
 if( !file.exists(file.name) | opt$recompute ) {
 
-## load cNMF features
-## features <- read.delim("/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/features/pops_features_raw/topic.zscore.ensembl.scaled_k_60.dt_0_2.txt", stringsAsFactors=F)
-features <- read.delim(opt$cNMF.features, stringsAsFactors=F)
+    ## load cNMF features
+    ## features <- read.delim("/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/features/pops_features_raw/topic.zscore.ensembl.scaled_k_60.dt_0_2.txt", stringsAsFactors=F)
+    features <- read.delim(opt$cNMF.features, stringsAsFactors=F)
 
-## load all features
-all.features.cNMF <- readRDS(opt$all.features)
-
-
-## sort features and subset coefs, take a product ((gene x features) x (features x beta scalar))
-coefs.cnmf <- coefs %>% subset(grepl("zscore", parameter))
-coefs.cnmf.mtx <- coefs.cnmf %>% `rownames<-`(.$parameter) %>% select(-parameter)
-coefs.cnmf.mtx$beta <- coefs.cnmf.mtx$beta %>% as.numeric
-coefs.cnmf.mtx <- coefs.cnmf.mtx %>% as.matrix
-
-## subset features
-features.names.tokeep <- coefs.cnmf.mtx %>% rownames
-features.tokeep <- features %>% `rownames<-`(.$ENSGID) %>% select(all_of(features.names.tokeep)) %>% as.matrix
-
-## also test marginals
-features.names.tokeep.df <- data.frame(X=features.names.tokeep)
-marginals.tokeep <- inner_join(features.names.tokeep.df, marginals, by="X") %>% `rownames<-`(.$X) %>% select(beta) %>% as.matrix
+    ## load all features
+    all.features.cNMF <- readRDS(opt$all.features)
 
 
-coefs.mtx <- coefs.df %>% `rownames<-`(.$parameter) %>% select(-parameter)
-coefs.mtx$beta <- coefs.mtx$beta %>% as.numeric
-coefs.mtx <- coefs.mtx %>% as.matrix
-all.features.cNMF.names.tokeep <- coefs.mtx %>% rownames
-all.features.cNMF.tokeep <- all.features.cNMF %>% `rownames<-`(.$ENSGID) %>% select(all_of(all.features.cNMF.names.tokeep)) %>% as.matrix
-all.features.cNMF.tokeep[all.features.cNMF.tokeep=="True"] <- 1
-all.features.cNMF.tokeep[all.features.cNMF.tokeep=="False"] <- 0
-storage.mode(all.features.cNMF.tokeep) <- "numeric"
-all.features.cNMF.names.tokeep.df <- data.frame(X=all.features.cNMF.names.tokeep) ## to subset marginals
-all.marginals.cNMF.tokeep <- inner_join(all.features.cNMF.names.tokeep.df, marginals, by="X") %>% `rownames<-`(.$X) %>% select(beta) %>% as.matrix
+    ## sort features and subset coefs, take a product ((gene x features) x (features x beta scalar))
+    coefs.cnmf <- coefs %>% subset(grepl("zscore", parameter))
+    coefs.cnmf.mtx <- coefs.cnmf %>% `rownames<-`(.$parameter) %>% select(-parameter)
+    coefs.cnmf.mtx$beta <- coefs.cnmf.mtx$beta %>% as.numeric
+    coefs.cnmf.mtx <- coefs.cnmf.mtx %>% as.matrix
+
+    ## subset features
+    features.names.tokeep <- coefs.cnmf.mtx %>% rownames
+    features.tokeep <- features %>% `rownames<-`(.$ENSGID) %>% select(all_of(features.names.tokeep)) %>% as.matrix
+
+    ## also test marginals
+    features.names.tokeep.df <- data.frame(X=features.names.tokeep)
+    marginals.tokeep <- inner_join(features.names.tokeep.df, marginals, by="X") %>% `rownames<-`(.$X) %>% select(beta) %>% as.matrix
+
+
+    coefs.mtx <- coefs.df %>% `rownames<-`(.$parameter) %>% select(-parameter)
+    coefs.mtx$beta <- coefs.mtx$beta %>% as.numeric
+    coefs.mtx <- coefs.mtx %>% as.matrix
+    all.features.cNMF.names.tokeep <- coefs.mtx %>% rownames
+    all.features.cNMF.tokeep <- all.features.cNMF %>% `rownames<-`(.$ENSGID) %>% select(all_of(all.features.cNMF.names.tokeep)) %>% as.matrix
+    all.features.cNMF.tokeep[all.features.cNMF.tokeep=="True"] <- 1
+    all.features.cNMF.tokeep[all.features.cNMF.tokeep=="False"] <- 0
+    storage.mode(all.features.cNMF.tokeep) <- "numeric"
+    all.features.cNMF.names.tokeep.df <- data.frame(X=all.features.cNMF.names.tokeep) ## to subset marginals
+    all.marginals.cNMF.tokeep <- inner_join(all.features.cNMF.names.tokeep.df, marginals, by="X") %>% `rownames<-`(.$X) %>% select(beta) %>% as.matrix
 
     saveRDS(all.features.cNMF.names.tokeep, file=paste0(OUTDIR, "/all.features.cNMF.keep.prioritized.mtx.RDS"))
 
-## ## check if PoPS_Score = coefs * features
-## ## multiply features with beta
-## PoPS_Score.coefs.manual <- features.tokeep %*% coefs.cnmf.mtx %>% `colnames<-`("PoPS_Score.coefs.manual")
-## PoPS_Score.marginals.manual <- features.tokeep %*% marginals.tokeep %>% `colnames<-`("PoPS_Score.marginals.manual")
-## PoPS_Score.coefs.all <- all.features.cNMF.tokeep %*% coefs.mtx %>% `colnames<-`("PoPS_Score_all.coefs")
-## PoPS_Score.marginals.all <- all.features.cNMF.tokeep %*% marginals.tokeep %>% `colnames<-`("PoPS_Score.all.marginals")
-## ## PoPS_Score.marginals.manual.all <- features %>% `rownames<-`(.$ENSGID) %>% select(-ENSGID) %*% marginals
+    ## ## check if PoPS_Score = coefs * features
+    ## ## multiply features with beta
+    ## PoPS_Score.coefs.manual <- features.tokeep %*% coefs.cnmf.mtx %>% `colnames<-`("PoPS_Score.coefs.manual")
+    ## PoPS_Score.marginals.manual <- features.tokeep %*% marginals.tokeep %>% `colnames<-`("PoPS_Score.marginals.manual")
+    ## PoPS_Score.coefs.all <- all.features.cNMF.tokeep %*% coefs.mtx %>% `colnames<-`("PoPS_Score_all.coefs")
+    ## PoPS_Score.marginals.all <- all.features.cNMF.tokeep %*% marginals.tokeep %>% `colnames<-`("PoPS_Score.all.marginals")
+    ## ## PoPS_Score.marginals.manual.all <- features %>% `rownames<-`(.$ENSGID) %>% select(-ENSGID) %*% marginals
 
 
-## get outer products of features and marginals
-PoPS_Score.coefs.manual.outer.ENSG <- sweep(features.tokeep, 2, (coefs.cnmf.mtx %>% t), `*`) ### store this matrix
-PoPS_Score.marginals.manual.outer.ENSG <- sweep(features.tokeep, 2, (marginals.tokeep %>% t), `*`) ### save this matrix
-PoPS_Score.coefs.all.outer.ENSG <- sweep(all.features.cNMF.tokeep, 2, (coefs.mtx %>% t), `*`)
-PoPS_Score.marginals.all.outer.ENSG <- sweep(all.features.cNMF.tokeep, 2, (all.marginals.cNMF.tokeep %>% t), `*`)
+    ## get outer products of features and marginals
+    PoPS_Score.coefs.manual.outer.ENSG <- sweep(features.tokeep, 2, (coefs.cnmf.mtx %>% t), `*`) ### store this matrix
+    PoPS_Score.marginals.manual.outer.ENSG <- sweep(features.tokeep, 2, (marginals.tokeep %>% t), `*`) ### save this matrix
+    PoPS_Score.coefs.all.outer.ENSG <- sweep(all.features.cNMF.tokeep, 2, (coefs.mtx %>% t), `*`)
+    PoPS_Score.marginals.all.outer.ENSG <- sweep(all.features.cNMF.tokeep, 2, (all.marginals.cNMF.tokeep %>% t), `*`)
 
 
-## function to convert the outer product ENSG name to Gene name
-add_gene_name <- function(df) {
-    out <- df %>% as.data.frame %>% mutate(EntrezID = xx.ensembl.to.entrez[df %>% rownames %>% as.character] %>% sapply("[[",1)) %>%
-    mutate(Gene.name = entrez.to.genename[.$EntrezID %>% as.character] %>% sapply("[[",1) %>% as.character,
-           Gene = entrez.to.symbol[.$EntrezID %>% as.character] %>% sapply("[[",1) %>% as.character)
-    return(out)
-}
+    ## function to convert the outer product ENSG name to Gene name
+    add_gene_name <- function(df) {
+        out <- df %>% as.data.frame %>% mutate(EntrezID = xx.ensembl.to.entrez[df %>% rownames %>% as.character] %>% sapply("[[",1)) %>%
+            mutate(Gene.name = entrez.to.genename[.$EntrezID %>% as.character] %>% sapply("[[",1) %>% as.character,
+                   Gene = entrez.to.symbol[.$EntrezID %>% as.character] %>% sapply("[[",1) %>% as.character)
+        return(out)
+    }
 
-PoPS_Score.coefs.manual.outer <- add_gene_name(PoPS_Score.coefs.manual.outer.ENSG)
-PoPS_Score.marginals.manual.outer <- add_gene_name(PoPS_Score.marginals.manual.outer.ENSG)
-PoPS_Score.coefs.all.outer <- add_gene_name(PoPS_Score.coefs.all.outer.ENSG)
-PoPS_Score.marginals.all.outer <- add_gene_name(PoPS_Score.marginals.all.outer.ENSG)
+    PoPS_Score.coefs.manual.outer <- add_gene_name(PoPS_Score.coefs.manual.outer.ENSG)
+    PoPS_Score.marginals.manual.outer <- add_gene_name(PoPS_Score.marginals.manual.outer.ENSG)
+    PoPS_Score.coefs.all.outer <- add_gene_name(PoPS_Score.coefs.all.outer.ENSG)
+    PoPS_Score.marginals.all.outer <- add_gene_name(PoPS_Score.marginals.all.outer.ENSG)
 
-## save the results
-write.table(PoPS_Score.coefs.manual.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/coefs.feature.outer.prod.txt"), quote=F, sep="\t")
-write.table(PoPS_Score.marginals.manual.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/marginals.feature.outer.prod.txt"), quote=F, sep="\t")
-write.table(PoPS_Score.coefs.all.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/coefs.all.feature.outer.prod.txt"), quote=F, sep="\t")
-write.table(PoPS_Score.marginals.all.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/marginals.all.feature.outer.prod.txt"), quote=F, sep="\t")
+    ## save the results
+    write.table(PoPS_Score.coefs.manual.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/coefs.feature.outer.prod.txt"), quote=F, sep="\t")
+    write.table(PoPS_Score.marginals.manual.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/marginals.feature.outer.prod.txt"), quote=F, sep="\t")
+    write.table(PoPS_Score.coefs.all.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/coefs.all.feature.outer.prod.txt"), quote=F, sep="\t")
+    write.table(PoPS_Score.marginals.all.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/marginals.all.feature.outer.prod.txt"), quote=F, sep="\t")
 
 
 
-## find top topic that define PoPS for each gene
-## function for sorting the feature x gene importance value
-sort_feature_x_gene_importance <- function(df) {
-    out <- df %>% mutate(ENSGID=rownames(.)) %>% melt(id.vars = c("Gene.name", "EntrezID", "Gene", "ENSGID"), variable.name="topic", value.name="gene.feature_x_beta") %>% group_by(Gene) %>% arrange(desc(gene.feature_x_beta)) %>% as.data.frame
-    return(out)
-}
+    ## find top topic that define PoPS for each gene
+    ## function for sorting the feature x gene importance value
+    sort_feature_x_gene_importance <- function(df) {
+        out <- df %>% mutate(ENSGID=rownames(.)) %>% melt(id.vars = c("Gene.name", "EntrezID", "Gene", "ENSGID"), variable.name="topic", value.name="gene.feature_x_beta") %>% group_by(Gene) %>% arrange(desc(gene.feature_x_beta)) %>% as.data.frame
+        return(out)
+    }
 
-coefs.defining.top.topic.df <- PoPS_Score.coefs.manual.outer %>% sort_feature_x_gene_importance
-marginals.defining.top.topic.df <- PoPS_Score.marginals.manual.outer %>% sort_feature_x_gene_importance
-all.coefs.defining.top.topic.df <- PoPS_Score.coefs.all.outer %>% sort_feature_x_gene_importance
-all.marginals.defining.top.topic.df <- PoPS_Score.marginals.all.outer %>% sort_feature_x_gene_importance
-save(PoPS_Score.coefs.manual.outer, PoPS_Score.marginals.manual.outer, PoPS_Score.coefs.all.outer, PoPS_Score.marginals.all.outer,
-     coefs.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,
-     file=file.name)
+    coefs.defining.top.topic.df <- PoPS_Score.coefs.manual.outer %>% sort_feature_x_gene_importance
+    marginals.defining.top.topic.df <- PoPS_Score.marginals.manual.outer %>% sort_feature_x_gene_importance
+    all.coefs.defining.top.topic.df <- PoPS_Score.coefs.all.outer %>% sort_feature_x_gene_importance
+    all.marginals.defining.top.topic.df <- PoPS_Score.marginals.all.outer %>% sort_feature_x_gene_importance
+
+    save(marginals.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,
+         file=paste0(OUTDIR, "/", PREFIX, "_marginals.defining.top.topic.RDS"))
+    save(coefs.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,
+         file=paste0(OUTDIR, "/", PREFIX, "_coefs.defining.top.topic.RDS"))
+    save(all.marginals.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,
+         file=paste0(OUTDIR, "/", PREFIX, "_all.marginals.defining.top.topic.RDS"))
+    save(all.coefs.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,
+         file=paste0(OUTDIR, "/", PREFIX, "_all.coefs.defining.top.topic.RDS"))
+
+    save(PoPS_Score.coefs.manual.outer, PoPS_Score.marginals.manual.outer, PoPS_Score.coefs.all.outer, PoPS_Score.marginals.all.outer,
+         coefs.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,
+         file=file.name)
 } else {
     load(file.name)
 }

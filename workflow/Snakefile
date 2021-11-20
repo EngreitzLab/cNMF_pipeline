@@ -33,7 +33,7 @@ rule all:
 		GO_raw_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/acrossK/GO.enrichment.on.raw.score.ranking.threshold0.1.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
 		clustering_plot = expand(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.clustering.k_{k}.dt_{threshold}.png"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
  		
-		##PoPS
+		## PoPS
 		feature_x_gene_importance_score_RDS = expand(os.path.join(config["analysisDir"], 
 			"{folder}/{sample}/K{k}/threshold_{threshold}/pops/{magma_prefix}_cNMF{k}_coefs.marginals.feature.outer.prod.RDS"), folder=config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], magma_prefix=config["magma_prefix"])
 		# motif_plot = expand(os.path.join(config["figDir"], "{{folder}}/{{sample}}/K{{k}}/{{sample}}_K{{k}}_dt_{{threshold}}_zscore{ep_type}.motif.enrichment{test_type_and_threshold}.pdf"), ep_type = ["enhancer", "promoter"], test_type_and_threshold = ["", "_motif.thr.10e-6", ".by.count.ttest", ".by.count.ttest_motif.thr.10e-6", ".by.count.ttest.labelPos", ".by.count.ttest_motif.thr.10e-6.labelPos"])

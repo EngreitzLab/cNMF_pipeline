@@ -13,7 +13,7 @@ conflict_prefer("summarize", "dplyr")
 conflict_prefer("filter", "dplyr")
 conflict_prefer("list", "base")
 conflict_prefer("desc", "dplyr")
-conflict_prefer("select", "dplyr")
+
 
 packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
               "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
@@ -22,6 +22,16 @@ packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", 
               "cluster","textshape","readxl", 
               "ggdist", "gghalves", "Seurat", "writexl") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
 xfun::pkg_attach(packages)
+conflict_prefer("combine", "dplyr")
+conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
+conflict_prefer("melt", "reshape2") 
+conflict_prefer("slice", "dplyr")
+conflict_prefer("summarize", "dplyr")
+conflict_prefer("filter", "dplyr")
+conflict_prefer("list", "base")
+conflict_prefer("desc", "dplyr")
+
+
 
 ## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
@@ -73,6 +83,13 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210810_snakemake_ctrls/analysis/2kG.library.no.DE.gene.with.FDR.less.than.0.1.perturbation/all_genes/"
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210806_curate_ctrl_mtx/outputs/2kG.library.no.DE.gene.with.FDR.less.than.0.1.perturbation.barcodes.tsv"
 ## opt$K.val <- 60
+
+## ## debug scRNAseq_2kG_11AMDox_1
+## opt$sampleName <- "scRNAseq_2kG_11AMDox_1"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/figures/all_genes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/"
+## opt$K.val <- 14
+## opt$topic.model.result.dir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes_acrossK/scRNAseq_2kG_11AMDox_1"
 
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
