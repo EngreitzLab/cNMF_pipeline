@@ -204,13 +204,13 @@ if( !file.exists(file.name) | opt$recompute ) {
     all.coefs.defining.top.topic.df <- PoPS_Score.coefs.all.outer %>% sort_feature_x_gene_importance
     all.marginals.defining.top.topic.df <- PoPS_Score.marginals.all.outer %>% sort_feature_x_gene_importance
 
-    save(marginals.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,
+    save(marginals.defining.top.topic.df,
          file=paste0(OUTDIR, "/", PREFIX, "_marginals.defining.top.topic.RDS"))
-    save(coefs.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,
+    save(coefs.defining.top.topic.df, 
          file=paste0(OUTDIR, "/", PREFIX, "_coefs.defining.top.topic.RDS"))
-    save(all.marginals.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,
+    save(all.marginals.defining.top.topic.df, 
          file=paste0(OUTDIR, "/", PREFIX, "_all.marginals.defining.top.topic.RDS"))
-    save(all.coefs.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,
+    save(all.coefs.defining.top.topic.df, 
          file=paste0(OUTDIR, "/", PREFIX, "_all.coefs.defining.top.topic.RDS"))
 
     save(PoPS_Score.coefs.manual.outer, PoPS_Score.marginals.manual.outer, PoPS_Score.coefs.all.outer, PoPS_Score.marginals.all.outer,
@@ -231,6 +231,13 @@ colnames(PoPS_preds.importance.score)[which(colnames(PoPS_preds.importance.score
 write.table(PoPS_preds.importance.score %>% apply(2, as.character), file=paste0(OUTDIR, "/PoPS_preds.importance.score.all.columns.txt"), sep="\t", quote=F, row.names=F)
 PoPS_preds.importance.score.key <- PoPS_preds.importance.score %>% select(Gene, Gene.name, PoPS_Score_with.cNMF, PoPS_Score_without.cNMF, pathway, Long_Name, gene.feature_x_beta)
 write.table(PoPS_preds.importance.score.key %>% apply(2, as.character), file=paste0(OUTDIR, "/PoPS_preds.importance.score.key.columns.txt"), sep="\t", quote=F, row.names=F)
+
+## cNMF topics only gene.feature_x_beta score
+PoPS_preds.importance.score.cNMF <- merge(preds.combined.df, coefs.defining.top.topic.df.subset %>% select(-Gene.name, -Gene, -EntrezID), by="ENSGID") %>% merge(., metadata, by.x="topic", by.y="X", all.x=T)
+colnames(PoPS_preds.importance.score.cNMF)[which(colnames(PoPS_preds.importance.score.cNMF)=="topic")] <- "pathway"
+write.table(PoPS_preds.importance.score %>% apply(2, as.character), file=paste0(OUTDIR, "/PoPS_preds.importance.score.all.columns.cNMF.Topics.only.txt"), sep="\t", quote=F, row.names=F)
+PoPS_preds.importance.score.cNMF.key <- PoPS_preds.importance.score.cNMF %>% select(Gene, Gene.name, PoPS_Score_with.cNMF, PoPS_Score_without.cNMF, pathway, Long_Name, gene.feature_x_beta)
+write.table(PoPS_preds.importance.score.cNMF.key %>% apply(2, as.character), file=paste0(OUTDIR, "/PoPS_preds.importance.score.key.columns.cNMF.Topics.only.txt"), sep="\t", quote=F, row.names=F)
 
  
 
