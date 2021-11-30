@@ -19,17 +19,24 @@ conflict_prefer("select", "dplyr")
 
 option.list <- list(
     make_option("--feature.dir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/features/pops_features_raw/"),
-    make_option("--output", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211101_normalized_features/outputs/", help="output directory"),
-    make_option("--prefix", type="character", default="CAD_aug6_cNMF60", help="use a format of MAGMA_{with, without}cNMF to specify which features are included")
+    make_option("--output", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211101_normalized_features/outputs/", help="output directory")
 )
 opt <- parse_args(OptionParser(option_list=option.list))
+
+
+## ## for sdev
+## opt$feature.dir <- "/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/211101_20sample_snakemake/pops/features/pops_features_raw"
+## opt$output <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/pops/"
+## opt$prefix <- "CAD_aug6_cNMF30"
+
+
 OUTDIR=opt$output
-PREFIX=opt$prefix
+# PREFIX=opt$prefix
 
 
 
-# ## load cNMF features
-# features <- read.delim("/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/features/pops_features_raw/topic.zscore.ensembl.scaled_k_60.dt_0_2.txt", stringsAsFactors=F)
+## ## load cNMF features
+## features <- read.delim(opt$, stringsAsFactors=F)
 
 ## get files in feature directory
 feature.file.paths <- dir(opt$feature.dir)
@@ -38,10 +45,10 @@ feature.file.paths <- dir(opt$feature.dir)
 num_feature_files = length(feature.file.paths)
 all.features.list <- vector("list", num_feature_files)
 for (feature.raw.index in 1:num_feature_files) {
-    all.features.list[[feature.raw.index]] <- read.delim(feature.file.paths[[feature.raw.index]], stringsAsFactors=F)
+    all.features.list[[feature.raw.index]] <- read.delim(paste0(opt$feature.dir, "/", feature.file.paths[[feature.raw.index]]), stringsAsFactors=F)
 }
 
 all.features <- Reduce(function(x,y) merge(x,y,by="ENSGID"), all.features.list) ## features without cNMF
-all.features.cNMF <- merge(all.features, features, by="ENSGID") ## all features with cNMF
-saveRDS(all.features, file=paste0(OUTDIR, "/full_features_", PREFIX, ".RDS"))
-write.table(all.features, file=paste0(OUTDIR, "/full_features_", PREFIX, ".txt", row.names=F, quote=F, sep="\t")
+## all.features.cNMF <- merge(all.features, features, by="ENSGID") ## all features with cNMF
+saveRDS(all.features, file=paste0(OUTDIR, "/full_external_features.RDS"))
+write.table(all.features, file=paste0(OUTDIR, "/full_external_features.txt", row.names=F, quote=F, sep="\t")

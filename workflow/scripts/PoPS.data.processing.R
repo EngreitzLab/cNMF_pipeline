@@ -21,6 +21,7 @@ conflict_prefer("select", "dplyr")
 option.list <- list(
     make_option("--project", type="character", default = "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/", help="project directory"),
     make_option("--output", type="character", default = "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/", help="output directory"),
+    make_option("--scratch.output", type="character", default="", help="output directory for large files"),
     make_option("--figure", type="character", default = "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/figures/", help="figure directory"),
     make_option("--coefs_with_cNMF", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.coefs", help=""),
     make_option("--marginals_with_cNMF", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.marginals", help=""),
@@ -37,6 +38,7 @@ opt <- parse_args(OptionParser(option_list=option.list))
 
 SAMPLE=opt$prefix
 OUTDIR=opt$output
+SCRATCH.OUTDIR=opt$scratch.output
 FIGDIR=opt$figure
 PREFIX=opt$prefix
 
@@ -116,7 +118,7 @@ write.table(preds.combined.df %>% apply(2, as.character), file=file.name, row.na
 
 
 
-file.name <- paste0(OUTDIR, "/", PREFIX, "_coefs.marginals.feature.outer.prod.RDS")
+file.name <- paste0(SCRATCH.OUTDIR, "/", PREFIX, "_coefs.marginals.feature.outer.prod.RDS")
 if( !file.exists(file.name) | opt$recompute ) {
 
     ## load cNMF features
@@ -204,14 +206,15 @@ if( !file.exists(file.name) | opt$recompute ) {
     all.coefs.defining.top.topic.df <- PoPS_Score.coefs.all.outer %>% sort_feature_x_gene_importance
     all.marginals.defining.top.topic.df <- PoPS_Score.marginals.all.outer %>% sort_feature_x_gene_importance
 
+    ## these are large files, so store them in $GROUP_SCRATCH
     save(marginals.defining.top.topic.df,
-         file=paste0(OUTDIR, "/", PREFIX, "_marginals.defining.top.topic.RDS"))
+         file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_marginals.defining.top.topic.RDS"))
     save(coefs.defining.top.topic.df, 
-         file=paste0(OUTDIR, "/", PREFIX, "_coefs.defining.top.topic.RDS"))
+         file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_coefs.defining.top.topic.RDS"))
     save(all.marginals.defining.top.topic.df, 
-         file=paste0(OUTDIR, "/", PREFIX, "_all.marginals.defining.top.topic.RDS"))
+         file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_all.marginals.defining.top.topic.RDS"))
     save(all.coefs.defining.top.topic.df, 
-         file=paste0(OUTDIR, "/", PREFIX, "_all.coefs.defining.top.topic.RDS"))
+         file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_all.coefs.defining.top.topic.RDS"))
 
     save(PoPS_Score.coefs.manual.outer, PoPS_Score.marginals.manual.outer, PoPS_Score.coefs.all.outer, PoPS_Score.marginals.all.outer,
          coefs.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,

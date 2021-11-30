@@ -913,14 +913,15 @@ checkpoint munge_features_without_cNMF:
 		external_features = config["PoPS_raw_featureDir"],
 		gene_annot_path = config["PoPS_gene_annotation_path"],
 		munged_features_dir = os.path.join(config["scratchDir"], "pops/features/pops_features_munged_{magma_prefix}"),
-		magma_prefix = config["magma_prefix"]
+		magma_prefix = config["magma_prefix"],
+		pipelineDir = config["pipelineDir"]
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
-		mkdir -p $DATADIR/features/pops_features_munged_cNMF; \
-		cp {params.external_features}/* {params.raw_features_dir}/; \
+		mkdir -p {output.munged_features} {params.raw_features_dir}; \
+		cp -r {params.external_features}/* {params.raw_features_dir}/; \
 		cd {params.munged_features_dir}; \
-		python workflow/scripts/pops/munge_feature_directory.py \
+		python {params.pipelineDir}/workflow/scripts/pops/munge_feature_directory.py \
        		--gene_annot_path {params.gene_annot_path} \
        		--feature_dir {params.raw_features_dir} \
        		--save_prefix {wildcards.magma_prefix} \
@@ -940,15 +941,17 @@ checkpoint munge_features_with_cNMF: ## need to test pops in cnmf_env
 		raw_features_dir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/features/pops_features_raw"),
 		external_features = config["PoPS_raw_featureDir"],
 		gene_annot_path = config["PoPS_gene_annotation_path"],
-		munged_features_dir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/features/pops_features_munged_{magma_prefix}_cNMF")
+		munged_features_dir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/features/pops_features_munged_{magma_prefix}_cNMF"),
+		pipelineDir = config["pipelineDir"]
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
-		mkdir -p $DATADIR/features/pops_features_munged_cNMF; \
-		cp {params.external_features}/* {params.raw_features_dir}/; \
+		rm {params.raw_features_dir}; \
+		mkdir -p {output.munged_features} {params.raw_features_dir}; \
+ 		cp -r {params.external_features}/* {params.raw_features_dir}/; \
 		cp {input.cNMF_ENSG_topic_zscore_scaled} {params.raw_features_dir}/; \
 		cd {params.munged_features_dir}; \
-		python workflow/scripts/pops/munge_feature_directory.py \
+		python {params.pipelineDir}/workflow/scripts/pops/munge_feature_directory.py \
        		--gene_annot_path {params.gene_annot_path} \
        		--feature_dir {params.raw_features_dir} \
        		--save_prefix {wildcards.magma_prefix}_cNMF{wildcards.k} \
@@ -986,20 +989,20 @@ rule run_PoPS_with_cNMF: ## num_feature_chunks: needs specification
 		mem_gb = "32",
 		gene_annot_path = config["PoPS_gene_annotation_path"],
 		munged_features_dir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/features/pops_features_munged_{magma_prefix}_cNMF"),
+		magma_dir = config["magma_dir"],
 		PoPS_control_features = config["PoPS_control_features"],
 		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops"),
 		num_munged_feature_chunks = get_pops_feature_chunk_number_with_cNMF
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
-		cd {params.munged_features_dir} \
 		python workflow/scripts/pops/pops.py \
 			--gene_annot_path {params.gene_annot_path} \
-			--feature_mat_prefix {params.munged_features_dir}/{wildcards.prefix} \
+			--feature_mat_prefix {params.munged_features_dir}/{wildcards.magma_prefix} \
 			--num_feature_chunks {params.num_munged_feature_chunks} \
 			--control_features_path {params.PoPS_control_features} \
-			--magma_prefix {wildcards.magma_prefix} \
-			--out_prefix {params.outdir}/{wildcards.magma_prefix}_cNMF{k} \
+			--magma_prefix {params.magma_dir}/{wildcards.magma_prefix} \
+			--out_prefix {params.outdir}/{wildcards.magma_prefix}_cNMF{wildcards.k} \
 			--verbose ' "
 
 
@@ -1015,19 +1018,19 @@ rule run_PoPS_without_cNMF: ## num_feature_chunks: needs specification
 		mem_gb = "32",
 		gene_annot_path = config["PoPS_gene_annotation_path"],
 		munged_features_dir = os.path.join(config["scratchDir"], "pops/features/pops_features_munged_{magma_prefix}"),
+		magma_dir = config["magma_dir"],
 		PoPS_control_features = config["PoPS_control_features"],
 		outdir = os.path.join(config["analysisDir"], "pops"),
 		num_munged_feature_chunks = get_pops_feature_chunk_number_without_cNMF
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
-		cd {params.munged_features_dir} \
 		python workflow/scripts/pops/pops.py \
 			--gene_annot_path {params.gene_annot_path} \
-			--feature_mat_prefix {params.munged_features_dir}/{wildcards.prefix} \
+			--feature_mat_prefix {params.munged_features_dir}/{wildcards.magma_prefix} \
 			--num_feature_chunks {params.num_munged_feature_chunks} \
 			--control_features_path {params.PoPS_control_features} \
-			--magma_prefix {wildcards.magma_prefix} \
+			--magma_prefix {params.magma_dir}/{wildcards.magma_prefix} \
 			--out_prefix {params.outdir}/{wildcards.magma_prefix} \
 			--verbose ' "
 
@@ -1038,22 +1041,41 @@ def get_features_txt_stream(wildcards):
 	return glob.glob(os.path.join(raw_features_dir, "*.txt"))
 
 
-rule aggregate_features_txt_to_RDS:
+rule aggregate_features_txt_to_RDS: ## aggregate all external features
 	input:
 		get_features_txt_stream
 	output:
-		all_features_RDS = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/full_features_{prefix}.RDS"),
-		all_features_txt=os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/full_features_{prefix}.txt")
+		all_features_RDS = os.path.join(config["analysisDir"], "pops/features/processed_features/full_external_features.RDS"),
+		all_features_txt=os.path.join(config["analysisDir"], "pops/features/processed_features/full_external_features.txt")
 	params:
 		time = "3:00:00",
 		mem_gb = "128",
-		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/pops"),
+		outdir = os.path.join(config["analysisDir"], "pops/features/processed_features"),
 		raw_features_dir = os.path.join(config["scratchDir"], "pops/features/pops_features_raw")
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
-		Rscript workflow/scripts/PoPS.aggregate_features.R \
+		Rscript workflow/scripts/PoPS_aggregate_features.R \
 		--feature.dir {params.raw_features_dir} \
+		--output {params.outdir}/ ' "
+
+
+rule aggregate_features_txt_to_RDS_with_cNMF:
+	input:
+		all_features_RDS = os.path.join(config["analysisDir"], "pops/features/processed_features/full_external_features.RDS"),
+		cNMF_ENSG_topic_zscore_scaled = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/topic.zscore.ensembl.scaled_k_{k}.dt_{threshold}.txt")
+	output:
+		all_features_with_cNMF_RDS=os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/full_features_{magma_prefix}_cNMF{k}.RDS")
+	params:
+		time = "3:00:00",
+		mem_gb = "128",
+		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops")
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_analysis_R; \
+		Rscript workflow/scripts/PoPS_aggregate_features_with_cNMF.R \
+		--feature.RDS {input.all_features_RDS} \
+		--cNMF.features {input.cNMF_ENSG_topic_zscore_scaled} \
 		--output {params.outdir}/ \
 		--prefix {wildcards.prefix} ' "
 
@@ -1066,19 +1088,21 @@ rule analyze_PoPS_results: ## need RDS file with all features
 		coefs_without_cNMF = os.path.join(config["analysisDir"], "pops/{magma_prefix}.coefs"),
 		marginals_without_cNMF = os.path.join(config["analysisDir"], "pops/{magma_prefix}.marginals"),
 		preds_without_cNMF = os.path.join(config["analysisDir"], "pops/{magma_prefix}.preds"),
-		all_features_RDS=os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/full_features_{magma_prefix}_cNMF{k}.RDS"),
-		all_features_txt=os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/full_features_{magma_prefix}_cNMF{k}.txt")
+		all_features_with_cNMF_RDS=os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/full_features_{magma_prefix}_cNMF{k}.RDS")#,
+		# all_features_txt=os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/full_features_{magma_prefix}_cNMF{k}.txt")
 	output:
 		feature_x_gene_importance_score_RDS = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/{magma_prefix}_cNMF{k}_coefs.marginals.feature.outer.prod.RDS")
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
-		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops")
+		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops"),
+		scratch_outdir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops")
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/PoPS.data.processing.R \
-		--output {params.outdir} \
+		--output {params.outdir}/ \
+		--scratch.output {params.scratch_outdir}/ \
 		--prefix {wildcards.magma_prefix}_cNMF{wildcards.k} \
 		--coefs_with_cNMF {input.coefs_with_cNMF} \
 		--preds_with_cNMF {input.preds_with_cNMF} \
