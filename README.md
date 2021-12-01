@@ -19,6 +19,13 @@
 | fasta_file | fasta file to find sequences based on coordinates |
 | fimo_formatted | ABC enhancer motif matches (if available) | 
 | ABC_enhancers | coordinates for ABC enhancers for the correct cell type |
+| PoPS_raw_featureDir | directory for storing feature txt files (one row per gene in ENSGID) for PoPS input |
+| PoPS_gene_annotation_path | gene annotation file for PoPS pipeline |
+| magma_dir | path to MAGMA results for PoPS pipeline input |
+| magma_prefix | desired magma_prefix for pointing to files in magma_dir |
+| PoPS_control_features | a list of features that serves as controls for the PoPS pipeline |
+| PoPS_features_metadata_path | PoPS external feature's annotation |
+| pipelineDir | the directory to this snakemake pipeline |
 | sampleName | the name of this run |
 
 

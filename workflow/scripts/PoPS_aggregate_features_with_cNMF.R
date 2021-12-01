@@ -46,4 +46,4 @@ all.features <- readRDS(opt$feature.RDS) ## features without cNMF
 ## combine cNMF features and external features
 all.features.cNMF <- merge(all.features, features, by="ENSGID") ## all features with cNMF
 saveRDS(all.features.cNMF, file=paste0(OUTDIR, "/full_features_", PREFIX, ".RDS"))
-write.table(all.features.cNMF, file=paste0(OUTDIR, "/full_features_", PREFIX, ".txt", row.names=F, quote=F, sep="\t")
+write.table(all.features.cNMF, file=paste0(OUTDIR, "/full_features_", PREFIX, ".txt", row.names=F, quote=F, sep="\t"))

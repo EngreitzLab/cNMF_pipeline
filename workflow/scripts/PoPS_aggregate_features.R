@@ -51,4 +51,4 @@ for (feature.raw.index in 1:num_feature_files) {
 all.features <- Reduce(function(x,y) merge(x,y,by="ENSGID"), all.features.list) ## features without cNMF
 ## all.features.cNMF <- merge(all.features, features, by="ENSGID") ## all features with cNMF
 saveRDS(all.features, file=paste0(OUTDIR, "/full_external_features.RDS"))
-write.table(all.features, file=paste0(OUTDIR, "/full_external_features.txt", row.names=F, quote=F, sep="\t")
+write.table(all.features, file=paste0(OUTDIR, "/full_external_features.txt", row.names=F, quote=F, sep="\t"))

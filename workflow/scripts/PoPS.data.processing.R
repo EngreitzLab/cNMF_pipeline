@@ -22,7 +22,6 @@ option.list <- list(
     make_option("--project", type="character", default = "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/", help="project directory"),
     make_option("--output", type="character", default = "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/", help="output directory"),
     make_option("--scratch.output", type="character", default="", help="output directory for large files"),
-    make_option("--figure", type="character", default = "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/figures/", help="figure directory"),
     make_option("--coefs_with_cNMF", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.coefs", help=""),
     make_option("--marginals_with_cNMF", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.marginals", help=""),
     make_option("--preds_with_cNMF", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.preds", help=""),
@@ -39,10 +38,9 @@ opt <- parse_args(OptionParser(option_list=option.list))
 SAMPLE=opt$prefix
 OUTDIR=opt$output
 SCRATCH.OUTDIR=opt$scratch.output
-FIGDIR=opt$figure
 PREFIX=opt$prefix
 
-check.dir <- c(OUTDIR, FIGDIR)
+check.dir <- c(OUTDIR, SCRATCH.OUTDIR)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
 
 
@@ -54,7 +52,7 @@ palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
 
 
 ## load metadata
-meta.data.path <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/metadata/metadata_jul17.txt"
+meta.data.path <- opt$external.features.metadata
 metadata <- read.delim(meta.data.path, stringsAsFactors=F)
 
 
@@ -70,8 +68,6 @@ marginals <- read.table(file=opt$marginals_with_cNMF,header=T, stringsAsFactors=
 coefs <- read.table(file=opt$coefs_with_cNMF,header=T, stringsAsFactors=F, sep="\t")
 coefs.df <- coefs[4:nrow(coefs),] %>% arrange(desc(beta))
 coefs.df$beta <- coefs.df$beta %>% as.numeric
-
-
 
 
 ## map ids
@@ -106,7 +102,7 @@ add_gene_name_to_df <- function(df) {
 preds.df <- preds %>% mutate(EntrezID = xx.ensembl.to.entrez[preds$ENSGID %>% as.character] %>% sapply("[[",1)) %>%
     mutate(Gene.name = entrez.to.genename[.$EntrezID %>% as.character] %>% sapply("[[",1) %>% as.character,
            Gene = entrez.to.symbol[.$EntrezID %>% as.character] %>% sapply("[[",1) %>% as.character)
-file.name <- paste0(OUTDIR, "/", SAMPLE, ".combined.preds")
+file.name <- paste0(OUTDIR, "/", PREFIX, ".combined.preds")
 if( !file.exists(file.name) | opt$recompute ) {
 preds.combined.df <- preds.combined %>% mutate(EntrezID = xx.ensembl.to.entrez[preds.combined$ENSGID %>% as.character] %>% sapply("[[",1)) %>%
     mutate(Gene.name = entrez.to.genename[.$EntrezID %>% as.character] %>% sapply("[[",1) %>% as.character,
@@ -207,13 +203,13 @@ if( !file.exists(file.name) | opt$recompute ) {
     all.marginals.defining.top.topic.df <- PoPS_Score.marginals.all.outer %>% sort_feature_x_gene_importance
 
     ## these are large files, so store them in $GROUP_SCRATCH
-    save(marginals.defining.top.topic.df,
+    saveRDS(marginals.defining.top.topic.df,
          file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_marginals.defining.top.topic.RDS"))
-    save(coefs.defining.top.topic.df, 
+    saveRDS(coefs.defining.top.topic.df, 
          file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_coefs.defining.top.topic.RDS"))
-    save(all.marginals.defining.top.topic.df, 
+    saveRDS(all.marginals.defining.top.topic.df, 
          file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_all.marginals.defining.top.topic.RDS"))
-    save(all.coefs.defining.top.topic.df, 
+    saveRDS(all.coefs.defining.top.topic.df, 
          file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_all.coefs.defining.top.topic.RDS"))
 
     save(PoPS_Score.coefs.manual.outer, PoPS_Score.marginals.manual.outer, PoPS_Score.coefs.all.outer, PoPS_Score.marginals.all.outer,
