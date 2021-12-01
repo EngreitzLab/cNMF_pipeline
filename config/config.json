@@ -3,8 +3,9 @@
 		"seed": 14,
 		"num_runs": 100,
 		"run_per_worker": 10,
-   		"k": [5, 8, 10, 14, 20, 30, 60],
+   		"k": [5],
 		"thresholds": ["0.2"],
+		"outDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/outputs",
 		"analysisDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis",
 		"figDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/figures",
 		"dataDir": "NOTE: need to put {sample}.SeuratObject.RDS file in analysisDir/data/ in order to skip 'create_Seurat_Object' rule",
@@ -14,5 +15,12 @@
 		"fasta_file": "/oak/stanford/groups/engreitz/Data/hg19/Sequence/hg19.fa",
 		"fimo_formatted": "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv",
 		"ABC_enhancers": "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/data/ABC/TeloHAEC_Ctrl_Predictions.AvgHiC.ABC0.015.minus150.txt",
+		"PoPS_raw_featureDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/data/pops_features_raw",
+		"PoPS_gene_annotation_path": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/utils/gene_annot_jun10.txt",
+		"magma_dir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/magma",
+		"magma_prefix": "CAD_aug6",
+		"PoPS_control_features": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/utils/features_jul17_control.txt",
+		"PoPS_features_metadata_path": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/metadata/metadata_jul17.txt",
+		"pipelineDir": "/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/",
 		"sampleName": "FT005_007_010_fresh_3min"
 }
