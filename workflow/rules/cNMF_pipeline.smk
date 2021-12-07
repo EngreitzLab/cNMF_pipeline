@@ -150,7 +150,7 @@ def get_cNMF_memory(wildcards):
 		return "32"
 
 def get_cNMF_time(wildcards):
-	if int(wildcards.k) > 60 and wildcards.folder == "all_genes":
+	if int(wildcards.k) > 100 and wildcards.folder == "all_genes":
 		return "168:00:00"
 	elif int(wildcards.k) > 25:
 		return "48:00:00"
@@ -165,7 +165,7 @@ def get_cNMF_memory_slurm(wildcards):
 
 def get_cNMF_partition_slurm(wildcards):
 	if ("all_genes" in wildcards.folder) and (int(wildcards.k) > 100):
-		return "engreitz"
+		return "normal,engreitz"
 	else:
 		return "owners,normal"
 
