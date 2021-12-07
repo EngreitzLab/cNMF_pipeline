@@ -29,6 +29,7 @@ option.list <- list(
     make_option("--marginals_without_cNMF", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6.marginals", help=""),
     make_option("--preds_without_cNMF", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6.preds", help=""),
     make_option("--prefix", type="character", default="CAD_aug6_cNMF60", help="magma file name (before genes.raw)"),
+    make_option("--external.features.metadata", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/metadata/metadata_jul17.txt", help="annotations for each external features"),
     make_option("--cNMF.features", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/features/pops_features_raw/topic.zscore.ensembl.scaled_k_60.dt_0_2.txt", help="normalized cNMF weights, unit variance and zero mean"),
     make_option("--all.features", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211101_normalized_features/outputs/full_features_with_cNMF.RDS", help=".RDS file with all features input into PoPS"),
     make_option("--recompute", type="logical", default=F, help="T for rerunning the entire script, F for only outputting the missing data")
@@ -52,11 +53,19 @@ palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
 
 
 ## load metadata
+print("loading metadata")
 meta.data.path <- opt$external.features.metadata
+print(meta.data.path)
 metadata <- read.delim(meta.data.path, stringsAsFactors=F)
 
 
+## load all features
+print(paste0("loading all features from ", opt$all.features))
+all.features.cNMF <- readRDS(opt$all.features)
+
+
 ## load data
+print("loading PoPS results")
 preds <- read.table(file=opt$preds_with_cNMF,header=T, stringsAsFactors=F, sep="\t")
 colnames(preds) <- paste0(colnames(preds), "_with.cNMF")
 colnames(preds)[1] <- "ENSGID"
@@ -115,15 +124,11 @@ write.table(preds.combined.df %>% apply(2, as.character), file=file.name, row.na
 
 
 file.name <- paste0(SCRATCH.OUTDIR, "/", PREFIX, "_coefs.marginals.feature.outer.prod.RDS")
-if( !file.exists(file.name) | opt$recompute ) {
+## if( !file.exists(file.name) | opt$recompute ) {
 
     ## load cNMF features
     ## features <- read.delim("/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/features/pops_features_raw/topic.zscore.ensembl.scaled_k_60.dt_0_2.txt", stringsAsFactors=F)
     features <- read.delim(opt$cNMF.features, stringsAsFactors=F)
-
-    ## load all features
-    all.features.cNMF <- readRDS(opt$all.features)
-
 
     ## sort features and subset coefs, take a product ((gene x features) x (features x beta scalar))
     coefs.cnmf <- coefs %>% subset(grepl("zscore", parameter))
@@ -183,10 +188,10 @@ if( !file.exists(file.name) | opt$recompute ) {
     PoPS_Score.marginals.all.outer <- add_gene_name(PoPS_Score.marginals.all.outer.ENSG)
 
     ## save the results
-    write.table(PoPS_Score.coefs.manual.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/coefs.feature.outer.prod.txt"), quote=F, sep="\t")
-    write.table(PoPS_Score.marginals.manual.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/marginals.feature.outer.prod.txt"), quote=F, sep="\t")
-    write.table(PoPS_Score.coefs.all.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/coefs.all.feature.outer.prod.txt"), quote=F, sep="\t")
-    write.table(PoPS_Score.marginals.all.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/marginals.all.feature.outer.prod.txt"), quote=F, sep="\t")
+    write.table(PoPS_Score.coefs.manual.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/", PREFIX, "_coefs.feature.outer.prod.txt"), quote=F, sep="\t")
+    write.table(PoPS_Score.marginals.manual.outer %>% apply(2, as.character), file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_marginals.feature.outer.prod.txt"), quote=F, sep="\t")
+    write.table(PoPS_Score.coefs.all.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/", PREFIX, "_coefs.all.feature.outer.prod.txt"), quote=F, sep="\t")
+    write.table(PoPS_Score.marginals.all.outer %>% apply(2, as.character), file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_marginals.all.feature.outer.prod.txt"), quote=F, sep="\t")
 
 
 
@@ -215,9 +220,9 @@ if( !file.exists(file.name) | opt$recompute ) {
     save(PoPS_Score.coefs.manual.outer, PoPS_Score.marginals.manual.outer, PoPS_Score.coefs.all.outer, PoPS_Score.marginals.all.outer,
          coefs.defining.top.topic.df, marginals.defining.top.topic.df, all.coefs.defining.top.topic.df, all.marginals.defining.top.topic.df,
          file=file.name)
-} else {
-    load(file.name)
-}
+## } else {
+##     load(file.name)
+## }
 
 
 ## output a table, one row per gene, with columns for gene symbol, PoPS score without cNMF, PoPS score with cNMF, top features from any source important for that gene, top topic features important for that gene
@@ -227,14 +232,14 @@ all.coefs.defining.top.topic.df.subset <- all.coefs.defining.top.topic.df %>% su
 
 PoPS_preds.importance.score <- merge(preds.combined.df, all.coefs.defining.top.topic.df.subset %>% select(-Gene.name, -Gene, -EntrezID), by="ENSGID") %>% merge(., metadata, by.x="topic", by.y="X", all.x=T)
 colnames(PoPS_preds.importance.score)[which(colnames(PoPS_preds.importance.score)=="topic")] <- "pathway"
-write.table(PoPS_preds.importance.score %>% apply(2, as.character), file=paste0(OUTDIR, "/PoPS_preds.importance.score.all.columns.txt"), sep="\t", quote=F, row.names=F)
+write.table(PoPS_preds.importance.score %>% apply(2, as.character), file=paste0(OUTDIR, "/", PREFIX, "_PoPS_preds.importance.score.all.columns.txt"), sep="\t", quote=F, row.names=F)
 PoPS_preds.importance.score.key <- PoPS_preds.importance.score %>% select(Gene, Gene.name, PoPS_Score_with.cNMF, PoPS_Score_without.cNMF, pathway, Long_Name, gene.feature_x_beta)
-write.table(PoPS_preds.importance.score.key %>% apply(2, as.character), file=paste0(OUTDIR, "/PoPS_preds.importance.score.key.columns.txt"), sep="\t", quote=F, row.names=F)
+write.table(PoPS_preds.importance.score.key %>% apply(2, as.character), file=paste0(OUTDIR, "/", PREFIX, "_PoPS_preds.importance.score.key.columns.txt"), sep="\t", quote=F, row.names=F)
 
 ## cNMF topics only gene.feature_x_beta score
 PoPS_preds.importance.score.cNMF <- merge(preds.combined.df, coefs.defining.top.topic.df.subset %>% select(-Gene.name, -Gene, -EntrezID), by="ENSGID") %>% merge(., metadata, by.x="topic", by.y="X", all.x=T)
 colnames(PoPS_preds.importance.score.cNMF)[which(colnames(PoPS_preds.importance.score.cNMF)=="topic")] <- "pathway"
-write.table(PoPS_preds.importance.score %>% apply(2, as.character), file=paste0(OUTDIR, "/PoPS_preds.importance.score.all.columns.cNMF.Topics.only.txt"), sep="\t", quote=F, row.names=F)
+write.table(PoPS_preds.importance.score %>% apply(2, as.character), file=paste0(OUTDIR, "/", PREFIX, "_PoPS_preds.importance.score.all.columns.cNMF.Topics.only.txt"), sep="\t", quote=F, row.names=F)
 PoPS_preds.importance.score.cNMF.key <- PoPS_preds.importance.score.cNMF %>% select(Gene, Gene.name, PoPS_Score_with.cNMF, PoPS_Score_without.cNMF, pathway, Long_Name, gene.feature_x_beta)
 write.table(PoPS_preds.importance.score.cNMF.key %>% apply(2, as.character), file=paste0(OUTDIR, "/PoPS_preds.importance.score.key.columns.cNMF.Topics.only.txt"), sep="\t", quote=F, row.names=F)
 

@@ -20,9 +20,11 @@ conflict_prefer("select", "dplyr")
 
 option.list <- list(
     make_option("--project", type="character", default = "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211130_test_PoPS.plots/", help="project directory"),
+    make_option("--sampleName", type="character", default="2kG.library", help="project name"),
     make_option("--output", type="character", default = "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211130_test_PoPS.plots/outputs/", help="output directory"),
     make_option("--figure", type="character", default = "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211130_test_PoPS.plots/figures/", help="figure directory"),
     make_option("--scratch.output", type="character", default="", help="output directory for large files"),
+    make_option("--k.val", type="numeric", default=60, help="the value of K in this run"),
     make_option("--PoPS_outdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/", help="PoPS output directory"),
     make_option("--coefs_with_cNMF", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.coefs", help=""),
     make_option("--marginals_with_cNMF", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.marginals", help=""),
@@ -31,20 +33,46 @@ option.list <- list(
     make_option("--marginals_without_cNMF", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6.marginals", help=""),
     make_option("--preds_without_cNMF", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6.preds", help=""),
     make_option("--prefix", type="character", default="CAD_aug6_cNMF60", help="magma file name (before genes.raw)"),
+    make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
     make_option("--cNMF.features", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/features/pops_features_raw/topic.zscore.ensembl.scaled_k_60.dt_0_2.txt", help="normalized cNMF weights, unit variance and zero mean"),
     make_option("--all.features", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211101_normalized_features/outputs/full_features_with_cNMF.RDS", help=".RDS file with all features input into PoPS"),
     make_option("--external.features.metadata", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/metadata/metadata_jul17.txt", help="annotations for each external features"),
     make_option("--combined.preds", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.combined.preds", help="preds file with results from no_cNMF run and with_cNMF run"),
     make_option("--coefs.defining.top.topic.RDS", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60_coefs.defining.top.topic.RDS", help=""),
-    make_option("--preds.importance.score.key.columns", type="character", defualt="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60_preds.importance.score.key.columns.txt", help="")
+    make_option("--preds.importance.score.key.columns", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60_preds.importance.score.key.columns.txt", help="")
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
 
+## debug PoPS.plots.R using scRNAseq_11AMDox_1 sample
+opt$sampleName <- "scRNAseq_2kG_11AMDox_1"
+opt$output <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/K5/threshold_0_2/pops/"
+opt$figure <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/figures/all_genes/scRNAseq_2kG_11AMDox_1/K5/"
+opt$scratch.output <- "/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/211101_20sample_snakemake/all_genes/scRNAseq_2kG_11AMDox_1/K5/threshold_0_2/pops/"
+opt$prefix <- "CAD_aug6_cNMF5"
+opt$k.val <- 5
+opt$coefs_with_cNMF <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/K5/threshold_0_2/pops/CAD_aug6_cNMF5.coefs"
+opt$preds_with_cNMF <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/K5/threshold_0_2/pops/CAD_aug6_cNMF5.preds"
+opt$marginals_with_cNMF <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/K5/threshold_0_2/pops/CAD_aug6_cNMF5.marginals"
+opt$coefs_without_cNMF <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/pops/CAD_aug6.coefs"
+opt$preds_without_cNMF <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/pops/CAD_aug6.preds"
+opt$marginals_without_cNMF <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/K5/threshold_0_2/pops/CAD_aug6_cNMF5.marginals"
+opt$cNMF.features <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/K5/threshold_0_2/topic.zscore.ensembl.scaled_k_5.dt_0_2.txt"
+opt$all.features <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/K5/threshold_0_2/pops/full_features_CAD_aug6_cNMF5.RDS"
+opt$external.features.metadata <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/metadata/metadata_jul17.txt"
+opt$combined.preds <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/K5/threshold_0_2/pops/CAD_aug6_cNMF5.combined.preds"
+opt$coefs.defining.top.topic.RDS <- "/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/211101_20sample_snakemake/all_genes/scRNAseq_2kG_11AMDox_1/K5/threshold_0_2/pops/CAD_aug6_cNMF5_coefs.defining.top.topic.RDS"
+opt$preds.importance.score.key.columns <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/K5/threshold_0_2/pops/CAD_aug6_cNMF5_PoPS_preds.importance.score.key.columns.txt"
+
+
+SAMPLE=opt$sampleName
 OUTDIR=opt$output
 SCRATCH.OUTDIR=opt$scratch.output
 FIGDIR=opt$figure
 PREFIX=opt$prefix
+DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
+DENSITY.THRESHOLD.FILENAME =paste0("dt_", DENSITY.THRESHOLD)
+k <- opt$k.val
 
 check.dir <- c(OUTDIR, FIGDIR)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
@@ -68,9 +96,9 @@ preds.before <- read.table(file=paste0(opt$preds_without_cNMF), header=T, string
 colnames(preds.before) <- paste0(colnames(preds.before), "_without.cNMF")
 colnames(preds.before)[1] <- "ENSGID"
 preds.combined <- merge(preds, preds.before, by="ENSGID")
-marginals <- read.table(file=opt$marginals_with_cNMF,header=T, stringsAsFactors=F, sep="\t")
+marginals <- read.table(file=opt$marginals_with_cNMF,header=T, stringsAsFactors=F, sep="\t") %>% merge(metadata, by="X")
 coefs <- read.table(file=opt$coefs_with_cNMF,header=T, stringsAsFactors=F, sep="\t")
-coefs.df <- coefs[4:nrow(coefs),] %>% arrange(desc(beta))
+coefs.df <- coefs[4:nrow(coefs),] %>% merge(metadata, by.x="parameter", by.y="X") %>% arrange(desc(beta)) 
 coefs.df$beta <- coefs.df$beta %>% as.numeric
 
 
@@ -105,7 +133,7 @@ preds.combined.df <- read.delim(file=opt$combined.preds, stringsAsFactors=F)
 features <- read.delim(opt$cNMF.features, stringsAsFactors=F)
 
 ## load all features
-all.features <- loadRDS(opt$all.features)
+all.features <- readRDS(opt$all.features)
 features <- read.delim(opt$cNMF.features, stringsAsFactors=F)
 
 # ## load gene x feature importance score
@@ -123,7 +151,7 @@ PoPS_preds.importance.score.key <- read.delim(file=opt$preds.importance.score.ke
 
 ## plot the list of topics and their PoPS component scores for gene of interest
 gene.set <- c("GOSR2", "TLNRD1", "EDN1", "NOS3", "KLF2", "ERG", "CCM2", "KRIT")
-pdf(paste0(FIGDIR, "/", PREFIX, "_feature_x_gene.component.importance.score.coefs.pdf"), width=4, height=6)
+pdf(paste0(FIGDIR, "/", PREFIX, "_", DENSITY.THRESHOLD.FILENAME, "_feature_x_gene.component.importance.score.coefs.pdf"), width=4, height=6)
 for (gene.here in gene.set) {
     toPlot <- coefs.defining.top.topic.df %>% subset(grepl(paste0("^",gene.here,"$"), Gene)) %>% select(topic, gene.feature_x_beta)
     p <- toPlot %>% ggplot(aes(x=reorder(topic, gene.feature_x_beta), y=gene.feature_x_beta)) + geom_col(fill="#38b4f7") + theme_minimal() +
@@ -137,34 +165,42 @@ for (gene.here in gene.set) {
 dev.off()
 
  
-pdf(paste0(FIGDIR, "/", PREFIX, "_Topic.coef.beta.pdf"), width=4, height=6) ## double check figures
+pdf(paste0(FIGDIR, "/", PREFIX, "_", DENSITY.THRESHOLD.FILENAME, "_Topic.coef.beta.pdf"), width=4, height=6) ## double check figures
 toPlot <- coefs.df %>% subset(grepl("zscore",parameter)) %>% arrange(desc(beta))
 p <- toPlot %>% ggplot(aes(x=reorder(parameter, beta), y=beta)) + geom_col(fill="#38b4f7") + theme_minimal() +
     coord_flip() + xlab("Features (topic)") + ylab("Beta Score") + ggtitle(paste0("K = ", k, " Topics")) + mytheme
 print(p)
+dev.off()
 pdf(paste0(FIGDIR, "/all.coef.beta.pdf"))
 toPlot <- coefs.df %>% arrange(desc(beta)) %>% slice(1:15)
 p <- toPlot %>% ggplot(aes(x=reorder(Long_Name, beta), y=beta)) + geom_col(fill="#38b4f7") + theme_minimal() +
     coord_flip() + xlab("Features") + ylab("Beta Score") + ggtitle(paste0("K = ", k, " Topics")) + mytheme
 print(p)
 dev.off()
- 
+pdf(paste0(FIGDIR, "/all.marginals.beta.pdf"))
+toPlot <- marginals %>% arrange(desc(beta)) %>% slice(1:15)
+p <- toPlot %>% ggplot(aes(x=reorder(Long_Name, beta), y=beta)) + geom_col(fill="#38b4f7") + theme_minimal() +
+    coord_flip() + xlab("Features") + ylab("Beta Score") + ggtitle(paste0("K = ", k, " Topics, Ranked by marginals beta score")) + mytheme
+print(p)
+dev.off()
+
+
 
 ## figure
-pdf(paste0(FIGDIR, "/", PREFIX, "_PoPS_score_list.pdf"), width=4, height=6)
+pdf(paste0(FIGDIR, "/", PREFIX, "_", DENSITY.THRESHOLD.FILENAME, "_PoPS_score_list.pdf"), width=4, height=6)
 top.PoPS.genes <- preds.df %>% slice(1:20)
 toPlot <- data.frame(Gene= top.PoPS.genes %>% pull(Gene),
-                     Score=top.PoPS.genes %>% pull(PoPS_Score_after))
+                     Score=top.PoPS.genes %>% pull(PoPS_Score_with.cNMF))
 p <- toPlot %>% ggplot(aes(x=reorder(Gene, Score), y=Score) ) + geom_col(fill="#38b4f7") + theme_minimal()
-p <- p + coord_flip() + xlab("Top 50 Genes") + ylab("PoPS Score") + ggtitle(paste0(SAMPLE)) + mytheme
+p <- p + coord_flip() + xlab("Top 50 Genes") + ylab("PoPS Score") + ggtitle(paste0(SAMPLE, ", ", PREFIX)) + mytheme
 print(p)
 dev.off()
 
 
 ## PoPS before vs after score
-pdf(paste0(FIGDIR, "/", PREFIX, "_before.vs.after.cNMF.pdf"))
-labels <- preds.combined.df %>% subset(PoPS_Score_after > 2 * PoPS_Score_before & PoPS_Score_after > 1)
-p <- preds.combined.df %>% ggplot(aes(x=PoPS_Score_before, y=PoPS_Score_after)) + geom_point(size=0.5) + mytheme + 
+pdf(paste0(FIGDIR, "/", PREFIX, "_", DENSITY.THRESHOLD.FILENAME, "_before.vs.after.cNMF.pdf"))
+labels <- preds.combined.df %>% subset((PoPS_Score_with.cNMF > (2 * PoPS_Score_without.cNMF)) & PoPS_Score_with.cNMF > 1)
+p <- preds.combined.df %>% ggplot(aes(x=PoPS_Score_without.cNMF, y=PoPS_Score_with.cNMF)) + geom_point(size=0.5) + mytheme + 
 xlab("PoPS Score (without cNMF features)") + ylab("PoPS Score(with cNMF features)") + geom_abline(slope=1, color="red") + geom_text_repel(data=labels, box.padding = 0.5,
                                                                                                      max.overlaps=30,
                                                                                                      aes(label=Gene), size=4,
