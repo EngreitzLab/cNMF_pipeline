@@ -146,12 +146,14 @@ rule prepare_geneSet_cNMF:
 def get_cNMF_memory(wildcards):
 	if "VariableGenes" in wildcards.folder:
 		return "16"
+	elif int(wildcards.k) > 100:
+		return "64"
 	else:
 		return "32"
 
 def get_cNMF_time(wildcards):
 	if int(wildcards.k) > 100 and wildcards.folder == "all_genes":
-		return "168:00:00"
+		return "48:00:00" ## temporarily changed to 48 to accommodate for owners partition
 	elif int(wildcards.k) > 25:
 		return "48:00:00"
 	else:
@@ -160,6 +162,8 @@ def get_cNMF_time(wildcards):
 def get_cNMF_memory_slurm(wildcards):
 	if "VariableGenes" in wildcards.folder:
 		return 16000
+	elif int(wildcards.k) > 100:	
+		return 64000
 	else:
 		return 32000
 
@@ -191,10 +195,10 @@ rule run_cNMF: # we don't know which worker will be working on which run, and sn
 		total_workers = config["total_workers"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["scratchDir"],"{folder}/K{k}/worker{workerIndex}/")
-	# resources: 
-	# 	mem_mb=get_cNMF_memory_slurm,
-	# 	time = get_cNMF_time,
-	# 	partition = get_cNMF_partition_slurm
+	resources: 
+		mem_mb=get_cNMF_memory_slurm,
+		time = get_cNMF_time,
+		partition = get_cNMF_partition_slurm
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -692,7 +696,8 @@ rule topic_plot:
 		topic_zscore_top50 = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top50GeneInTopics.zscore.pdf"),
 		topic_raw_score_top50 = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top50GeneInTopics.rawWeight.pdf"),
 		topic_raw_score_top10 = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top10GeneInTopics.rawWeight.pdf"),
-		topic_zcore_top10 = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top10GeneInTopics.zscore.pdf")
+		topic_zcore_top10 = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top10GeneInTopics.zscore.pdf"),
+		topic_zscore_correlation = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_topic.Pearson.correlation.pdf")
 	params:
 		time = "3:00:00",
 		mem_gb = "64",

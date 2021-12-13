@@ -13,7 +13,7 @@
 #               "ggdist", "patchwork", "gghalves", "Seurat", "writexl")
 # library(textshape)
 # library(readxl)
-packages <- c("optparse","dplyr", "ggplot2", "reshape2", "ggrepel", "conflicted")
+packages <- c("optparse","dplyr", "ggplot2", "reshape2", "ggrepel", "conflicted", "gplots")
 ## library(Seurat)
 xfun::pkg_attach(packages)
 conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
@@ -189,3 +189,32 @@ for ( t in 1:dim(theta)[2] ) {
 }
 dev.off()
 
+
+##########################################################################
+## topic Pearson correlation heatmap
+d <- cor(theta.zscore, method="pearson")
+m <- as.matrix(d)
+
+## Function for plotting heatmap  # new version (adjusted font size)
+plotHeatmap <- function(mtx, labCol, title, margins=c(12,6), ...) { #original
+  heatmap.2(
+    mtx %>% t(), 
+    Rowv=T, 
+    Colv=T,
+    trace='none',
+    key=T,
+    col=palette,
+    labCol=labCol,
+    margins=margins, 
+    cex.main=0.8, 
+    cexCol=4.8/sqrt(ncol(mtx)), cexRow=4.8/sqrt(ncol(mtx)), #4.8/sqrt(nrow(mtx))
+    ## cexCol=1/(ncol(mtx)^(1/3)), cexRow=1/(ncol(mtx)^(1/3)), #4.8/sqrt(nrow(mtx))
+    main=title,
+    ...
+  )
+}
+
+pdf(file=paste0(FIGDIRTOP, "topic.Pearson.correlation.pdf"))
+plotHeatmap(m, labCol=rownames(m), margins=c(3,3), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
+dev.off()
+ 

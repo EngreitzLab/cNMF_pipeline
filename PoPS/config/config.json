@@ -1,0 +1,15 @@
+{
+   		"outDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ptb_expr_PoPS/outputs",
+		"analysisDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ptb_expr_PoPS/analysis",
+		"figDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ptb_expr_PoPS/figures",
+		"dataDir": "NOTE: need to put {sample}.SeuratObject.RDS file in analysisDir/data/ in order to skip 'create_Seurat_Object' rule",
+		"scratchDir": "/scratch/groups/engreitz/Users/kangh/PoPS/211206_ptb_expr_PoPS",
+		"PoPS_raw_featureDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ptb_expr_PoPS/data/pops_features_raw",
+		"PoPS_gene_annotation_path": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/utils/gene_annot_jun10.txt",
+		"magma_dir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/magma",
+		"magma_prefix": "CAD_aug6",
+		"PoPS_control_features": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/utils/features_jul17_control.txt",
+		"PoPS_features_metadata_path": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/metadata/metadata_jul17.txt",
+		"pipelineDir": "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/util/PoPS",
+		"sampleName": "2kG.library.K60"
+}
