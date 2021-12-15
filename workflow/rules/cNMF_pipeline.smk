@@ -550,7 +550,8 @@ rule get_concensus_factors_plot:
 	params:
 		time = get_concensus_factors_time,
 		mem_gb = "128", # 96 for top 3000 genes
-		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK")
+		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK"),
+		figdir = os.path.join(config["figDir"])
 	run:
 		threshold_here = wildcards.threshold.replace("_",".")
 		shell("bash -c ' source $HOME/.bashrc; \
@@ -560,7 +561,8 @@ rule get_concensus_factors_plot:
 		--name {wildcards.sample} \
 		--components {wildcards.k} \
 		--local-density-threshold {threshold_here} \
-		--show-clustering ' ")
+		--show-clustering; \
+		cp {params.outdir}/{wildcards.sample}.clustering.k_{k}.dt_{wildcards.threshold}.png {params.figdir}/{folder}/{sample}/K{k}/ ' ")
 
 
 def get_cNMF_filter_threshold_double(wildcards):

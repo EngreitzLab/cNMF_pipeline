@@ -51,6 +51,12 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$sampleName <- "scRNAseq_2kG_11AMDox_1"
 ## opt$aggregated.data <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211101_20sample_snakemake/analysis/all_genes/scRNAseq_2kG_11AMDox_1/acrossK/aggregated.outputs.findK.RData"
 
+## for testing findK_plots for control only cells
+opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ctrl_only_snakemake/figures/all_genes/2kG.library.ctrl.only/acrossK/"
+opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ctrl_only_snakemake/analysis/all_genes/2kG.library.ctrl.only/acrossK/"
+opt$sampleName <- "2kG.library.ctrl.only"
+opt$aggregated.data <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ctrl_only_snakemake/analysis/all_genes/2kG.library.ctrl.only/acrossK/aggregated.outputs.findK.RData"
+
 
 ## Directories and Constants
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
@@ -98,7 +104,7 @@ load(opt$aggregated.data) ## all.fdr.df, all.test.df, enhancer.fisher.df, count.
 
 
 ## plot number of GO enrichment on raw score ranking per K
-par(mar = c(4, 4, .1, .1))
+## par(mar = c(4, 4, .1, .1))
 threshold = opt$p.adj.threshold
 pdf(file=paste0(FIGDIR, "/GO.enrichment.on.raw.score.ranking.threshold", as.character(threshold), ".pdf"))
 fgsea.summary.df <- fgsea.results.df %>% subset(padj.over.topics < threshold & type == "raw.score") %>% group_by(database,K) %>% summarize(total.per.K.count = n()) %>% mutate(average.topic.count.per.K = total.per.K.count / K)
@@ -133,8 +139,9 @@ print(p)
 dev.off()
 
 
-pdf(file=paste0(FIGDIR, "/GO.enrichment.on.z-score.ranking.threshold", as.character(threshold), ".pdf"))
+pdf(file=paste0(FIGDIR, "/Gene.set.enrichment.on.z-score.ranking.threshold", as.character(threshold), ".pdf"))
 fgsea.summary.df <- fgsea.results.df %>% subset(padj < threshold & type == "z.score") %>% group_by(database,K) %>% summarize(total.per.K.count = n()) %>% mutate(average.topic.count.per.K = total.per.K.count / K)
+fgsea.summary.unique.df <- fgsea.results.df %>% subset(padj < threshold & type == "z.score") %>% select(database,K,pathway) %>% unique %>% group_by(database,K) %>% summarize(total.per.K.count = n()) %>% mutate(average.topic.count.per.K = total.per.K.count / K)
 K <- fgsea.summary.df %>% pull(K) %>% unique() # K for x tick labels
 # GO only plot for sum for sum of significant pathways
 p <- fgsea.summary.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = total.per.K.count)) + geom_line() + geom_point() +
@@ -146,6 +153,20 @@ print(p)
 # GO only plot for average number of significant pathways per topic
 p <- fgsea.summary.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = average.topic.count.per.K)) + geom_line() + geom_point() +
   xlab("K") + ylab(paste0("Average Number of GO Pathways Per Topic \nUnder p.adj of ", threshold)) + mytheme +
+  scale_x_continuous("K", labels = as.character(K), breaks = K) +
+  ggtitle("FGSEA on z-score of each gene in the topics")
+print(p)
+
+## GO only plot for total unique significant pathways per topic
+p <- fgsea.summary.unique.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = total.per.K.count)) + geom_line() + geom_point() +
+  xlab("K") + ylab(paste0("Number of Unique GO Pathways Under p.adj of ", threshold)) + mytheme +
+  scale_x_continuous("K", labels = as.character(K), breaks = K) +   
+  ggtitle("FGSEA on z-score of each gene in the topics")
+print(p)
+
+## GO only plot for normalized unique significant pathways per topic
+p <- fgsea.summary.unique.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = average.topic.count.per.K)) + geom_line() + geom_point() +
+  xlab("K") + ylab(paste0("Average Number of Unique GO Pathways Per Topic \nUnder p.adj of ", threshold)) + mytheme +
   scale_x_continuous("K", labels = as.character(K), breaks = K) +
   ggtitle("FGSEA on z-score of each gene in the topics")
 print(p)
@@ -163,6 +184,21 @@ p <- fgsea.summary.df %>% ggplot(aes(x=K, y = average.topic.count.per.K, color =
   scale_x_continuous("K", labels = as.character(K), breaks = K) +   
   ggtitle("FGSEA on z-score of each gene in the topics")
 print(p)
+
+
+# Number of unique selected MSigDB pathways per model
+p <- fgsea.summary.unique.df %>% ggplot(aes(x=K, y = total.per.K.count, color = database)) + geom_line() + geom_point() +
+  xlab("K") + ylab(paste0("Number of Unique Pathways Under p.adj of ", threshold)) + mytheme +
+  scale_x_continuous("K", labels = as.character(K), breaks = K) +   
+  ggtitle("FGSEA on z-score of each gene in the topics")
+print(p)
+
+# selected MSigDB pathway plot for average number of unique significant pathways per topic
+p <- fgsea.summary.unique.df %>% ggplot(aes(x=K, y = average.topic.count.per.K, color = database)) + geom_line() + geom_point() +
+  xlab("K") + ylab(paste0("Average Number of Unique Pathways Under p.adj of ", threshold)) + mytheme +
+  scale_x_continuous("K", labels = as.character(K), breaks = K) +   
+  ggtitle("FGSEA on z-score of each gene in the topics")
+print(p)
 dev.off()
 
 
@@ -174,68 +210,68 @@ fgsea.results.zscore.df <- fgsea.results.df %>% subset(padj < threshold & type =
 fgsea.summary.unique.raw.df <- fgsea.results.raw.df %>% select(K, pathway, database) %>% group_by(K) %>% unique() %>% group_by(database,K) %>% summarize(total.per.K.count = n()) %>% mutate(average.topic.count.per.K = total.per.K.count / K)
 fgsea.summary.unique.zscore.df <- fgsea.results.zscore.df %>% select(K, pathway, database) %>% group_by(K) %>% unique() %>% group_by(database,K) %>% summarize(total.per.K.count = n()) %>% mutate(average.topic.count.per.K = total.per.K.count / K)
 
-pdf(file=paste0(FIGDIR,"/GO.unique.p.adj.", threshold, ".pdf"))
-# GO only plot for sum of significant pathways
-K <- fgsea.summary.unique.raw.df$K %>% unique()
-p <- fgsea.summary.unique.raw.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = total.per.K.count)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Number of Unique GO Pathways Under p.adj of ", threshold)) + mytheme +
-  scale_x_continuous("K", labels = as.character(K), breaks = K) +   
-  ggtitle("FGSEA on raw score of each gene in the factors")
-print(p)
-K <- fgsea.summary.unique.zscore.df$K %>% unique()
-p <- fgsea.summary.unique.zscore.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = total.per.K.count)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Number of Unique GO Pathways Under p.adj of ", threshold)) + mytheme +
-  scale_x_continuous("K", labels = as.character(K), breaks = K)  +   
-  ggtitle("FGSEA on z-score of each gene in the factors")
-print(p)
-dev.off()
+## pdf(file=paste0(FIGDIR,"/GO.unique.p.adj.", threshold, ".pdf"))
+## # GO only plot for sum of significant pathways
+## K <- fgsea.summary.unique.raw.df$K %>% unique()
+## p <- fgsea.summary.unique.raw.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = total.per.K.count)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Number of Unique GO Pathways Under p.adj of ", threshold)) + mytheme +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K) +   
+##   ggtitle("FGSEA on raw score of each gene in the factors")
+## print(p)
+## K <- fgsea.summary.unique.zscore.df$K %>% unique()
+## p <- fgsea.summary.unique.zscore.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = total.per.K.count)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Number of Unique GO Pathways Under p.adj of ", threshold)) + mytheme +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K)  +   
+##   ggtitle("FGSEA on z-score of each gene in the factors")
+## print(p)
+## dev.off()
 
 
  
-## plot number of unique MSigDB pathways per K
-# selected MSigDB pathway plot for sum of significant pathways
-pdf(file=paste0(FIGDIR, "/MSigDB.unique.p.adj.", threshold, ".pdf"))
-p <- fgsea.summary.unique.raw.df %>% ggplot(aes(x=K, y = total.per.K.count, color = database)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Number of Unique Pathways Under p.adj of ", threshold, ", raw weight")) + mytheme +
-  scale_x_continuous("K", labels = as.character(K), breaks = K)
-print(p)
-p <- fgsea.summary.unique.zscore.df %>% ggplot(aes(x=K, y = total.per.K.count, color = database)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Number of Unique Pathways Under p.adj of ", threshold, ", z-score")) + mytheme +
-  scale_x_continuous("K", labels = as.character(K), breaks = K)
-print(p)
-dev.off()
+## ## plot number of unique MSigDB pathways per K
+## # selected MSigDB pathway plot for sum of significant pathways
+## pdf(file=paste0(FIGDIR, "/MSigDB.unique.p.adj.", threshold, ".pdf"))
+## p <- fgsea.summary.unique.raw.df %>% ggplot(aes(x=K, y = total.per.K.count, color = database)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Number of Unique Pathways Under p.adj of ", threshold, ", raw weight")) + mytheme +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K)
+## print(p)
+## p <- fgsea.summary.unique.zscore.df %>% ggplot(aes(x=K, y = total.per.K.count, color = database)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Number of Unique Pathways Under p.adj of ", threshold, ", z-score")) + mytheme +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K)
+## print(p)
+## dev.off()
 
 
-## plot average number of unique GO enrichment per topic vs K
-# GO only plot for sum for average number of significant pathways per topic
-pdf(file=paste0(FIGDIR, "/GO.avg.unique.over.K_p.adj.", threshold, ".pdf"))
-K <- fgsea.summary.unique.raw.df$K %>% unique()
-p <- fgsea.summary.unique.raw.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = average.topic.count.per.K)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Average Number of Unique GO Pathways Per Topic \nUnder p.adj of ", threshold, ", raw weight")) + mytheme +
-  scale_x_continuous("K", labels = as.character(K), breaks = K)
-print(p)
-K <- fgsea.summary.unique.zscore.df$K %>% unique()
-p <- fgsea.summary.unique.zscore.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = average.topic.count.per.K)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Average Number of Unique GO Pathways Per Topic \nUnder p.adj of ", threshold, ", z-score")) + mytheme +
-  scale_x_continuous("K", labels = as.character(K), breaks = K)
-print(p)
-dev.off()
+## ## plot average number of unique GO enrichment per topic vs K
+## # GO only plot for sum for average number of significant pathways per topic
+## pdf(file=paste0(FIGDIR, "/GO.avg.unique.over.K_p.adj.", threshold, ".pdf"))
+## K <- fgsea.summary.unique.raw.df$K %>% unique()
+## p <- fgsea.summary.unique.raw.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = average.topic.count.per.K)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Average Number of Unique GO Pathways Per Topic \nUnder p.adj of ", threshold, ", raw weight")) + mytheme +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K)
+## print(p)
+## K <- fgsea.summary.unique.zscore.df$K %>% unique()
+## p <- fgsea.summary.unique.zscore.df %>% subset(database == "msigdb.c3") %>% ggplot(aes(x=K, y = average.topic.count.per.K)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Average Number of Unique GO Pathways Per Topic \nUnder p.adj of ", threshold, ", z-score")) + mytheme +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K)
+## print(p)
+## dev.off()
 
 
-## plot average number of unique MSigDB pathways per topic vs K
-# selected MSigDB pathway plot for average number of significant pathways per topic
-pdf(file=paste0(FIGDIR, "/MsigDB.avg.unique.over.K_p.adj.", threshold, ".pdf"))
-K <- fgsea.summary.unique.raw.df$K %>% unique()
-p <- fgsea.summary.unique.raw.df %>% ggplot(aes(x=K, y = average.topic.count.per.K, color = database)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Average Number of Unique Pathways Under p.adj of ", threshold, ", raw weight")) + mytheme +
-  scale_x_continuous("K", labels = as.character(K), breaks = K)
-print(p)
-K <- fgsea.summary.unique.zscore.df$K %>% unique()
-p <- fgsea.summary.unique.zscore.df %>% ggplot(aes(x=K, y = average.topic.count.per.K, color = database)) + geom_line() + geom_point() +
-  xlab("K") + ylab(paste0("Average Number of Unique Pathways Under p.adj of ", threshold, ", z-score")) + mytheme +
-  scale_x_continuous("K", labels = as.character(K), breaks = K)
-print(p)
-dev.off()
+## ## plot average number of unique MSigDB pathways per topic vs K
+## # selected MSigDB pathway plot for average number of significant pathways per topic
+## pdf(file=paste0(FIGDIR, "/MsigDB.avg.unique.over.K_p.adj.", threshold, ".pdf"))
+## K <- fgsea.summary.unique.raw.df$K %>% unique()
+## p <- fgsea.summary.unique.raw.df %>% ggplot(aes(x=K, y = average.topic.count.per.K, color = database)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Average Number of Unique Pathways Under p.adj of ", threshold, ", raw weight")) + mytheme +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K)
+## print(p)
+## K <- fgsea.summary.unique.zscore.df$K %>% unique()
+## p <- fgsea.summary.unique.zscore.df %>% ggplot(aes(x=K, y = average.topic.count.per.K, color = database)) + geom_line() + geom_point() +
+##   xlab("K") + ylab(paste0("Average Number of Unique Pathways Under p.adj of ", threshold, ", z-score")) + mytheme +
+##   scale_x_continuous("K", labels = as.character(K), breaks = K)
+## print(p)
+## dev.off()
 
 
 ## ## plot number of significant DE topics per K
