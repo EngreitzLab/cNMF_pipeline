@@ -83,7 +83,7 @@ if(opt$recompute | !file.exists(outSeuratObjectPath)) {
     # plotSingleCellStats(s.meta, mtMax=NULL, nCountMax=NULL, paste0(FIGDIRSAMPLE,"/QC.single.cell.stats.pdf"))
 
     ## remove non-protein coding genes and genes detected in fewer than 10 cells
-    tokeep <- which(!(grepl("-AS[0-9]$|-DT$|-IT[0-9]$|^LINC|^[A-Za-z][A-Za-z][0-9][0-9][0-9][0-9][0-9][0-9]\\.", s %>% rownames))) ## remove antisense genes, divergent transcripts, non coding genes, and intronic transcripts
+    tokeep <- which(!(grepl("^LINC|^[A-Za-z][A-Za-z][0-9][0-9][0-9][0-9][0-9][0-9]\\.", s %>% rownames))) ## remove antisense genes, divergent transcripts, non coding genes, and intronic transcripts
     s.subset <- s[tokeep,]
     s.subset <- subset(s.subset, subset= nCount_RNA > 200 & nFeature_RNA > 200) # remove cells with less than 200 UMIs and less than 200 genes
     ## tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, sum) > 10) # keep genes detected in more than 10 UMIs
