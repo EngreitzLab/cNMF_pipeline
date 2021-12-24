@@ -26,13 +26,14 @@ option.list <- list(
     make_option("--marginals", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.marginals", help=""),
     make_option("--preds", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.preds", help=""),
     make_option("--prefix", type="character", default="CAD_aug6_cNMF60", help="magma file name (before genes.raw)"),
+    make_option("--sampleName", type="character", default="2kG.library", help="Sample name for this run to output"),
     make_option("--external.features.metadata", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/metadata/metadata_jul17.txt", help="annotations for each external features"),
     make_option("--all.features", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211101_normalized_features/outputs/full_features_with_cNMF.RDS", help=".RDS file with all features input into PoPS"),
     make_option("--recompute", type="logical", default=F, help="T for rerunning the entire script, F for only outputting the missing data")
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
-SAMPLE=opt$prefix
+SAMPLE=opt$sampleName
 OUTDIR=opt$output
 SCRATCH.OUTDIR=opt$scratch.output
 PREFIX=opt$prefix
@@ -100,11 +101,11 @@ add_gene_name_to_df <- function(df) {
 
 ## add Gene name to preds.df
 preds.df <- preds %>% add_gene_name_to_df
-file.name <- paste0(OUTDIR, "/", PREFIX, ".added.gene.name.preds")
+file.name <- paste0(OUTDIR, "/", PREFIX, "_", SAMPLE, ".added.gene.name.preds")
 
 
 
-file.name <- paste0(SCRATCH.OUTDIR, "/", PREFIX, "_coefs.marginals.feature.outer.prod.RDS")
+file.name <- paste0(SCRATCH.OUTDIR, "/", PREFIX, "_", SAMPLE, "_coefs.marginals.feature.outer.prod.RDS")
 ## if( !file.exists(file.name) | opt$recompute ) {
 
 ## load cNMF features
@@ -169,10 +170,10 @@ PoPS_Score.coefs.all.outer <- add_gene_name(PoPS_Score.coefs.all.outer.ENSG)
 PoPS_Score.marginals.all.outer <- add_gene_name(PoPS_Score.marginals.all.outer.ENSG)
 
 ## save the results
-write.table(PoPS_Score.coefs.manual.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/", PREFIX, "_coefs.feature.outer.prod.txt"), quote=F, sep="\t")
-write.table(PoPS_Score.marginals.manual.outer %>% apply(2, as.character), file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_marginals.feature.outer.prod.txt"), quote=F, sep="\t")
-write.table(PoPS_Score.coefs.all.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/", PREFIX, "_coefs.all.feature.outer.prod.txt"), quote=F, sep="\t")
-write.table(PoPS_Score.marginals.all.outer %>% apply(2, as.character), file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_marginals.all.feature.outer.prod.txt"), quote=F, sep="\t")
+write.table(PoPS_Score.coefs.manual.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/", PREFIX, "_", SAMPLE, "_coefs.feature.outer.prod.txt"), quote=F, sep="\t")
+write.table(PoPS_Score.marginals.manual.outer %>% apply(2, as.character), file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_", SAMPLE, "_marginals.feature.outer.prod.txt"), quote=F, sep="\t")
+write.table(PoPS_Score.coefs.all.outer %>% apply(2, as.character), file=paste0(OUTDIR, "/", PREFIX, "_", SAMPLE, "_coefs.all.feature.outer.prod.txt"), quote=F, sep="\t")
+write.table(PoPS_Score.marginals.all.outer %>% apply(2, as.character), file=paste0(SCRATCH.OUTDIR, "/", PREFIX, "_", SAMPLE, "_marginals.all.feature.outer.prod.txt"), quote=F, sep="\t")
 
 
 

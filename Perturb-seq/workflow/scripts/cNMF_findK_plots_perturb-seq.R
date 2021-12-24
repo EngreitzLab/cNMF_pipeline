@@ -88,7 +88,8 @@ batch.percent.df$batch.thr <- as.character(batch.percent.df$batch.thr)
 ## percent of topics correlated with batch over K
 pdf(fig.file.name, width=8, height=6)
 p <- batch.percent.df %>% ggplot(aes(x = K, y = percent.correlated, color = batch.thr)) + geom_line() + geom_point() + mytheme +
-    ggtitle("Percent of Topics correlated with batch") +
+    ggtitle("Percent of Topics Correlated with Batch") +
+    scale_x_continuous(breaks = batch.percent.df$K %>% unique) +
     scale_y_continuous(name = "Percent of Topics Correlated with Batch", labels = scales::percent) +
     scale_color_discrete(name = "Pearson correlation")
 print(p)

@@ -9,46 +9,46 @@ threshold_txt = [ s.replace(".", "_") for s in config["thresholds"] ]
 run_index_list = [n for n in range(config["run_per_worker"])]
 
 
-## todo: rethink the structure of UMAP part: what are the possible input file types?
-rule create_Seurat_Object:
-	input:
-		mtx = os.path.join(config["dataDir"], "matrix.mtx.gz"),
-		features = os.path.join(config["dataDir"], "features.tsv.gz"),
-		barcodes = os.path.join(config["dataDir"], "barcodes.tsv.gz")
-	output:
-		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
-	params:
-		time = "2:00:00",
-		mem_gb = "200",
-		datadir = config["dataDir"],
-		outdir = os.path.join(config["analysisDir"], "data")
-	shell:
-		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_analysis_R; \
-		Rscript workflow/scripts/create_seurat_object.R \
-		--outdir {params.outdir}/ \
-		--datadir {params.datadir} \
-		--sampleName {wildcards.sample} \
-		' "
+# ## todo: rethink the structure of UMAP part: what are the possible input file types?
+# rule create_Seurat_Object:
+# 	input:
+# 		mtx = os.path.join(config["dataDir"], "matrix.mtx.gz"),
+# 		features = os.path.join(config["dataDir"], "features.tsv.gz"),
+# 		barcodes = os.path.join(config["dataDir"], "barcodes.tsv.gz")
+# 	output:
+# 		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
+# 	params:
+# 		time = "2:00:00",
+# 		mem_gb = "200",
+# 		datadir = config["dataDir"],
+# 		outdir = os.path.join(config["analysisDir"], "data")
+# 	shell:
+# 		"bash -c ' source $HOME/.bashrc; \
+# 		conda activate cnmf_analysis_R; \
+# 		Rscript workflow/scripts/create_seurat_object.R \
+# 		--outdir {params.outdir}/ \
+# 		--datadir {params.datadir} \
+# 		--sampleName {wildcards.sample} \
+# 		' "
 
 
-## convert Seurat Object to h5ad file
-rule Seurat_Object_to_h5ad:
-	input:
-		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
-	output:
-		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
-		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
-	params:
-		time = "2:00:00",
-		mem_gb = "64"
-	shell:
-		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_analysis_R; \
-		Rscript workflow/scripts/seurat_to_h5ad.R \
-		--inputSeuratObject {input.seurat_object} \
-		--output_h5ad {output.h5ad_mtx} \
-		--output_gene_name_txt {output.gene_name_txt} ' "
+# ## convert Seurat Object to h5ad file
+# rule Seurat_Object_to_h5ad:
+# 	input:
+# 		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
+# 	output:
+# 		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
+# 		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
+# 	params:
+# 		time = "2:00:00",
+# 		mem_gb = "64"
+# 	shell:
+# 		"bash -c ' source $HOME/.bashrc; \
+# 		conda activate cnmf_analysis_R; \
+# 		Rscript workflow/scripts/seurat_to_h5ad.R \
+# 		--inputSeuratObject {input.seurat_object} \
+# 		--output_h5ad {output.h5ad_mtx} \
+# 		--output_gene_name_txt {output.gene_name_txt} ' "
 
 
 # ## need a rule to convert txt to h5ad or RDS to h5ad
@@ -195,10 +195,10 @@ rule run_cNMF: # we don't know which worker will be working on which run, and sn
 		total_workers = config["total_workers"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["scratchDir"],"{folder}/K{k}/worker{workerIndex}/")
-	resources: 
-		mem_mb=get_cNMF_memory_slurm,
-		time = get_cNMF_time,
-		partition = get_cNMF_partition_slurm
+	# resources: 
+	# 	mem_mb=get_cNMF_memory_slurm,
+	# 	time = get_cNMF_time,
+	# 	partition = get_cNMF_partition_slurm
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \

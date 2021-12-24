@@ -19,7 +19,9 @@ conflict_prefer("select", "dplyr")
 
 option.list <- list(
     make_option("--feature.dir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/data/features/pops_features_raw/"),
-    make_option("--output", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211101_normalized_features/outputs/", help="output directory")
+    make_option("--output", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211101_normalized_features/outputs/", help="output directory"),
+    make_option("--magma_prefix", type="character", default="CAD_aug6", help="MAGMA prefix"),
+    make_option("--sampleName", type="character", default="2kG.library", help="Sample name for this run to output")
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
@@ -31,8 +33,8 @@ opt <- parse_args(OptionParser(option_list=option.list))
 
 
 OUTDIR=opt$output
-# PREFIX=opt$prefix
-
+PREFIX=opt$prefix
+SAMPLE=opt$sampleName
 
 
 ## ## load cNMF features
@@ -51,7 +53,7 @@ for (feature.raw.index in 1:num_feature_files) {
 all.features <- Reduce(function(x,y) merge(x,y,by="ENSGID"), all.features.list) ## features without cNMF
 ## all.features.cNMF <- merge(all.features, features, by="ENSGID") ## all features with cNMF
 print(paste0("Saving all.features to ", OUTDIR, " as an RDS file"))
-saveRDS(all.features, file=paste0(OUTDIR, "/full_external_features.RDS"))
+saveRDS(all.features, file=paste0(OUTDIR, "/full_external_features_", PREFIX, "_", SAMPLE, ".RDS"))
 print(paste0("Saving all.features to ", OUTDIR, " as a text file"))
-write.table(all.features, file=paste0(OUTDIR, "/full_external_features.txt"), row.names=F, quote=F, sep="\t")
+write.table(all.features, file=paste0(OUTDIR, "/full_external_features_", PREFIX, "_", SAMPLE, ".txt"), row.names=F, quote=F, sep="\t")
 print("done!")

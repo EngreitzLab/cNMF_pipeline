@@ -28,6 +28,7 @@ option.list <- list(
     make_option("--marginals", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.marginals", help=""),
     make_option("--preds", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60.preds", help=""),
     make_option("--prefix", type="character", default="CAD_aug6_cNMF60", help="magma file name (before genes.raw)"),
+    make_option("--sampleName", type="character", default="2kG.library", help="Sample name for this run to output"),
     make_option("--all.features", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211101_normalized_features/outputs/full_features_with_cNMF.RDS", help=".RDS file with all features input into PoPS"),
     make_option("--external.features.metadata", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/metadata/metadata_jul17.txt", help="annotations for each external features"),
     make_option("--coefs.defining.top.topic.RDS", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/CAD_aug6_cNMF60_coefs.defining.top.topic.RDS", help=""),
@@ -40,6 +41,7 @@ OUTDIR=opt$output
 SCRATCH.OUTDIR=opt$scratch.output
 FIGDIR=opt$figure
 PREFIX=opt$prefix
+SAMPLE=opt$sampleName
 
 check.dir <- c(OUTDIR, FIGDIR)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
@@ -130,7 +132,7 @@ PoPS_preds.importance.score.key <- read.delim(file=opt$preds.importance.score.ke
 
  
 ## top selected features
-pdf(paste0(FIGDIR, "/all.coef.beta.pdf"))
+pdf(paste0(FIGDIR, "/", PREFIX, "_", SAMPLE, "_all.coef.beta.pdf"))
 toPlot <- coefs.df %>% arrange(desc(beta)) %>% slice(1:15)
 p <- toPlot %>% ggplot(aes(x=reorder(Long_Name, beta), y=beta)) + geom_col(fill="#38b4f7") + theme_minimal() +
     coord_flip() + xlab("Features") + ylab("Beta Score") + ggtitle(paste0("K = ", k, " Topics")) + mytheme
@@ -139,7 +141,7 @@ dev.off()
  
 
 ## figure
-pdf(paste0(FIGDIR, "/", PREFIX, "_PoPS_score_list.pdf"), width=4, height=6)
+pdf(paste0(FIGDIR, "/", PREFIX, "_", SAMPLE, "_PoPS_score_list.pdf"), width=4, height=6)
 top.PoPS.genes <- preds.df %>% slice(1:20)
 toPlot <- data.frame(Gene= top.PoPS.genes %>% pull(Gene),
                      Score=top.PoPS.genes %>% pull(PoPS_Score))

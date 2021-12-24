@@ -18,9 +18,9 @@ include: "rules/PoPS_pipeline.smk"
 rule all:
 	input:
 		## PoPS
-		coefs = expand(os.path.join(config["analysisDir"], "pops/{magma_prefix}.coefs"), magma_prefix=config["magma_prefix"]),
-		all_features_RDS = os.path.join(config["analysisDir"], "pops/features/processed_features/full_external_features.RDS"),
-		PoPS_score_list_plot = expand(os.path.join(config["figDir"], "{magma_prefix}_PoPS_score_list.pdf"), magma_prefix=config["magma_prefix"])
+		coefs = expand(os.path.join(config["analysisDir"], "pops/{magma_prefix}_{sample}.coefs"), magma_prefix=config["magma_prefix"], sample=config["sampleName"]),
+		all_features_RDS = expand(os.path.join(config["analysisDir"], "pops/features/processed_features/full_external_features_{magma_prefix}_{sample}.RDS"), magma_prefix=config["magma_prefix"], sample=config["sampleName"]),
+		PoPS_score_list_plot = expand(os.path.join(config["figDir"], "{magma_prefix}_{sample}_PoPS_score_list.pdf"), magma_prefix=config["magma_prefix"], sample=config["sampleName"])
 		# feature_x_gene_importance_score_RDS = expand(os.path.join(config["scratchDir"], 
 		# 	"{folder}/{sample}/K{k}/threshold_{threshold}/pops/{magma_prefix}_cNMF{k}_coefs.marginals.feature.outer.prod.RDS"), folder=config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], magma_prefix=config["magma_prefix"]),
 		# feature_x_gene_component_importance_score_coefs_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{magma_prefix}_cNMF{k}_dt_{threshold}_feature_x_gene.component.importance.score.coefs.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], magma_prefix=config["magma_prefix"])
