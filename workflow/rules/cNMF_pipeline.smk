@@ -118,8 +118,8 @@ rule prepare_geneSet_cNMF:
 		norm_counts = os.path.join(config["scratchDir"],"{gene_selection_method}_genes/K{k}/worker{workerIndex}/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad"),
 		overdispersed_genes = os.path.join(config["scratchDir"],"{gene_selection_method}_genes/K{k}/worker{workerIndex}/{sample}/{sample}.overdispersed_genes.txt")
 	params:
-		time = "3:00:00",
-		mem_gb = "128",
+		time = "5:00:00",
+		mem_gb = "196",
         seed = config["seed"],
 		run_per_worker = config["run_per_worker"],
 		total_workers = config["total_workers"],
@@ -143,7 +143,7 @@ rule prepare_geneSet_cNMF:
 		--genes-file {input.genes} ' "
 
 
-def get_cNMF_memory(wildcards):
+def get_cNMF_memory(wildcards): ## add condition to allot more memory for large matrices
 	if "VariableGenes" in wildcards.folder:
 		return "16"
 	elif int(wildcards.k) > 100:
@@ -411,7 +411,7 @@ rule prepare_findK_geneSet:
 		overdispersed_genes = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/{sample}.overdispersed_genes.txt")
 	params:
 		time = "3:00:00",
-		mem_gb = "128",
+		mem_gb = "200",
 		seed = config["seed"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["analysisDir"], "{gene_selection_method}_genes_acrossK"),
@@ -562,7 +562,7 @@ rule get_concensus_factors_plot:
 		--components {wildcards.k} \
 		--local-density-threshold {threshold_here} \
 		--show-clustering; \
-		cp {params.outdir}/{wildcards.sample}.clustering.k_{k}.dt_{wildcards.threshold}.png {params.figdir}/{folder}/{sample}/K{k}/ ' ")
+		cp {params.outdir}/{wildcards.sample}.clustering.k_{wildcards.k}.dt_{wildcards.threshold}.png {params.figdir}/{wildcards.folder}/{wildcards.sample}/K{wildcards.k}/ ' ")
 
 
 def get_cNMF_filter_threshold_double(wildcards):
