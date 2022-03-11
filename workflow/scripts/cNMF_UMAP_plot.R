@@ -39,8 +39,8 @@ option.list <- list(
   # make_option("--sep", type="logical", default=F, help="Whether to separate replicates or samples"),
   # make_option("--K.list", type="character", default="2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,19,21,23,25", help="K values available for analysis"),
   make_option("--K.val", type="numeric", default=60, help="K value to analyze"),
-  # make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
-  # make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
+  make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
+  make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
   # make_option("--ABCdir",type="character", default="/oak/stanford/groups/engreitz/Projects/ABC/200220_CAD/ABC_out/TeloHAEC_Ctrl/Neighborhoods/", help="Path to ABC enhancer directory"),
   make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
   # make_option("--raw.mtx.dir",type="character",default="stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/data/no_IL1B_filtered.normalized.ptb.by.gene.mtx.filtered.txt", help="input matrix to cNMF pipeline"),
@@ -69,6 +69,8 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/figures/2kG.library/all_genes/"
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/"
 ## opt$K.val <- 60
+## opt$inputSeuratObject <- paste0(opt$datadir,"/", SAMPLE, "_SeuratObjectUMAP.rds")
+
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
 
@@ -259,15 +261,13 @@ if(file.exists(cNMF.result.file)) {
     warning(paste0(cNMF.result.file, " does not exist"))
 }
 
-# ## load ann.omega
-# file.name <- ifelse(SEP,
-#                     paste0(OUTDIRSAMPLE,"/cNMFAnalysis.",SUBSCRIPT,".sep.RData"),
-#                     paste0(OUTDIRSAMPLE,"/cNMFAnalysis.",SUBSCRIPT,".RData"))
-# print(file.name) 
-# if(file.exists((file.name))) { 
-#     print(paste0("loading ",file.name))
-#     load(file.name) 
-# }
+## load ann.omega
+file.name <- paste0(OUTDIRSAMPLE,"/cNMFAnalysis.",SUBSCRIPT,".RData")
+print(file.name) 
+if(file.exists((file.name))) { 
+    print(paste0("loading ",file.name))
+    load(file.name) 
+}
 
 
 

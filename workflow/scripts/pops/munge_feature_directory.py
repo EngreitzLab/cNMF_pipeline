@@ -32,7 +32,9 @@ if __name__ == '__main__':
     all_col_data = []
     curr_block_index = 0
     for f in all_feature_files:
+        print(f) ## added by Helen for debugging
         f_df = pd.read_csv(f, sep="\t", index_col=0).astype(np.float64)
+        import pdb; pdb.set_trace(); ## added by Helen for debugging
         f_df = gene_annot_df.merge(f_df, how="left", left_index=True, right_index=True)
         if nan_policy == "raise":
             assert not f_df.isnull().values.any(), "Missing genes in feature matrix."
@@ -48,6 +50,7 @@ if __name__ == '__main__':
         all_col_data += list(cols)
         while len(all_col_data) >= MAX_COLS:
             ### Flush MAX_COLS columns to disk at a time
+            import pdb; pdb.set_trace(); ## added by Helen for debugging
             mat = np.hstack(all_mat_data)
             save_mat = mat[:,:MAX_COLS]
             keep_mat = mat[:,MAX_COLS:]

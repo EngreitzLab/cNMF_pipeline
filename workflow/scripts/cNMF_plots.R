@@ -82,7 +82,7 @@ DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
 FIGDIR=opt$figdir
 FIGDIRSAMPLE=paste0(FIGDIR, "/", SAMPLE, "/K",k,"/")
 FIGDIRTOP=paste0(FIGDIRSAMPLE,"/",SAMPLE,"_K",k,"_dt_", DENSITY.THRESHOLD,"_")
-OUTDIRSAMPLE=paste0(OUTDIR, SAMPLE, "/K",k,"/threshold_", DENSITY.THRESHOLD, "/")
+OUTDIRSAMPLE=paste0(OUTDIR, "/", SAMPLE, "/K",k,"/threshold_", DENSITY.THRESHOLD, "/")
 FGSEADIR=paste0(OUTDIRSAMPLE,"/fgsea/")
 FGSEAFIG=paste0(FIGDIRSAMPLE,"/fgsea/")
 

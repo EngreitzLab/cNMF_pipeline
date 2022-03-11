@@ -62,9 +62,7 @@ SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$datadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
 OUTDIR=opt$outdir
 OUTDIR.ACROSS.K=paste0(OUTDIR,"/",SAMPLE,"/acrossK/")
-# SEP=opt$sep
 K.list <- strsplit(opt$K.list,",") %>% unlist() %>% as.numeric()
-## k <- opt$K.val
 DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
 FIGDIR=opt$figdir
 
@@ -139,7 +137,7 @@ if(file.exists(opt$K.table)) {
 
 
 ## initialize storage variables
-promoter.fisher.df.list <- enhancer.fisher.df.list <- fgsea.results <- all.test.df.list <- all.fdr.df.list <- count.by.GWAS.list <- count.by.GWAS.withTopic.list <- theta.zscore.list <- theta.raw.list <- all.enhancer.fisher.df.list <- all.promoter.fisher.df.list <- all.enhancer.fisher.df.10en6.list <- promoter.wide.10en6.list <- promoter.wide.binary.10en6.list <- all.promoter.fisher.df.10en6.list <- all.promoter.ttest.df.list <- all.promoter.ttest.df.10en6.list <- all.enhancer.ttest.df.list <- all.enhancer.ttest.df.10en6.list <- vector("list", nrow(K.spectra.threshold))
+fgsea.results <- all.test.df.list <- all.fdr.df.list <- count.by.GWAS.list <- count.by.GWAS.withTopic.list <- theta.zscore.list <- theta.raw.list <-  all.promoter.ttest.df.list <- all.enhancer.ttest.df.list <- vector("list", nrow(K.spectra.threshold))
 ## loop over all values of K and aggregate results
 for (n in 1:nrow(K.spectra.threshold)) {
     k <- K.spectra.threshold[n,"K"]
@@ -221,30 +219,36 @@ for (n in 1:nrow(K.spectra.threshold)) {
     # }
     
     ## load motif enrichment results
-    file.name <- paste0(OUTDIRSAMPLE,"/cNMFAnalysis.factorMotifEnrichment.",SUBSCRIPT.SHORT,".RData")
-    print(file.name)
-    if(file.exists((file.name))) { 
-        load(file.name)
-        print(paste0("loading ", file.name))
+    for(ep.type in c("promoter", "enhancer")){
+        num.top.genes <- 300
+        file.name <- paste0(OUTDIRSAMPLE, "/", ep.type, ".topic.top.", num.top.genes, ".zscore.gene_motif.count.ttest.enrichment_motif.thr.qval0.1_", SUBSCRIPT.SHORT,".txt")
+        get(paste0("all.", ep.type, ".ttest.df.list"))[[n]] <- read.delim(file.name, stringsAsFactors) %>% mutate(K = k) ## does this work?
     }
-    motif.enrichment.variables <- c("all.enhancer.fisher.df", "all.promoter.fisher.df", 
-                                    "promoter.wide", "enhancer.wide", "promoter.wide.binary", "enhancer.wide.binary",
-                                    "enhancer.wide.10en6", "enhancer.wide.binary.10en6", "all.enhancer.fisher.df.10en6",
-                                    "promoter.wide.10en6", "promoter.wide.binary.10en6", "all.promoter.fisher.df.10en6",
-                                    "all.promoter.ttest.df", "all.promoter.ttest.df.10en6", "all.enhancer.ttest.df", "all.enhancer.ttest.df.10en6")
-    motif.enrichment.variables.missing <- (!(motif.enrichment.variables %in% ls())) %>% as.numeric %>% sum 
-    if ( motif.enrichment.variables.missing > 0 ) {
-        warning(paste0(motif.enrichment.variables[!(motif.enrichment.variables %in% ls())], " not available"))
-    } else {
-        promoter.fisher.df.list[[n]] <- all.promoter.fisher.df %>% mutate(K = k)
-        enhancer.fisher.df.list[[n]] <- all.enhancer.fisher.df %>% mutate(K = k)
-        all.promoter.ttest.df.list[[n]] <- all.promoter.ttest.df %>% mutate(K = k)
-        all.promoter.ttest.df.10en6.list[[n]] <- all.promoter.ttest.df.10en6 %>% mutate(K = k)
-        all.enhancer.ttest.df.list[[n]] <- all.enhancer.ttest.df %>% mutate(K = k)
-        all.enhancer.ttest.df.10en6.list[[n]] <- all.enhancer.ttest.df.10en6 %>% mutate(K = k)
-        all.promoter.fisher.df.list[[n]] <- all.promoter.fisher.df
-        all.enhancer.fisher.df.list[[n]] <- all.enhancer.fisher.df
-    }
+
+    # file.name <- paste0(OUTDIRSAMPLE,"/cNMFAnalysis.factorMotifEnrichment.",SUBSCRIPT.SHORT,".RData")
+    # print(file.name)
+    # if(file.exists((file.name))) { 
+    #     load(file.name)
+    #     print(paste0("loading ", file.name))
+    # }
+    # motif.enrichment.variables <- c("all.enhancer.fisher.df", "all.promoter.fisher.df", 
+    #                                 "promoter.wide", "enhancer.wide", "promoter.wide.binary", "enhancer.wide.binary",
+    #                                 "enhancer.wide.10en6", "enhancer.wide.binary.10en6", "all.enhancer.fisher.df.10en6",
+    #                                 "promoter.wide.10en6", "promoter.wide.binary.10en6", "all.promoter.fisher.df.10en6",
+    #                                 "all.promoter.ttest.df", "all.promoter.ttest.df.10en6", "all.enhancer.ttest.df", "all.enhancer.ttest.df.10en6")
+    # motif.enrichment.variables.missing <- (!(motif.enrichment.variables %in% ls())) %>% as.numeric %>% sum 
+    # if ( motif.enrichment.variables.missing > 0 ) {
+    #     warning(paste0(motif.enrichment.variables[!(motif.enrichment.variables %in% ls())], " not available"))
+    # } else {
+    #     promoter.fisher.df.list[[n]] <- all.promoter.fisher.df %>% mutate(K = k)
+    #     enhancer.fisher.df.list[[n]] <- all.enhancer.fisher.df %>% mutate(K = k)
+    #     all.promoter.ttest.df.list[[n]] <- all.promoter.ttest.df %>% mutate(K = k)
+    #     all.promoter.ttest.df.10en6.list[[n]] <- all.promoter.ttest.df.10en6 %>% mutate(K = k)
+    #     all.enhancer.ttest.df.list[[n]] <- all.enhancer.ttest.df %>% mutate(K = k)
+    #     all.enhancer.ttest.df.10en6.list[[n]] <- all.enhancer.ttest.df.10en6 %>% mutate(K = k)
+    #     all.promoter.fisher.df.list[[n]] <- all.promoter.fisher.df
+    #     all.enhancer.fisher.df.list[[n]] <- all.enhancer.fisher.df
+    # }
 
 
     ## GSEA results
@@ -305,8 +309,8 @@ for (n in 1:nrow(K.spectra.threshold)) {
     
 }
 
-promoter.fisher.df <- do.call(rbind, promoter.fisher.df.list)
-enhancer.fisher.df <- do.call(rbind, enhancer.fisher.df.list)
+# promoter.fisher.df <- do.call(rbind, promoter.fisher.df.list)
+# enhancer.fisher.df <- do.call(rbind, enhancer.fisher.df.list)
 fgsea.results.df <- do.call(rbind, fgsea.results)
 # all.test.df <- do.call(rbind, all.test.df.list)
 # all.fdr.df <- do.call(rbind, all.fdr.df.list)
@@ -316,14 +320,14 @@ theta.zscore.df <- do.call(cbind, theta.zscore.list)
 theta.raw.df <- do.call(cbind, theta.raw.list)
 # theta.KL.df <- do.call(rbind, theta.KL.list)
 all.promoter.ttest.df <- do.call(rbind, all.promoter.ttest.df.list)
-all.promoter.ttest.df.10en6 <- do.call(rbind, all.promoter.ttest.df.10en6.list)
+# all.promoter.ttest.df.10en6 <- do.call(rbind, all.promoter.ttest.df.10en6.list)
 all.enhancer.ttest.df <- do.call(rbind, all.enhancer.ttest.df.list)
-all.enhancer.ttest.df.10en6 <- do.call(rbind, all.enhancer.ttest.df.10en6.list)
+# all.enhancer.ttest.df.10en6 <- do.call(rbind, all.enhancer.ttest.df.10en6.list)
 
 
 file.name <- paste0(OUTDIR.ACROSS.K, "/aggregated.outputs.findK.RData")
 # save(promoter.fisher.df, enhancer.fisher.df, fgsea.results.df, all.test.df, all.fdr.df, count.by.GWAS, count.by.GWAS.withTopic, theta.zscore.df, theta.raw.df, theta.KL.df,
 #      file=file.name)
-save(promoter.fisher.df, enhancer.fisher.df, fgsea.results.df, theta.zscore.df, theta.raw.df, all.promoter.ttest.df, all.promoter.ttest.df.10en6, all.enhancer.ttest.df, all.enhancer.ttest.df.10en6,
+save(fgsea.results.df, theta.zscore.df, theta.raw.df, all.promoter.ttest.df, all.enhancer.ttest.df,
      file=file.name)
 

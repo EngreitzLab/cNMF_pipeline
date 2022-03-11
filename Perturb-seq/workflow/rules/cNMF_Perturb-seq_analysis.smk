@@ -834,7 +834,7 @@ rule batch_topic_correlation:
 
 # rule fgsea:
 # 	input:
-# 		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+		# cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
 # 	output:
 # 		fgsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{{k}}/threshold_{{threshold}}/fgsea/fgsea_all_pathways_df_{ranking_type}_k_{{k}}.dt_{{threshold}}.RData"), ranking_type=["raw.score", "z.score"])
 # 	params:
@@ -879,6 +879,17 @@ rule batch_topic_correlation:
 # 		--density.thr 0.2 \
 # 		--cluster.topic.expression T "
 
+
+rule MAST:
+        input:
+                cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+        output:
+        params:
+        shell:
+                "bash -c ' source $HOME/.bashrc; \
+                conda activate cnmf_analysis_R; \
+                Rscript workflow/scripts/ \
+                ' "
 
 
 rule aggregate_over_K_perturb_seq:
