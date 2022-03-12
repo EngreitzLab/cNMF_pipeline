@@ -21,7 +21,7 @@ option.list <- list(
   make_option("--datadir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/data/", help="Input 10x data directory"), # "/oak/stanford/groups/engreitz/Users/kangh/process_sequencing_data/210912_FT010_fresh_Telo_sortedEC/multiome_FT010_fresh_2min/outs/filtered_feature_bc_matrix"
   make_option("--sampleName", type="character", default="2kG.library", help="Name of Samples to be processed, separated by commas"),
   # make_option("--sep", type="logical", default=F, help="Whether to separate replicates or samples"),
-  make_option("--K.list", type="character", default="14,15,60", help="K values available for analysis"),
+  make_option("--K.list", type="character", default="14,30,60", help="K values available for analysis"),
   # make_option("--K.val", type="numeric", default=14, help="K value to analyze"),
   make_option("--K.table", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210625_snakemake_output/analysis/2kG.library/K.spectra.threshold.table.txt", help="table for defining spectra threshold"), # opt$K.table <-"/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/all_genes/2kG.library/K.spectra.threshold.table.txt"
   # make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
@@ -43,10 +43,10 @@ option.list <- list(
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
-## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes"
-## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/all_genes/"
-## ## opt$datadir <- "/oak/stanford/groups/engreitz/Users/kangh/process_sequencing_data/210912_FT010_fresh_Telo_sortedEC/multiome_FT010_fresh_2min/outs/filtered_feature_bc_matrix"
-## opt$sampleName <- "FT010_fresh_3min"
+opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/figures/all_genes"
+opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/analysis/all_genes/"
+## opt$datadir <- "/oak/stanford/groups/engreitz/Users/kangh/process_sequencing_data/210912_FT010_fresh_Telo_sortedEC/multiome_FT010_fresh_2min/outs/filtered_feature_bc_matrix"
+opt$sampleName <- "Perturb_2kG_dup4"
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
 
@@ -222,7 +222,7 @@ for (n in 1:nrow(K.spectra.threshold)) {
     for(ep.type in c("promoter", "enhancer")){
         num.top.genes <- 300
         file.name <- paste0(OUTDIRSAMPLE, "/", ep.type, ".topic.top.", num.top.genes, ".zscore.gene_motif.count.ttest.enrichment_motif.thr.qval0.1_", SUBSCRIPT.SHORT,".txt")
-        get(paste0("all.", ep.type, ".ttest.df.list"))[[n]] <- read.delim(file.name, stringsAsFactors) %>% mutate(K = k) ## does this work?
+        eval(parse(text = paste0("all.", ep.type, ".ttest.df.list[[n]] <- read.delim(file.name, stringsAsFactors=F) %>% mutate(K = k)"))) ## store in all.{promoter, enhancer}.ttest.df.list
     }
 
     # file.name <- paste0(OUTDIRSAMPLE,"/cNMFAnalysis.factorMotifEnrichment.",SUBSCRIPT.SHORT,".RData")
@@ -259,7 +259,7 @@ for (n in 1:nrow(K.spectra.threshold)) {
         file.name <- paste0(FGSEADIR,"/fgsea_",type,"_", SUBSCRIPT.SHORT, ".txt")
         if(file.exists(file.name)) {
             message("Loading ", file.name)
-            fgsea.df[[n]] <- read.table(file.name, header=T, stringsAsFactors = F) %>% mutate(type = type, K = k)
+            fgsea.df[[i]] <- read.table(file.name, header=T, stringsAsFactors = F) %>% mutate(type = type, K = k)
         } else {
             print(paste0(file.name, " file does not exist"))
         }

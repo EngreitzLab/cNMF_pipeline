@@ -648,48 +648,45 @@ def get_cNMF_filter_threshold_double(wildcards):
 # 	shell:
 
 
-# rule analysis:
-# 	input:
-# 		# mtx_RDS = config["inputRDSmtx"], # os.path.join(config["dataDir"],"aggregated.{sample}.mtx.cell_x_gene.RDS"),
-# 		#todo: add input files
-# 		spectra_tpm = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_tpm.k_{k}.dt_{threshold}.txt"),
-# 		spectra_zscore = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_score.k_{k}.dt_{threshold}.txt"),
-# 		spectra_consensus = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.spectra.k_{k}.dt_{threshold}.consensus.txt")
-# 	output:
-# 		#todo: add output files
-# 		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
-# 		# cNMF_Analysis = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/cNMFAnalysis.k_{k}.dt_{threshold}.RData")
-# 		cNMF_ENSG_topic_zscore = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/topic.zscore.ensembl_k_{k}.dt_{threshold}.txt"),
-# 		cNMF_ENSG_topic_zscore_scaled = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/topic.zscore.ensembl.scaled_k_{k}.dt_{threshold}.txt"),
-# 		cNMF_ENSG_topic_raw = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/topic.raw.ensembl_k_{k}.dt_{threshold}.txt"),
-# 		cNMF_ENSG_topic_raw_scaled = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/topic.raw.ensembl.scaled_k_{k}.dt_{threshold}.txt")
-# 	params:
-# 		time = "3:00:00",
-# 		mem_gb = "64",
-# 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
-# 		figdir = os.path.join(config["figDir"], "{folder}"), 
-# 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
-# 		# barcode = os.path.join(config["barcodeDir"], "{sample}.barcodes.tsv"),
-# 		threshold = get_cNMF_filter_threshold_double
-# 		# subsample_type = config["subsample_type"]
-# 	# resources:
-# 	# 	mem_mb=get_topicModelAnalysis_memory_slurm,
-# 	# 	time = get_topicModelAnalysis_time_slurm, ## 6 hours
-# 	# 	partition = get_topicModelAnlaysis_partition_slurm  
-# 	shell:
-# 		"bash -c ' source $HOME/.bashrc; \
-# 		conda activate cnmf_analysis_R; \
-# 		Rscript workflow/scripts/cNMF_analysis.R \
-# 		--topic.model.result.dir {params.outdir}/ \
-# 		--sampleName {wildcards.sample} \
-# 		--figdir {params.figdir}/ \
-# 		--outdir {params.analysisdir}/ \
-# 		--K.val {wildcards.k} \
-# 		--density.thr {params.threshold} \
-# 		--recompute F \
-# 		--motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
-# 		--motif.promoter.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv \
-# 		' "
+rule perturbation_analysis:
+	input:
+		# mtx_RDS = config["inputRDSmtx"], # os.path.join(config["dataDir"],"aggregated.{sample}.mtx.cell_x_gene.RDS"),
+		#todo: add input files
+		spectra_tpm = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_tpm.k_{k}.dt_{threshold}.txt"),
+		spectra_zscore = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_score.k_{k}.dt_{threshold}.txt"),
+		spectra_consensus = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.spectra.k_{k}.dt_{threshold}.consensus.txt"),
+                cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+	output:
+		#todo: add output files
+		# cNMF_Analysis = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/cNMFAnalysis.k_{k}.dt_{threshold}.RData"),
+		wilcoxon_results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/all.test.k_{k}.dt_{threshold}.minGuidePerPtb_{min_guide_per_ptb}.minCellPerGuide_{min_cell_per_guide}.txt")
+	params:
+		time = "3:00:00",
+		mem_gb = "64",
+		figdir = os.path.join(config["figDir"], "{folder}"), 
+		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
+		# barcode = os.path.join(config["barcodeDir"], "{sample}.barcodes.tsv"),
+		threshold = get_cNMF_filter_threshold_double
+		# subsample_type = config["subsample_type"]
+	# resources:
+	# 	mem_mb=get_topicModelAnalysis_memory_slurm,
+	# 	time = get_topicModelAnalysis_time_slurm, ## 6 hours
+	# 	partition = get_topicModelAnlaysis_partition_slurm  
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_analysis_R; \
+		Rscript workflow/scripts/perturbationAnalysis.R \
+		--sampleName {wildcards.sample} \
+		--figdir {params.figdir}/ \
+		--outdir {params.analysisdir}/ \
+		--K.val {wildcards.k} \
+		--density.thr {params.threshold} \
+                --cell.count.thr {wildcards.min_cell_per_guide} \
+                --guide.count.thr {wildcards.min_guide_per_ptb} \
+		--recompute F \
+		--motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
+		--motif.promoter.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv \
+		' "
 
 
 rule batch_topic_correlation:
@@ -884,12 +881,21 @@ rule MAST:
         input:
                 cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
         output:
+                MAST_output = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_MAST_DEtopics.txt")
         params:
+                time = "8:00:00",
+                mem_gb = "128",
+                outdirsample = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
+                threshold = get_cNMF_filter_threshold_double
         shell:
                 "bash -c ' source $HOME/.bashrc; \
                 conda activate cnmf_analysis_R; \
-                Rscript workflow/scripts/ \
-                ' "
+                Rscript workflow/scripts/MAST_DE_Topics.R \
+                --outdirsample {params.outdirsample} \
+                --sampleName {wildcards.sample} \
+                --K.val {wildcards.k} \
+                --density.thr {params.threshold} \
+                --recompute F ' "
 
 
 rule aggregate_over_K_perturb_seq:

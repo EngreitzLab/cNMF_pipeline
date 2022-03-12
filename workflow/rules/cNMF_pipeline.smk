@@ -793,7 +793,6 @@ rule motif_enrichment_analysis_plot:
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
-		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
 		threshold = get_cNMF_filter_threshold_double
@@ -802,6 +801,7 @@ rule motif_enrichment_analysis_plot:
 		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/cNMF_analysis_motif.enrichment_plot.R \
 		--sampleName {wildcards.sample} \
+		--ep.type {wildcards.ep_type} \
 		--figdir {params.figdir}/ \
 		--outdir {params.analysisdir} \
 		--K.val {wildcards.k} \
@@ -890,7 +890,7 @@ rule findK_plot:
 	input:
 		toplot = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData")
 	output:
-		GO_raw_plot = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/GO.enrichment.on.raw.score.ranking.threshold0.1.pdf"),
+		GSEA_plots = expand(os.path.join(config["figDir"], "{{folder}}/{{sample}}/acrossK/Gene.set.enrichment.on.{gene_ranking_label}.ranking.threshold0.1.pdf"), gene_ranking_label = ["z-score", "raw-score"]),
 		topic_clustering_plot = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/cluster.topic.zscore.by.Pearson.corr.pdf")
 	params:
 		time = "3:00:00",
