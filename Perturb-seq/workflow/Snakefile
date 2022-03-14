@@ -20,11 +20,19 @@ rule all_perturb_seq_analysis:
 		## Batch correlation
 		batch_correlation_pdf = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_batch.correlation.heatmap.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 		percent_batch_topics_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/acrossK/percent.batch.topics.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
+
+		## motif enrichment
+		motif_plot_perturbseq = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_zscore.{ep_type}.motif.{test_type_and_threshold}.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], ep_type = ["enhancer", "promoter"], test_type_and_threshold = ["count.ttest.enrichment_motif.thr.qval0.1"]),
 		
 		## Statistical Test
 		# cNMF_Analysis = expand(os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/cNMFAnalysis.k_{k}.dt_{threshold}.RData"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 		wilcoxon_txt_results = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/all.test.k_{k}.dt_{threshold}.minGuidePerPtb_{min_guide_per_ptb}.minCellPerGuide_{min_cell_per_guide}.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], min_guide_per_ptb = [1], min_cell_per_guide = [2]),
-		MAST_txt_result = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_MAST_DEtopics.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]])
+		MAST_txt_result = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_MAST_DEtopics.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+
+		## aggregated across K results for Perturb-seq
+		aggregated_output_perturbseq = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.perturb-seq.RData"), folder = config["cNMF_gene_selection"], sample=config["sampleName"])
+
+
 
 		# motif_plot = expand(os.path.join(config["figDir"], "{{folder}}/{{sample}}/K{{k}}/{{sample}}_K{{k}}_dt_{{threshold}}_zscore{ep_type}.motif.enrichment{test_type_and_threshold}.pdf"), ep_type = ["enhancer", "promoter"], test_type_and_threshold = ["", "_motif.thr.10e-6", ".by.count.ttest", ".by.count.ttest_motif.thr.10e-6", ".by.count.ttest.labelPos", ".by.count.ttest_motif.thr.10e-6.labelPos"])
 		# cNMF_Results = expand(os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"), folder = config["cNMF_gene_selection"], sample=sampleName, k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),

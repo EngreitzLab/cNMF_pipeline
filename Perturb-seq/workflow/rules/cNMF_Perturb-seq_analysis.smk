@@ -883,10 +883,13 @@ rule MAST:
         output:
                 MAST_output = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_MAST_DEtopics.txt")
         params:
-                time = "8:00:00",
-                mem_gb = "128",
+                time = "12:00:00",
+                mem_gb = "160", ## 128 is good up to K=80
                 outdirsample = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
-                threshold = get_cNMF_filter_threshold_double
+                threshold = get_cNMF_filter_threshold_double,
+                perturbAnalysis_scriptdir = config["perturbAnalysis_scriptdir"]
+        # script:
+        #         "workflow/scripts/perturbationAnalysis.R"
         shell:
                 "bash -c ' source $HOME/.bashrc; \
                 conda activate cnmf_analysis_R; \
@@ -895,7 +898,7 @@ rule MAST:
                 --sampleName {wildcards.sample} \
                 --K.val {wildcards.k} \
                 --density.thr {params.threshold} \
-                --recompute F ' "
+                --scriptdir {params.perturbAnalysis_scriptdir} ' "
 
 
 rule aggregate_over_K_perturb_seq:
@@ -908,8 +911,8 @@ rule aggregate_over_K_perturb_seq:
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
-		figdir = os.path.join(config["figDir"], "{folder}"),
-		analysisdir = os.path.join(config["analysisDir"], "{folder}"),
+		figdir = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/"),
+		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/"),
 		datadir = config["dataDir"],
 		klist_comma = ",".join(str(k) for k in config["k"])
 	shell:

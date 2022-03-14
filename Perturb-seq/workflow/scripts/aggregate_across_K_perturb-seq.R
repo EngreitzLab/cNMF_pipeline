@@ -24,8 +24,8 @@ option.list <- list(
   make_option("--K.list", type="character", default="14,15,60", help="K values available for analysis"),
   # make_option("--K.val", type="numeric", default=14, help="K value to analyze"),
   make_option("--K.table", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210625_snakemake_output/analysis/2kG.library/K.spectra.threshold.table.txt", help="table for defining spectra threshold"), # opt$K.table <-"/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/all_genes/2kG.library/K.spectra.threshold.table.txt"
-  # make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
-  # make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
+  make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
+  make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
   # make_option("--ABCdir",type="character", default="/oak/stanford/groups/engreitz/Projects/ABC/200220_CAD/ABC_out/TeloHAEC_Ctrl/Neighborhoods/", help="Path to ABC enhancer directory"),
   # make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
   # make_option("--raw.mtx.dir",type="character",default="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/data/no_IL1B_filtered.normalized.ptb.by.gene.mtx.filtered.txt", help="input matrix to cNMF pipeline"),
@@ -43,6 +43,13 @@ option.list <- list(
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
+
+## 2n1.99x
+opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/figures/all_genes"
+opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/analysis/all_genes/"
+opt$sampleName <- "Perturb_2kG_dup4"
+
+## scratch sdev
 ## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes"
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/all_genes/"
 ## ## opt$datadir <- "/oak/stanford/groups/engreitz/Users/kangh/process_sequencing_data/210912_FT010_fresh_Telo_sortedEC/multiome_FT010_fresh_2min/outs/filtered_feature_bc_matrix"
@@ -149,7 +156,7 @@ if(file.exists(opt$K.table)) {
 
 ## initialize storage variables
 # promoter.fisher.df.list <- enhancer.fisher.df.list <- fgsea.results <- all.test.df.list <- all.fdr.df.list <- count.by.GWAS.list <- count.by.GWAS.withTopic.list <- theta.zscore.list <- theta.raw.list <- all.enhancer.fisher.df.list <- all.promoter.fisher.df.list <- all.enhancer.fisher.df.10en6.list <- promoter.wide.10en6.list <- promoter.wide.binary.10en6.list <- all.promoter.fisher.df.10en6.list <- all.promoter.ttest.df.list <- all.promoter.ttest.df.10en6.list <- all.enhancer.ttest.df.list <- all.enhancer.ttest.df.10en6.list <- vector("list", nrow(K.spectra.threshold))
-batch.percent.df.list <- vector("list", nrow(K.spectra.threshold))
+batch.percent.df.list <- all.test.df.list <- MAST.df.list <- vector("list", nrow(K.spectra.threshold))
 ## loop over all values of K and aggregate results
 for (n in 1:nrow(K.spectra.threshold)) {
     k <- K.spectra.threshold[n,"K"]
@@ -157,7 +164,7 @@ for (n in 1:nrow(K.spectra.threshold)) {
 
     ## subscript for files
     SUBSCRIPT.SHORT=paste0("k_", k, ".dt_", DENSITY.THRESHOLD)
-    # SUBSCRIPT=paste0("k_", k,".dt_",DENSITY.THRESHOLD,".minGuidePerPtb_",opt$guide.count.thr,".minCellPerGuide_", opt$cell.count.thr)
+    SUBSCRIPT=paste0("k_", k,".dt_",DENSITY.THRESHOLD,".minGuidePerPtb_",opt$guide.count.thr,".minCellPerGuide_", opt$cell.count.thr)
 
     ## directories
     # FIGDIRSAMPLE=ifelse(SEP, paste0(FIGDIR,SAMPLE,".sep/K",k,"/"), paste0(FIGDIR, SAMPLE, "/K",k,"/"))
@@ -204,16 +211,26 @@ for (n in 1:nrow(K.spectra.threshold)) {
 
 
 
-    # ## all statistical tests
-    # file.name <- paste0(OUTDIRSAMPLE, "/all.test.", SUBSCRIPT, ".txt")
-    # print(file.name)
-    # if(file.exists(file.name)) {
-    #     print(paste0("loading ", file.name))
-    #     all.test.df.list[[n]] <- read.table(file.name, header=T, stringsAsFactors=F) %>% mutate(K = k)
-    # } else {
-    #     print("all.test file not found")
-    # }
+    ## all Wilcoxon statistical tests
+    file.name <- paste0(OUTDIRSAMPLE, "/all.test.", SUBSCRIPT, ".txt")
+    print(file.name)
+    if(file.exists(file.name)) {
+        print(paste0("loading ", file.name))
+        all.test.df.list[[n]] <- read.table(file.name, header=T, stringsAsFactors=F) %>% mutate(K = k)
+    } else {
+        print("all.test file not found")
+    }
 
+    ## MAST statistical test
+    file.name <- paste0(OUTDIRSAMPLE, "/", SAMPLE, "_MAST_DEtopics.txt")
+    print(file.name)
+    if(file.exists(file.name)) {
+        print(paste0("loading ", file.name))
+        MAST.df.list[[n]] <- read.table(file.name, header=T, stringsAsFactors=F, fill=T, check.names=F) %>% mutate(K = k)
+    } else {
+        print("MAST result file not found")
+    }
+    
     # file.name <- paste0(OUTDIRSAMPLE, "/all.expressed.genes.pval.fdr.", SUBSCRIPT, ".txt")
     # print(file.name)
     # if(file.exists(file.name)) {
@@ -247,10 +264,11 @@ for (n in 1:nrow(K.spectra.threshold)) {
 }
 
 batch.percent.df <- do.call(rbind, batch.percent.df.list)
-
+MAST.df <- do.call(rbind, MAST.df.list)
+all.test.df <- do.call(rbind, all.test.df.list)
 
 file.name <- paste0(OUTDIR.ACROSS.K, "/aggregated.outputs.findK.perturb-seq.RData")
-save(batch.percent.df, file= file.name)
+save(batch.percent.df, all.test.df, MAST.df, file = file.name)
 # save(promoter.fisher.df, enhancer.fisher.df, fgsea.results.df, theta.zscore.df, theta.raw.df, all.promoter.ttest.df, all.promoter.ttest.df.10en6, all.enhancer.ttest.df, all.enhancer.ttest.df.10en6,
 #      file=file.name)
 

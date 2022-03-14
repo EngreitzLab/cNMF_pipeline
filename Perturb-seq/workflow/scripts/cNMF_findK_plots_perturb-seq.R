@@ -22,10 +22,15 @@ option.list <- list(
   make_option("--reference.table", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/data/210702_2kglib_adding_more_brief_ca0713.xlsx"),
   make_option("--sampleName", type="character", default="2kG.library", help="Name of Samples to be processed, separated by commas"),
   make_option("--p.adj.threshold", type="numeric", default=0.1, help="Threshold for fdr and adjusted p-value"),
-  make_option("--aggregated.data", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/acrossK/aggregated.outputs.findK.RData")
+  make_option("--aggregated.data", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/analysis//all_genes/Perturb_2kG_dup4/acrossK/aggregated.outputs.findK.perturb-seq.RData")
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
+## ## sdev for 2n1.99x singlets
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/figures/all_genes/Perturb_2kG_dup4/acrossK/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/outputs/all_genes/Perturb_2kG_dup4/acrossK/"
+## opt$aggregated.data <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/analysis/all_genes/Perturb_2kG_dup4/acrossK/aggregated.outputs.findK.perturb-seq.RData"
+## opt$sampleName <- "Perturb_2kG_dup4"
 
 ## ## for all genes (in sdev)
 ## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/figures/2kG.library/all_genes/2kG.library/acrossK/"
@@ -86,15 +91,21 @@ load(opt$aggregated.data) ## all.fdr.df, all.test.df, enhancer.fisher.df, count.
 fig.file.name <- paste0(FIGDIR, "/percent.batch.topics.pdf")
 batch.percent.df$batch.thr <- as.character(batch.percent.df$batch.thr)
 ## percent of topics correlated with batch over K
-pdf(fig.file.name, width=8, height=6)
+pdf(fig.file.name, width=6, height=4)
 p <- batch.percent.df %>% ggplot(aes(x = K, y = percent.correlated, color = batch.thr)) + geom_line() + geom_point() + mytheme +
-    ggtitle("Percent of Topics Correlated with Batch") +
+    ggtitle(paste0(SAMPLE, " Percent of Topics Correlated with Batch")) +
     scale_x_continuous(breaks = batch.percent.df$K %>% unique) +
     scale_y_continuous(name = "Percent of Topics Correlated with Batch", labels = scales::percent) +
     scale_color_discrete(name = "Pearson correlation")
 print(p)
 dev.off()
-    
+
+## MAST DE topics results
+
+## MAST DE genes results
+
+## Wilcoxon Test results
+
 
 ## ## Update the files for 2kG library
 ## ## Intersecting EdgeR and Topic Model Results
@@ -128,16 +139,40 @@ threshold = opt$p.adj.threshold
 
 
 
-## ## plot number of significant DE topics per K
-## threshold = opt$p.adj.threshold
-## pdf(file=paste0(FIGDIR, "/Topics.DE.sig.threshold", as.character(threshold), ".pdf"), width=8, height=6)
-## all.test.summary.df <- all.test.df %>% subset(adjusted.p.value < threshold & grepl("wilcoxon", test.type)) %>% group_by(K, test.type) %>% summarize(total=n())
-## K <- all.test.summary.df %>% pull(K) %>% unique() # K for x tick labels
-## p <- all.test.summary.df %>% ggplot(aes(x=K, y=total, color=test.type)) + geom_line() + geom_point() +
-##   xlab("K") + ylab(paste0("Number of DE (topic x gene) pairs (adjusted p-value < ", threshold, ")")) + mytheme +
-##   scale_x_continuous("K", labels = as.character(K), breaks = K)
-## print(p)
-## dev.off()
+## plot number of significant DE topics per K
+threshold = opt$p.adj.threshold
+wilcoxon.test.summary.df <- all.test.df %>%
+    subset(adjusted.p.value < threshold) %>%
+    group_by(K, test.type) %>%
+    summarize(total=n(),
+              unique.perturbation = unique(Gene) %>% length) %>%
+    as.data.frame
+MAST.summary.df <- MAST.df %>%
+    subset(fdr.across.ptb < threshold) %>%
+    group_by(K, zlm.model.name) %>%
+    summarize(total = n(),
+              unique.perturbation = unique(perturbation) %>% length) %>%
+    as.data.frame
+colnames(MAST.summary.df)[colnames(MAST.summary.df) == "zlm.model.name"] <- "test.type"
+all.test.summary.df <- rbind(wilcoxon.test.summary.df, MAST.summary.df) %>%
+    mutate(test.type.label = gsub("[.]", " ", test.type) %>%
+               gsub("batch correction", "MAST, with batch\ncorrection", .) %>%
+               gsub("no correction", "MAST", .))
+ 
+pdf(file=paste0(FIGDIR, "/Topics.DE.sig.threshold", as.character(threshold), ".pdf"), width=6, height=4)
+K <- all.test.summary.df %>% pull(K) %>% unique() # K for x tick labels
+p <- all.test.summary.df %>% ggplot(aes(x=K, y=total, color=test.type.label)) + geom_line() + geom_point() +
+  xlab("K") + ylab(paste0("# DE topic x perturbation pairs\n(FDR < ", threshold, ")")) + mytheme +
+  scale_x_continuous("K", labels = as.character(K), breaks = K) +
+  scale_color_manual(name = "Statistical Test", values = c("#38b4f7", "#0141a8", "#f79646", "#9bbb59", "#4bacc6", "grey"))
+print(p)
+p <- all.test.summary.df %>% ggplot(aes(x=K, y=unique.perturbation, color=test.type.label)) + geom_line() + geom_point() +
+  xlab("K") + ylab(paste0("# DE perturbations\n(FDR < ", threshold, ")")) + mytheme +
+  scale_x_continuous("K", labels = as.character(K), breaks = K) +
+  scale_color_manual(name = "Statistical Test", values = c("#38b4f7", "#0141a8", "#f79646", "#9bbb59", "#4bacc6", "grey"))
+print(p)
+dev.off()
+
 
 
 ## ## Number of perturbations with at least one DE topic per K ## need to update DE file

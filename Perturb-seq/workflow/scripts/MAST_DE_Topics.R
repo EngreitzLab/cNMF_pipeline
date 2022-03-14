@@ -46,7 +46,11 @@ option.list <- list(
     make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
     make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
     make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
-    make_option("--outdirsample", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/K60/threshold_0_2/", help="path to cNMF analysis results") ## or for 2n1.99x: "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/analysis/all_genes/Perturb_2kG_dup4/K60/threshold_0_2/"
+    make_option("--outdirsample", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/K60/threshold_0_2/", help="path to cNMF analysis results"), ## or for 2n1.99x: "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/analysis/all_genes/Perturb_2kG_dup4/K60/threshold_0_2/"
+
+    ## script dir
+    make_option("--scriptdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/Perturb-seq/workflow/scripts/", help="location for this script and functions script")
+
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
@@ -175,7 +179,7 @@ if ( !( "ann.omega" %in% ls()) ) {
     ann.omega <- ann.omega %>%
         mutate(Gene = gsub("-TSS2$", "", Gene.full.name)) ## remove TSS2 annotation
 }
-omega.tpm <- ann.omega[,1:60] %>% as.matrix %>% apply(2, function(x) x / sum(x) * 1000000) ## convert to TPM
+omega.tpm <- ann.omega[,1:k] %>% as.matrix %>% apply(2, function(x) x / sum(x) * 1000000) ## convert to TPM
 log2.omega <- (omega.tpm + 1) %>% log2 ## log2(TPM + 1)
 ## ann.omega.original <- ann.omega
 df <- merge(log2.omega %>% as.data.frame %>% mutate(long.CBC = rownames(.)), meta_data, by="long.CBC")
@@ -247,7 +251,7 @@ MAST.list <- mclapply(1:num.ptb, function(i) {
         return(fcHurdle)
     })},
     error = function(cond) {
-        return(data.frame(primerid = "",
+        return(data.frame(primerid = NA,
                           `Pr(>Chisq)`= NA,
                           coef = NA,
                           ci.hi = NA,
