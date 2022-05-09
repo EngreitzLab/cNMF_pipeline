@@ -71,6 +71,13 @@ option.list <- list(
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
+
+## ## 2n dataset (for sdev)
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/analysis/all_genes/"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/figures/all_genes/"
+## opt$K.val <- 60
+## opt$sampleName <- "Perturb_2kG_dup4"
+
 ## ## all genes directories (for sdev)
 ## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/figures/2kG.library/all_genes/"
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/"

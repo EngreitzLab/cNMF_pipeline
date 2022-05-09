@@ -74,14 +74,14 @@ mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.titl
 
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
+DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
 # STATIC.SAMPLE=c("Telo_no_IL1B_T200_1", "Telo_no_IL1B_T200_2", "Telo_plus_IL1B_T200_1", "Telo_plus_IL1B_T200_2", "no_IL1B", "plus_IL1B",  "pooled")
 DATADIR=opt$datadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
 OUTDIR=opt$outdir
-OUTDIR.ACROSS.K=paste0(OUTDIR,"/",SAMPLE,"/acrossK/")
+OUTDIR.ACROSS.K=paste0(OUTDIR,"/",SAMPLE,"/acrossK/threshold_", DENSITY.THRESHOLD, "/")
 # SEP=opt$sep
 K.list <- strsplit(opt$K.list,",") %>% unlist() %>% as.numeric()
 ## k <- opt$K.val
-DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
 FIGDIR=opt$figdir
 
 

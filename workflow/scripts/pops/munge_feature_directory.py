@@ -34,8 +34,11 @@ if __name__ == '__main__':
     for f in all_feature_files:
         print(f) ## added by Helen for debugging
         f_df = pd.read_csv(f, sep="\t", index_col=0).astype(np.float64)
-        import pdb; pdb.set_trace(); ## added by Helen for debugging
+        # import pdb; pdb.set_trace(); ## added by Helen for debugging
         f_df = gene_annot_df.merge(f_df, how="left", left_index=True, right_index=True)
+        if len(f_df.index[f_df.index.duplicated(keep='first')]) > 0:
+            print("duplicated ENSGID: " + f_df.index[f_df.index.duplicated()])
+            f_df = f_df[~f_df.index.duplicated(keep='first')] ## added by Helen to remove duplicated ENSGID ## need to make sure 
         if nan_policy == "raise":
             assert not f_df.isnull().values.any(), "Missing genes in feature matrix."
         elif nan_policy == "ignore":
@@ -50,7 +53,7 @@ if __name__ == '__main__':
         all_col_data += list(cols)
         while len(all_col_data) >= MAX_COLS:
             ### Flush MAX_COLS columns to disk at a time
-            import pdb; pdb.set_trace(); ## added by Helen for debugging
+            # import pdb; pdb.set_trace(); ## added by Helen for debugging
             mat = np.hstack(all_mat_data)
             save_mat = mat[:,:MAX_COLS]
             keep_mat = mat[:,MAX_COLS:]
@@ -65,6 +68,7 @@ if __name__ == '__main__':
             curr_block_index += 1
     ### Flush last block
     if len(all_col_data) > 0:
+        # import pdb; pdb.set_trace(); ## added by Helen for debugging
         mat = np.hstack(all_mat_data)
         np.save(save_prefix + ".mat.{}.npy".format(curr_block_index), mat)
         np.savetxt(save_prefix + ".cols.{}.txt".format(curr_block_index), all_col_data, fmt="%s")

@@ -20,6 +20,7 @@ rule all_perturb_seq_analysis:
 		## Batch correlation
 		batch_correlation_pdf = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_batch.correlation.heatmap.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 		percent_batch_topics_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/acrossK/percent.batch.topics.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
+		batch_topic_list = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/batch.topics.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 
 		## motif enrichment
 		motif_plot_perturbseq = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_zscore.{ep_type}.motif.{test_type_and_threshold}.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], ep_type = ["enhancer", "promoter"], test_type_and_threshold = ["count.ttest.enrichment_motif.thr.qval0.1"]),
@@ -30,8 +31,13 @@ rule all_perturb_seq_analysis:
 		MAST_txt_result = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_MAST_DEtopics.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 
 		## aggregated across K results for Perturb-seq
-		aggregated_output_perturbseq = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.perturb-seq.RData"), folder = config["cNMF_gene_selection"], sample=config["sampleName"])
+		aggregated_output_perturbseq = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.perturb-seq.RData"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
 
+
+		## PoPS
+		feature_x_gene_importance_score_RDS = expand(os.path.join(config["scratchDir"], 
+			"{folder}/{sample}/K{k}/threshold_{threshold}/pops/{magma_prefix}_cNMF{k}_coefs.marginals.feature.outer.prod.RDS"), folder=config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], magma_prefix=config["magma_prefix"]),
+		feature_x_gene_component_importance_score_coefs_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{magma_prefix}_cNMF{k}_dt_{threshold}_feature_x_gene.component.importance.score.coefs.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], magma_prefix=config["magma_prefix"])
 
 
 		# motif_plot = expand(os.path.join(config["figDir"], "{{folder}}/{{sample}}/K{{k}}/{{sample}}_K{{k}}_dt_{{threshold}}_zscore{ep_type}.motif.enrichment{test_type_and_threshold}.pdf"), ep_type = ["enhancer", "promoter"], test_type_and_threshold = ["", "_motif.thr.10e-6", ".by.count.ttest", ".by.count.ttest_motif.thr.10e-6", ".by.count.ttest.labelPos", ".by.count.ttest_motif.thr.10e-6.labelPos"])

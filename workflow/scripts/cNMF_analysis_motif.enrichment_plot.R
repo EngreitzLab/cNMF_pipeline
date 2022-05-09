@@ -27,7 +27,8 @@ option.list <- list(
   make_option("--test.type", type="character", default="per.guide.wilcoxon", help="Significance test to threshold perturbation results"),
   make_option("--ep.type", type="character", default="enhancer", help="motif enrichment for enhancer or promoter, specify 'enhancer' or 'promoter'"),
   make_option("--adj.p.value.thr", type="numeric", default=0.1, help="adjusted p-value threshold"),
-  make_option("--recompute", type="logical", default=F, help="T for recomputing statistical tests and F for not recompute")
+  make_option("--recompute", type="logical", default=F, help="T for recomputing statistical tests and F for not recompute"),
+  make_option("--motif.match.thr.str", type="character", default="pval0.0001", help="threshold for subsetting motif matches")
   
 )
 opt <- parse_args(OptionParser(option_list=option.list))
@@ -64,6 +65,7 @@ SUBSCRIPT.SHORT=paste0("k_", k, ".dt_", DENSITY.THRESHOLD)
 ## adjusted p-value threshold
 fdr.thr <- opt$adj.p.value.thr
 p.value.thr <- opt$adj.p.value.thr
+motif.match.thr.str <- opt$motif.match.thr.str
 
 ## ## directories for factor motif enrichment
 ## FILENAME=opt$filename
@@ -93,8 +95,8 @@ if(file.exists(cNMF.result.file)) {
 }
 
 ## load motif enrichment results
-all.ttest.df.qval0.1.path <- paste0(OUTDIRSAMPLE,"/", ep.type, ".topic.top.", num.top.genes, ".zscore.gene_motif.count.ttest.enrichment_motif.thr.qval0.1_", SUBSCRIPT.SHORT,".txt")
-ttest.df <- read.delim(all.ttest.df.qval0.1.path, stringsAsFactors=F)
+all.ttest.df.path <- paste0(OUTDIRSAMPLE,"/", ep.type, ".topic.top.", num.top.genes, ".zscore.gene_motif.count.ttest.enrichment_motif.thr.", motif.match.thr.str, "_", SUBSCRIPT.SHORT,".txt")
+ttest.df <- read.delim(all.ttest.df.path, stringsAsFactors=F)
 
 
 
@@ -132,7 +134,7 @@ volcano.plot <- function(toplot, ep.type, ranking.type, label.type="") {
     }
     t <- gsub("topic_", "", toplot$topic[1])
     p <- toplot %>% ggplot(aes(x=enrichment.log2fc, y=-log10(p.adjust))) + geom_point(size=0.5) + mytheme +
-        ggtitle(paste0(SAMPLE[1], " Topic ", t, " Top 100 ", ranking.type," ", ifelse(ep.type=="promoter", "Promoter", "Enhancer"), " Motif Enrichment")) + xlab("Motif Enrichment (log2FC)") + ylab("-log10(adjusted p-value)") +
+        ggtitle(paste0(SAMPLE[1], " Topic ", t, " Top ", num.top.genes, " ", ranking.type," ", ifelse(ep.type=="promoter", "Promoter", "Enhancer"), " Motif Enrichment")) + xlab("Motif Enrichment (log2FC)") + ylab("-log10(adjusted p-value)") +
         geom_text_repel(data=label, box.padding = 0.5,
                         aes(label=motif.toshow), size=5,
                         color="black") + theme(text=element_text(size=16), axis.title=element_text(size=16), axis.text=element_text(size=16), plot.title=element_text(size=14))
@@ -156,10 +158,10 @@ all.volcano.plots <- function(all.fisher.df, ep.type, ranking.type, label.type="
 
 ##########################################################################
 ## motif enrichment plot
-pdf(file=paste0(FIGDIRTOP, "zscore.",ep.type,".motif.count.ttest.enrichment_motif.thr.qval0.1.pdf"))
+pdf(file=paste0(FIGDIRTOP, "zscore.",ep.type,".motif.count.ttest.enrichment_motif.thr.", motif.match.thr.str, ".pdf"))
 all.volcano.plots(get(paste0("ttest.df")) %>% subset(top.gene.mean != 0 & !grepl("X.NA.",motif)), ep.type, ranking.type="z-score")
 dev.off()
-
+    
 
 # ep.names <- c("enhancer", "promoter")
 # for (ep.type in ep.names) {

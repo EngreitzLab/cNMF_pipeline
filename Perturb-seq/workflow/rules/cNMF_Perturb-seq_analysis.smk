@@ -694,7 +694,8 @@ rule batch_topic_correlation:
 		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")		
 	output:
 		batch_correlation_mtx_RDS = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/batch.correlation.RDS"),
-		batch_correlation_pdf = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_batch.correlation.heatmap.pdf")
+		batch_correlation_pdf = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_batch.correlation.heatmap.pdf"),
+		batch_topic_list = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/batch.topics.txt")
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
@@ -711,7 +712,6 @@ rule batch_topic_correlation:
 		--K.val {wildcards.k} \
 		--density.thr {params.threshold} \
 		--recompute F ' "
-
 
 
 
@@ -887,7 +887,7 @@ rule MAST:
                 mem_gb = "160", ## 128 is good up to K=80
                 outdirsample = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
                 threshold = get_cNMF_filter_threshold_double,
-                perturbAnalysis_scriptdir = config["perturbAnalysis_scriptdir"]
+                perturbAnalysis_scriptdir = os.path.join(config["pipelineDir"], "Perturb-seq/workflow/scripts")
         # script:
         #         "workflow/scripts/perturbationAnalysis.R"
         shell:
@@ -901,7 +901,7 @@ rule MAST:
                 --scriptdir {params.perturbAnalysis_scriptdir} ' "
 
 
-rule aggregate_over_K_perturb_seq:
+rule aggregate_over_K_perturb_seq: ## add MAST result
 	input:
 		aggregated_output = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData"),
 		batch_correlation_mtx_RDS = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/batch.correlation.RDS"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]])
