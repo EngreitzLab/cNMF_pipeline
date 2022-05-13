@@ -887,13 +887,15 @@ rule MAST:
                 mem_gb = "160", ## 128 is good up to K=80
                 outdirsample = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
                 threshold = get_cNMF_filter_threshold_double,
-                perturbAnalysis_scriptdir = os.path.join(config["pipelineDir"], "Perturb-seq/workflow/scripts")
+                perturbAnalysis_scriptdir = os.path.join(config["pipelineDir"], "Perturb-seq/workflow/scripts"),
+                barcode_names = config["barcodeDir"]
         # script:
         #         "workflow/scripts/perturbationAnalysis.R"
         shell:
                 "bash -c ' source $HOME/.bashrc; \
                 conda activate cnmf_analysis_R; \
                 Rscript workflow/scripts/MAST_DE_Topics.R \
+                --barcode.names {params.barcode_names} \
                 --outdirsample {params.outdirsample} \
                 --sampleName {wildcards.sample} \
                 --K.val {wildcards.k} \
@@ -903,8 +905,9 @@ rule MAST:
 
 rule aggregate_over_K_perturb_seq: ## add MAST result
 	input:
-		aggregated_output = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData"),
-		batch_correlation_mtx_RDS = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/batch.correlation.RDS"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]])
+		# aggregated_output = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData"),
+		batch_correlation_mtx_RDS = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/batch.correlation.RDS"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+                MAST_output = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/{{sample}}_MAST_DEtopics.txt"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]])
 		# cNMF_Analysis = expand(os.path.join(config["analysisDir"], "{{sample}}/{{folder}}/K{k}/threshold_0_2/cNMFAnalysis.k_{k}.dt_0_2.RData"), k=config["k"])
 	output:
 		aggregated_output = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.perturb-seq.RData")
@@ -912,9 +915,10 @@ rule aggregate_over_K_perturb_seq: ## add MAST result
 		time = "3:00:00",
 		mem_gb = "64",
 		figdir = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/"),
-		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/"),
+		analysisdir = os.path.join(config["analysisDir"], "{folder}/"),
 		datadir = config["dataDir"],
-		klist_comma = ",".join(str(k) for k in config["k"])
+		klist_comma = ",".join(str(k) for k in config["k"]),
+                K_spectra_threshold_table = config["K_spectra_threshold_table"]
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -924,7 +928,7 @@ rule aggregate_over_K_perturb_seq: ## add MAST result
 		--datadir {params.datadir} \
 		--sampleName {wildcards.sample} \
 		--K.list {params.klist_comma} \
-		--K.table {params.analysisdir}/K.spectra.threshold.table.txt ' " ## how to create this automatically?
+		--K.table {params.K_spectra_threshold_table} ' " ## how to create this automatically?
 
 
 rule findK_plot_perturb_seq:

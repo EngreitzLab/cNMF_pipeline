@@ -63,7 +63,7 @@ DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
 # STATIC.SAMPLE=c("Telo_no_IL1B_T200_1", "Telo_no_IL1B_T200_2", "Telo_plus_IL1B_T200_1", "Telo_plus_IL1B_T200_2", "no_IL1B", "plus_IL1B",  "pooled")
 DATADIR=opt$datadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
 OUTDIR=opt$outdir
-OUTDIR.ACROSS.K=paste0(OUTDIR,"/",SAMPLE,"/acrossK/threshold_", DENSITY.THRESHOLD, "/")
+OUTDIR.ACROSS.K=paste0(OUTDIR,"/",SAMPLE,"/acrossK/")
 K.list <- strsplit(opt$K.list,",") %>% unlist() %>% as.numeric()
 FIGDIR=opt$figdir
 
@@ -138,7 +138,13 @@ if(file.exists(opt$K.table)) {
 
 
 ## initialize storage variables
-clusterProfiler.GO.list <- clusterProfiler.GSEA.list <- clusterProfiler.enricher.GSEA.list <- all.MAST.df.list <- all.test.df.list <- all.fdr.df.list <- count.by.GWAS.list <- count.by.GWAS.withTopic.list <- theta.zscore.list <- theta.raw.list <-  all.promoter.ttest.df.list <- all.enhancer.ttest.df.list <- vector("list", nrow(K.spectra.threshold))
+GSEA.types <- c("GOEnrichment", "ByWeightGSEA", "GSEA")
+for (j in 1:length(GSEA.types)) {
+    GSEA.type <- GSEA.types[j]
+    to.eval <- paste0("clusterProfiler.", GSEA.type, ".list <- vector(\"list\",nrow(K.spectra.threshold))")
+    eval(parse(text = to.eval))
+}
+all.MAST.df.list <- all.test.df.list <- all.fdr.df.list <- count.by.GWAS.list <- count.by.GWAS.withTopic.list <- theta.zscore.list <- theta.raw.list <-  all.promoter.ttest.df.list <- all.enhancer.ttest.df.list <- vector("list", nrow(K.spectra.threshold))
 ## loop over all values of K and aggregate results
 for (n in 1:nrow(K.spectra.threshold)) {
     k <- K.spectra.threshold[n,"K"]
@@ -222,8 +228,12 @@ for (n in 1:nrow(K.spectra.threshold)) {
     ## load motif enrichment results
     for(ep.type in c("promoter", "enhancer")){
         num.top.genes <- 300
-        file.name <- paste0(OUTDIRSAMPLE, "/", ep.type, ".topic.top.", num.top.genes, ".zscore.gene_motif.count.ttest.enrichment_motif.thr.pval1e-6", SUBSCRIPT.SHORT,".txt")
-        eval(parse(text = paste0("all.", ep.type, ".ttest.df.list[[n]] <- read.delim(file.name, stringsAsFactors=F) %>% mutate(K = k)"))) ## store in all.{promoter, enhancer}.ttest.df.list
+        file.name <- paste0(OUTDIRSAMPLE, "/", ep.type, ".topic.top.", num.top.genes, ".zscore.gene_motif.count.ttest.enrichment_motif.thr.pval1e-6_", SUBSCRIPT.SHORT,".txt")
+        if(file.exists(file.name)) {
+            eval(parse(text = paste0("all.", ep.type, ".ttest.df.list[[n]] <- read.delim(file.name, stringsAsFactors=F) %>% mutate(K = k)"))) ## store in all.{promoter, enhancer}.ttest.df.list
+        } else {
+            message(paste0(file.name, " does not exist"))
+        }
     }
 
 
@@ -254,35 +264,25 @@ for (n in 1:nrow(K.spectra.threshold)) {
 
 
     ## GSEA results
-    types <- c("zscore", "raw")
-    clusterProfiler.GO.list.here <- clusterProfiler.GSEA.list.here <- clusterProfiler.enricher.GSEA.list.here <- vector("list",length(types))
-    for (i in 1:length(types)) {
-        type <- types[i]
-        file.name <- paste0(OUTDIRSAMPLE,"/clusterProfiler_top300Genes",type,"_GOEnrichment.txt")
-        if(file.exists(file.name)) {
-            message("Loading ", file.name)
-            clusterProfiler.GO.list.here[[i]] <- read.table(file.name, header=T, stringsAsFactors = F) %>% mutate(type = type, K = k)
-        } else {
-            print(paste0(file.name, " file does not exist"))
+    ranking.types <- c("zscore", "raw")
+    for (j in 1:length(GSEA.types)) {
+        GSEA.type <- GSEA.types[j]
+        to.eval <- paste0("clusterProfiler.", GSEA.type, ".list.here <- vector(\"list\",length(ranking.types))")
+        eval(parse(text = to.eval))
+        for (i in 1:length(ranking.types)) {
+            ranking.type <- ranking.types[i]
+            file.name <- paste0(OUTDIRSAMPLE,"/clusterProfiler_GeneRankingType",ranking.type,"_EnrichmentType", GSEA.type, ".txt")
+            if(file.exists(file.name)) {
+                message("Loading ", file.name)
+                to.eval <- paste0("clusterProfiler.", GSEA.type, ".list.here[[i]] <- read.delim(file.name, header=T, stringsAsFactors = F) %>% mutate(type = ranking.type, K = k)")
+                eval(parse(text = to.eval))
+            } else {
+                print(paste0(file.name, " file does not exist"))
+            }
         }
-        file.name <- paste0(OUTDIRSAMPLE,"/clusterProfiler_AllGene",type,"_ByWeight_GSEA.txt")
-        if(file.exists(file.name)) {
-            message("Loading ", file.name)
-            clusterProfiler.GSEA.list.here[[i]] <- read.table(file.name, header=T, stringsAsFactors = F) %>% mutate(type = type, K = k)
-        } else {
-            print(paste0(file.name, " file does not exist"))
-        }
-        file.name <- paste0(OUTDIRSAMPLE,"/clusterProfiler_top300Genes",type,"_GSEA.txt")
-        if(file.exists(file.name)) {
-            message("Loading ", file.name)
-            clusterProfiler.enricher.GSEA.list.here[[i]] <- read.table(file.name, header=T, stringsAsFactors = F) %>% mutate(type = type, K = k)
-        } else {
-            print(paste0(file.name, " file does not exist"))
-        }
+        to.eval <- paste0("clusterProfiler.", GSEA.type, ".list[[n]] <- do.call(rbind, clusterProfiler.", GSEA.type, ".list.here)")
+        eval(parse(text = to.eval))
     }
-    clusterProfiler.GO.list[[n]] <- do.call(rbind, clusterProfiler.GO.list.here)
-    clusterProfiler.GSEA.list[[n]] <- do.call(rbind, clusterProfiler.GSEA.list.here)
-    clusterProfiler.enricher.GSEA.list[[n]] <- do.call(rbind, clusterProfiler.enricher.GSEA.list.here)
     
     # ## all statistical tests
     # file.name <- paste0(OUTDIRSAMPLE, "/all.test.", SUBSCRIPT, ".txt")
@@ -328,9 +328,16 @@ for (n in 1:nrow(K.spectra.threshold)) {
 
 # promoter.fisher.df <- do.call(rbind, promoter.fisher.df.list)
 # enhancer.fisher.df <- do.call(rbind, enhancer.fisher.df.list)
-clusterProfiler.GO.df <- do.call(rbind, clusterProfiler.GO.list)
-clusterProfiler.GSEA.df <- do.call(rbind, clusterProfiler.GSEA.list)
-clusterProfiler.enricher.GSEA.df <- do.call(rbind, clusterProfiler.enricher.GSEA.list)
+GSEA.types <- c("GOEnrichment", "ByWeightGSEA", "GSEA") ## use external input
+clusterProfiler.GO.list.here <- clusterProfiler.GSEA.list.here <- clusterProfiler.enricher.GSEA.list.here <- vector("list",length(GSEA.types))
+for (j in 1:length(GSEA.types)) {
+    GSEA.type <- GSEA.types[j]
+    to.eval <- paste0("clusterProfiler.", GSEA.type, ".df <- do.call(rbind, clusterProfiler.", GSEA.type, ".list)")
+    eval(parse(text = to.eval))
+}
+## clusterProfiler.GO.df <- do.call(rbind, clusterProfiler.GO.list)
+## clusterProfiler.GSEA.df <- do.call(rbind, clusterProfiler.GSEA.list)
+## clusterProfiler.enricher.GSEA.df <- do.call(rbind, clusterProfiler.enricher.GSEA.list)
 # all.test.df <- do.call(rbind, all.test.df.list)
 # all.fdr.df <- do.call(rbind, all.fdr.df.list)
 # count.by.GWAS <- do.call(rbind, count.by.GWAS.list)
@@ -347,6 +354,6 @@ all.enhancer.ttest.df <- do.call(rbind, all.enhancer.ttest.df.list)
 file.name <- paste0(OUTDIR.ACROSS.K, "/aggregated.outputs.findK.RData")
 # save(promoter.fisher.df, enhancer.fisher.df, fgsea.results.df, all.test.df, all.fdr.df, count.by.GWAS, count.by.GWAS.withTopic, theta.zscore.df, theta.raw.df, theta.KL.df,
 #      file=file.name)
-save(clusterProfiler.GO.df, clusterProfiler.GSEA.df, clusterProfiler.enricher.GSEA.df, theta.zscore.df, theta.raw.df, all.promoter.ttest.df, all.enhancer.ttest.df,
+save(clusterProfiler.GOEnrichment.df, clusterProfiler.ByWeightGSEA.df, clusterProfiler.GSEA.df, theta.zscore.df, theta.raw.df, all.promoter.ttest.df, all.enhancer.ttest.df,
      file=file.name)
 

@@ -43,6 +43,7 @@ conflict_prefer("desc", "dplyr")
 option.list <- list(
     make_option("--K.val", type="numeric", default=60, help="K value to analyze"),
     make_option("--sampleName", type="character", default="2kG.library", help="sample name"),
+    make_option("--barcode.names", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/2kG.library.barcodes.tsv", help="barcodes.tsv for all cells"),
     make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
     make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
     make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
@@ -59,7 +60,7 @@ SAMPLE <- opt$sampleName
 DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
 SUBSCRIPT=paste0("k_", k,".dt_",DENSITY.THRESHOLD,".minGuidePerPtb_",opt$guide.count.thr,".minCellPerGuide_", opt$cell.count.thr)
 SUBSCRIPT.SHORT=paste0("k_", k, ".dt_", DENSITY.THRESHOLD)
-## OUTDIRSAMPLE <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/K60/threshold_0_2/"
+## OUTDIRSAMPLE <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/K31/threshold_0_2/"
 OUTDIRSAMPLE <- opt$outdirsample
 
 INPUTDIR <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220217_MAST/inputs/"
@@ -86,12 +87,12 @@ if(file.exists(cNMF.result.file)) {
     load(cNMF.result.file)
 }
 
-file.name <- paste0(OUTDIRSAMPLE,"/cNMFAnalysis.",SUBSCRIPT,".RData")
-print(file.name) 
-if(file.exists((file.name))) { 
-    print(paste0("loading ",file.name))
-    load(file.name) 
-}
+## file.name <- paste0(OUTDIRSAMPLE,"/cNMFAnalysis.",SUBSCRIPT,".RData")
+## print(file.name) 
+## if(file.exists((file.name))) { 
+##     print(paste0("loading ",file.name))
+##     load(file.name) 
+## }
 
 ## add UMI / cell information
 umiPerCell.df <- read.delim("/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220217_MAST/outputs/UMIPerCell.txt", stringsAsFactors=F, row.names=1) %>% mutate(long.CBC = rownames(.)) %>%
@@ -115,7 +116,9 @@ geneDetectedPerCell.df <- read.delim("/oak/stanford/groups/engreitz/Users/kangh/
     mutate(CBC_10x = paste0(CBC, "-", sample_num))  
 
 ## get metadata from log2.X.full rownames
-if(SAMPLE != "Perturb_2kG_dup4") {
+if(SAMPLE %in% c("2kG.library", "Perturb_2kG_dup4")) {
+    ## barcode.names <- read.table(opt$barcode.names, header=F, stringsAsFactors=F) %>% `colnames<-`("long.CBC")
+    ## rownames(omega) <- barcode.names %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
     meta_data <- omega %>%
         rownames %>%
         as.data.frame %>%
@@ -123,18 +126,20 @@ if(SAMPLE != "Perturb_2kG_dup4") {
         separate(col="long.CBC", into=c("Gene.full.name", "Guide", "CBC"), sep=":", remove=F) %>%
         ## separate(col="CBC", into=c("CBC", "sample"), sep="-", remove=F) %>%
         separate(col="CBC", into=c("CBC", "sample"), sep="-scRNAseq_2kG_", remove=F) %>%
-        mutate(Gene = gsub("-TSS2$", "", Gene.full.name),
+        mutate(Gene = gsub("-TSS2", "", Gene.full.name),
                CBC = gsub("RHOA-and-", "", CBC)) %>%
         as.data.frame
     sample.to.10X.lane <- data.frame(sample_num = 1:20,
                                      sample = meta_data$sample %>% unique %>% sort)
 
-    meta_data <- merge(meta_data, sample.to.10X.lane, by="sample") %>%
-        mutate(CBC_10x = paste0(CBC, "-", sample_num)) %>%
-        merge(guidePerCell.df %>% select(CBC_10x, guides_per_cbc, max_umi_ct), by="CBC_10x") %>%
-        merge(umiPerCell.df, by="long.CBC") %>%
-        merge(geneDetectedPerCell.df, by.x="long.CBC", by.y=0)
+    ## meta_data <- merge(meta_data, sample.to.10X.lane, by="sample") %>%
+    ##     mutate(CBC_10x = paste0(CBC, "-", sample_num)) %>%
+    ##     merge(guidePerCell.df %>% select(CBC_10x, guides_per_cbc, max_umi_ct), by="CBC_10x") %>%
+    ##     merge(umiPerCell.df, by="long.CBC") %>%
+    ##     merge(geneDetectedPerCell.df, by.x="long.CBC", by.y=0)
 } else {
+    barcode.names <- read.table(opt$barcode.names, header=F, stringsAsFactors=F) %>% `colnames<-`("long.CBC")
+    rownames(omega) <- barcode.names %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
     meta_data <- omega %>%
         rownames %>%
         as.data.frame %>%
@@ -185,7 +190,7 @@ log2.omega <- (omega.tpm + 1) %>% log2 ## log2(TPM + 1)
 df <- merge(log2.omega %>% as.data.frame %>% mutate(long.CBC = rownames(.)), meta_data, by="long.CBC")
 
 
-gene.here <- "MESDC1"
+## gene.here <- "MESDC1"
 gene.list <- df$Gene %>% unique
 num.ptb <- length(gene.list)
 
@@ -205,11 +210,11 @@ MAST.list <- mclapply(1:num.ptb, function(i) {
         cond <- factor(colData(scaRaw)$perturb_status)
         cond <- relevel(cond, "negative-control")
         colData(scaRaw)$condition <- cond
-        if(SAMPLE != "Perturb_2kG_dup4") {
-        colData(scaRaw)$umiPerCell <- totest.df %>% pull(num.UMI)
-        colData(scaRaw)$topGuideUMI <- totest.df %>% pull(max_umi_ct)
-        colData(scaRaw)$geneDetectedPerCell <- totest.df %>% pull(num.geneDetected)
-        }
+        ## if(!(SAMPLE %in% c("2kG.library", "Perturb_2kG_dup4"))) {
+        ## colData(scaRaw)$umiPerCell <- totest.df %>% pull(num.UMI)
+        ## colData(scaRaw)$topGuideUMI <- totest.df %>% pull(max_umi_ct)
+        ## colData(scaRaw)$geneDetectedPerCell <- totest.df %>% pull(num.geneDetected)
+        ## }
         
         format.zlm.result <- function(zlmCond) {
             condition.str <- paste0('condition', gene.here)
@@ -263,7 +268,7 @@ MAST.list <- mclapply(1:num.ptb, function(i) {
     }
     )
     ## MAST.list[[i]] <- fcHurdle %>% mutate(perturbation = gene.here)
-}, mc.cores = detectCores() - 2)
+}, mc.cores = floor(detectCores() / 2 - 1))
 MAST.df <- do.call(rbind, MAST.list) %>%
     group_by(zlm.model.name) %>%
     mutate(fdr.across.ptb = p.adjust(`Pr(>Chisq)`, method='fdr')) %>%

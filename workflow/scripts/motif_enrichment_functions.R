@@ -10,10 +10,12 @@ ttest.on.motifs <- function(wide){##todo:210812:a
             top.gene.boolean <- wide.here %>% pull(all_of(topic)) == 1
             background.count <- wide.here[which(!top.gene.boolean),] %>% pull(all_of(motif.here))
             top.gene.count <- wide.here[which(top.gene.boolean),] %>% pull(all_of(motif.here))
-            test.result <- t.test(top.gene.count, background.count)$p.value
+            one.sided.test.result <- t.test(top.gene.count, background.count, alternative = "greater")$p.value
+            two.sided.test.result <- t.test(top.gene.count, background.count)$p.value
             output <- data.frame(motif=motif.here,
                                  topic=topic,
-                                 p.value = test.result) %>%
+                                 one.sided.p.value = one.sided.test.result,
+                                 two.sided.p.value = two.sided.test.result) %>%
                 mutate(global.mean=background.count %>% mean,
                        global.var=background.count %>% var,
                        global.count=dim(wide)[1],
@@ -24,7 +26,8 @@ ttest.on.motifs <- function(wide){##todo:210812:a
                        enrichment.log2fc=log2(enrichment)
                        )                
         }))
-    })) %>% mutate(p.adjust = p.adjust(p.value, method="BH"))##here210813
+    })) %>% mutate(one.sided.p.adjust = p.adjust(one.sided.p.value, method="fdr"), ## result for "fdr" and "BH" are the same
+                   two.sided.p.adjust = p.adjust(two.sided.p.value, method="fdr"))##here210813
     ## adjust -Inf and +Inf for log2FC
     inf.index <- all.ttest.df %>% pull(enrichment.log2fc) %>% is.infinite %>% which
     neg.inf.index <- ( all.ttest.df %>% pull(top.gene.mean) == 0 ) %>% which

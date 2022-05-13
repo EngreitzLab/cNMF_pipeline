@@ -109,8 +109,19 @@ if(file.exists(cNMF.result.file)) {
 
 
 ## annotate omega to get Gene, Guide, Sample, and CBC
-ann.omega <- omega %>% as.data.frame %>% mutate(long.CBC = rownames(.)) %>% separate(col=long.CBC, into=c("Gene", "Guide", "CBC-sample"), sep=":", remove=F) %>% separate(col=`CBC-sample`, into=c("CBC", "sample"), sep="-")
-
+## if(SAMPLE == "2kG.library") {
+##     barcodePath <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/2kG.library.barcodes.tsv"
+##     barcode.names <- read.table(barcodePath, header=F, stringsAsFactors=F) %>% `colnames<-`("long.CBC")
+##     rownames(omega) <- barcode.names %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
+## }
+## ann.omega <- omega %>%
+##     as.data.frame %>%
+##     mutate(long.CBC = rownames(.)) %>%
+##     separate(col=long.CBC, into=c("Gene", "Guide", "CBC-sample"), sep=":", remove=F) %>%
+##     separate(col=`CBC-sample`, into=c("CBC", "sample"), sep="-")
+ann.omega <- cbind(omega, barcode.names) %>%
+    mutate(CBC = gsub("RHOA-and-", "", CBC)) %>%
+    separate(col=`CBC`, into=c("CBC", "sample"), sep="-")
 
 
 ## Batch Effect QC: correlate batch binary labels with topic expression
@@ -118,8 +129,8 @@ ann.omega <- omega %>% as.data.frame %>% mutate(long.CBC = rownames(.)) %>% sepa
 ann.omega.batch <- ann.omega %>% mutate(sample.short = gsub("scRNAseq_2kG_", "", sample) %>% gsub("_.*$","", .))
 ann.omega.batch.binary <- ann.omega.batch %>% mutate(tmp.value = 1) %>% spread(key="sample.short", fill=0, value="tmp.value")
 ann.omega.sample.batch.binary <- ann.omega.batch %>% mutate(tmp.value = 1) %>% spread(key="sample", fill=0, value="tmp.value")
-ann.omega.batch.binary.mtx <- ann.omega.batch.binary %>% select(-long.CBC,-Guide,-CBC,-sample,-Gene) %>% as.matrix()
-ann.omega.sample.batch.binary.mtx <- ann.omega.sample.batch.binary %>% select(-long.CBC,-Guide,-CBC,-sample.short,-Gene) %>% as.matrix()
+ann.omega.batch.binary.mtx <- ann.omega.batch.binary %>% select(-long.CBC,-Gene.full.name,-Guide,-CBC,-sample,-Gene) %>% as.matrix()
+ann.omega.sample.batch.binary.mtx <- ann.omega.sample.batch.binary %>% select(-long.CBC,-Gene.full.name,-Guide,-CBC,-sample.short,-Gene) %>% as.matrix()
 m <- cor(ann.omega.batch.binary.mtx, method="pearson") %>% as.matrix()
 batch.correlation.mtx <- m[1:k,(k+1):(dim(m)[2])]
 m <- cor(ann.omega.sample.batch.binary.mtx, method="pearson") %>% as.matrix()

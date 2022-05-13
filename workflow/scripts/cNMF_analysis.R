@@ -52,7 +52,7 @@ option.list <- list(
   make_option("--raw.mtx.dir",type="character",default="stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/data/no_IL1B_filtered.normalized.ptb.by.gene.mtx.filtered.txt", help="input matrix to cNMF pipeline"),
   make_option("--raw.mtx.RDS.dir",type="character",default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/aggregated.2kG.library.mtx.cell_x_gene.RDS", help="input matrix to cNMF pipeline"), # the first lane: "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/aggregated.2kG.library.mtx.cell_x_gene.expandedMultiTargetGuide.RDS"
   make_option("--subsample.type", type="character", default="", help="Type of cells to keep. Currently only support ctrl"),
-  # make_option("--barcode.names", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/barcodes.tsv", help="barcodes.tsv for all cells"),
+  make_option("--barcode.names", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/2kG.library.barcodes.tsv", help="barcodes.tsv for all cells"),
   make_option("--reference.table", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/data/210702_2kglib_adding_more_brief_ca0713.xlsx"),
   
   ## fisher motif enrichment
@@ -268,48 +268,48 @@ invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recur
 
 
 
-# ## for the guides that target multiple genes, we will split the gene annotation and duplicate the cell entry, so that each gene will get a cell read out.
-# adjust.multiTargetGuide.rownames <- function(omega) {
-#     ## duplicate cells with guide that targets multiple genes
-#     cells.with.multiTargetGuide <- rownames(omega)[grepl("and",rownames(omega))]
-#     if(length(cells.with.multiTargetGuide) > 0) {
-#         ## split index by number of guide targets
-#         cells.with.multiTargetGuide.index <- which(grepl("and",rownames(omega)))
-#         cells.with.singleTargetGuide.index <- which(!grepl("and",rownames(omega)))
-#         ## get multi target gene names
-#         multiTarget.names <- cells.with.multiTargetGuide %>% strsplit(., split=":") %>% sapply("[[",1) ## full names: GeneA-and-GeneB
-#         multiTarget.Guide.CBC <- cells.with.multiTargetGuide %>% strsplit(., split=":") %>% sapply( function(x) paste0(x[[2]], ":", x[[3]]) )
-#         multiTarget.names.1 <- multiTarget.names %>% strsplit(., split="-and-") %>% sapply ("[[",1)
-#         multiTarget.names.2 <- multiTarget.names %>% strsplit(., split="-and-") %>% sapply ("[[",2)
-#         multiTarget.names.all <- multiTarget.names.1 %>% append(multiTarget.names.2) %>% unique() ## get all the genes/enhancers that have guides targeting other gene/enhancer at the same time
-#         cells.with.multiTarget.gene.names.index <- which(grepl(paste0(multiTarget.names.all,collapse="|"), rownames(omega)))
+## for the guides that target multiple genes, we will split the gene annotation and duplicate the cell entry, so that each gene will get a cell read out.
+adjust.multiTargetGuide.rownames <- function(omega) {
+    ## duplicate cells with guide that targets multiple genes
+    cells.with.multiTargetGuide <- rownames(omega)[grepl("and",rownames(omega))]
+    if(length(cells.with.multiTargetGuide) > 0) {
+        ## split index by number of guide targets
+        cells.with.multiTargetGuide.index <- which(grepl("and",rownames(omega)))
+        cells.with.singleTargetGuide.index <- which(!grepl("and",rownames(omega)))
+        ## get multi target gene names
+        multiTarget.names <- cells.with.multiTargetGuide %>% strsplit(., split=":") %>% sapply("[[",1) ## full names: GeneA-and-GeneB
+        multiTarget.Guide.CBC <- cells.with.multiTargetGuide %>% strsplit(., split=":") %>% sapply( function(x) paste0(x[[2]], ":", x[[3]]) )
+        multiTarget.names.1 <- multiTarget.names %>% strsplit(., split="-and-") %>% sapply ("[[",1)
+        multiTarget.names.2 <- multiTarget.names %>% strsplit(., split="-and-") %>% sapply ("[[",2)
+        multiTarget.names.all <- multiTarget.names.1 %>% append(multiTarget.names.2) %>% unique() ## get all the genes/enhancers that have guides targeting other gene/enhancer at the same time
+        cells.with.multiTarget.gene.names.index <- which(grepl(paste0(multiTarget.names.all,collapse="|"), rownames(omega)))
 
-#         multiTarget.long.CBC.1 <- sapply(1:length(multiTarget.names), function(i) {
-#             paste0(multiTarget.names.1[i], "_multiTarget:", multiTarget.Guide.CBC[i])
-#         })
-#         multiTarget.long.CBC.2 <- sapply(1:length(multiTarget.names), function(i) {
-#             paste0(multiTarget.names.2[i], "_multiTarget:", multiTarget.Guide.CBC[i])
-#         })
-#         ## change original df's rownames
-#         multiTargetGuide.mtx <- omega[cells.with.multiTargetGuide.index,]
-#         multiTargetGuide.mtx.1 <- multiTargetGuide.mtx %>% `rownames<-`(multiTarget.long.CBC.1)
-#         multiTargetGuide.mtx.2 <- multiTargetGuide.mtx %>% `rownames<-`(multiTarget.long.CBC.2)
-#         ## pull cells with guides that has a single target, but the perturbed gene has multiTarget guide
-#         expanded.gene.name.df <- do.call(rbind, lapply(1:length(multiTarget.names.all), function(i) {
-#             gene.name.here <- multiTarget.names.all[i]
-#             toPaste.gene.name.here <- multiTarget.names[which(grepl(gene.name.here, multiTarget.names))] %>% gsub("-TSS2","",.) %>% unique()
-#             out <- do.call(rbind, lapply(1:length(toPaste.gene.name.here), function(j) {
-#                 singleTarget.cell.index.here <- which(grepl(gene.name.here,rownames(omega)) & !grepl("and",rownames(omega)))
-#                 singleTarget.cell.df <- omega[singleTarget.cell.index.here,]
-#                 rownames(singleTarget.cell.df) <- gsub(gene.name.here,toPaste.gene.name.here[j],rownames(singleTarget.cell.df))
-#                 return(singleTarget.cell.df)
-#             }))
-#             return(out)
-#         })) # takes two minutes
-#         omega <- rbind(omega[cells.with.singleTargetGuide.index,], multiTargetGuide.mtx.1, multiTargetGuide.mtx.2, expanded.gene.name.df)
-#     }
-#     return(omega)
-# }    
+        multiTarget.long.CBC.1 <- sapply(1:length(multiTarget.names), function(i) {
+            paste0(multiTarget.names.1[i], "_multiTarget:", multiTarget.Guide.CBC[i])
+        })
+        multiTarget.long.CBC.2 <- sapply(1:length(multiTarget.names), function(i) {
+            paste0(multiTarget.names.2[i], "_multiTarget:", multiTarget.Guide.CBC[i])
+        })
+        ## change original df's rownames
+        multiTargetGuide.mtx <- omega[cells.with.multiTargetGuide.index,]
+        multiTargetGuide.mtx.1 <- multiTargetGuide.mtx %>% `rownames<-`(multiTarget.long.CBC.1)
+        multiTargetGuide.mtx.2 <- multiTargetGuide.mtx %>% `rownames<-`(multiTarget.long.CBC.2)
+        ## pull cells with guides that has a single target, but the perturbed gene has multiTarget guide
+        expanded.gene.name.df <- do.call(rbind, lapply(1:length(multiTarget.names.all), function(i) {
+            gene.name.here <- multiTarget.names.all[i]
+            toPaste.gene.name.here <- multiTarget.names[which(grepl(gene.name.here, multiTarget.names))] %>% gsub("-TSS2","",.) %>% unique()
+            out <- do.call(rbind, lapply(1:length(toPaste.gene.name.here), function(j) {
+                singleTarget.cell.index.here <- which(grepl(gene.name.here,rownames(omega)) & !grepl("and",rownames(omega)))
+                singleTarget.cell.df <- omega[singleTarget.cell.index.here,]
+                rownames(singleTarget.cell.df) <- gsub(gene.name.here,toPaste.gene.name.here[j],rownames(singleTarget.cell.df))
+                return(singleTarget.cell.df)
+            }))
+            return(out)
+        })) # takes two minutes
+        omega <- rbind(omega[cells.with.singleTargetGuide.index,], multiTargetGuide.mtx.1, multiTargetGuide.mtx.2, expanded.gene.name.df)
+    }
+    return(omega)
+}    
 
 
 ######################################################################
@@ -359,10 +359,13 @@ invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recur
     print(omega.path)
     omega.original <- omega <- read.delim(omega.path, header=T, stringsAsFactors=F, check.names=F, row.names = 1)  %>% apply(1, function(x) x/sum(x)) %>% t()
     colnames(omega) <- paste0("topic_",colnames(omega))
-    # barcode.names <- read.table(opt$barcode.names, header=F, stringsAsFactors=F) %>% `colnames<-`("long.CBC")
-    # rownames(omega) <- rownames(omega.original) <- barcode.names %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
-    # omega <- adjust.multiTargetGuide.rownames(omega)
-    # barcode.names <- data.frame(long.CBC=rownames(omega)) %>% separate(col="long.CBC", into=c("Gene.full.name", "Guide", "CBC"), sep=":", remove=F) %>% mutate(Gene = gsub("_multiTarget|-TSS", "", Gene.full.name))
+
+    barcode.names <- read.table(opt$barcode.names, header=F, stringsAsFactors=F) %>% `colnames<-`("long.CBC")
+    if(SAMPLE == "2kG.library") {
+        rownames(omega) <- rownames(omega.original) <- barcode.names %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
+    omega <- adjust.multiTargetGuide.rownames(omega)
+    barcode.names <- data.frame(long.CBC=rownames(omega)) %>% separate(col="long.CBC", into=c("Gene.full.name", "Guide", "CBC"), sep=":", remove=F) %>% mutate(Gene = gsub("_multiTarget|-TSS2$", "", Gene.full.name))
+    }
 
     print("save the data")
     ensembl.theta.zscore.names <- mapIds(org.Hs.eg.db, keys = rownames(theta.zscore), keytype = "SYMBOL", column="ENSEMBL")
@@ -382,7 +385,7 @@ invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recur
     theta.zscore.ensembl.scaled <- theta.zscore.ensembl %>% select(-ENSGID) %>% apply(2, scale) %>% as.data.frame %>% mutate(ENSGID=ensembl.theta.zscore.names,.before=paste0("zscore_K",k,"_topic1"))
     
     
-    save(theta, theta.raw, theta.zscore, omega, theta.path, omega.path, # barcode.names,
+    save(theta, theta.raw, theta.zscore, omega, theta.path, omega.path, barcode.names,
          file=cNMF.result.file)
 
     write.table(theta.zscore, file=paste0(OUTDIRSAMPLE, "/topic.zscore_",SUBSCRIPT.SHORT, ".txt"), row.names=T, quote=F, sep="\t")

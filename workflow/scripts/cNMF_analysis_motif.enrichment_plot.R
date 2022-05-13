@@ -26,9 +26,9 @@ option.list <- list(
   #summary plot parameters
   make_option("--test.type", type="character", default="per.guide.wilcoxon", help="Significance test to threshold perturbation results"),
   make_option("--ep.type", type="character", default="enhancer", help="motif enrichment for enhancer or promoter, specify 'enhancer' or 'promoter'"),
-  make_option("--adj.p.value.thr", type="numeric", default=0.1, help="adjusted p-value threshold"),
+  make_option("--adj.p.value.thr", type="numeric", default=0.05, help="adjusted p-value threshold"),
   make_option("--recompute", type="logical", default=F, help="T for recomputing statistical tests and F for not recompute"),
-  make_option("--motif.match.thr.str", type="character", default="pval0.0001", help="threshold for subsetting motif matches")
+  make_option("--motif.match.thr.str", type="character", default="pval1e-6", help="threshold for subsetting motif matches")
   
 )
 opt <- parse_args(OptionParser(option_list=option.list))
@@ -38,7 +38,9 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/"
 ## opt$K.val <- 60
 
-mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
+mytheme <- theme_classic() + theme(axis.text = element_text(size = 7),
+                                   axis.title = element_text(size = 8),
+                                   plot.title = element_text(hjust = 0.5, face = "bold", size=8))
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 # STATIC.SAMPLE=c("Telo_no_IL1B_T200_1", "Telo_no_IL1B_T200_2", "Telo_plus_IL1B_T200_1", "Telo_plus_IL1B_T200_2", "no_IL1B", "plus_IL1B",  "pooled")
@@ -128,22 +130,28 @@ ttest.df <- read.delim(all.ttest.df.path, stringsAsFactors=F)
 ## volcano plots
 volcano.plot <- function(toplot, ep.type, ranking.type, label.type="") {
     if( label.type == "pos") {
-        label <- toplot %>% subset(-log10(p.adjust) > 1 & enrichment.log2fc > 0) %>% mutate(motif.toshow = gsub("HUMAN.H11MO.", "", motif))
+        label <- toplot %>% subset(two.sided.p.adjust < fdr.thr & enrichment.log2fc > 0) %>% mutate(motif.toshow = gsub("HUMAN.H11MO.", "", motif))
     } else {
-        label <- toplot %>% subset(-log10(p.adjust) > 1) %>% mutate(motif.toshow = gsub("HUMAN.H11MO.", "", motif))
+        label <- toplot %>% subset(two.sided.p.adjust < fdr.thr) %>% mutate(motif.toshow = gsub("HUMAN.H11MO.", "", motif))
     }
     t <- gsub("topic_", "", toplot$topic[1])
-    p <- toplot %>% ggplot(aes(x=enrichment.log2fc, y=-log10(p.adjust))) + geom_point(size=0.5) + mytheme +
-        ggtitle(paste0(SAMPLE[1], " Topic ", t, " Top ", num.top.genes, " ", ranking.type," ", ifelse(ep.type=="promoter", "Promoter", "Enhancer"), " Motif Enrichment")) + xlab("Motif Enrichment (log2FC)") + ylab("-log10(adjusted p-value)") +
-        geom_text_repel(data=label, box.padding = 0.5,
-                        aes(label=motif.toshow), size=5,
-                        color="black") + theme(text=element_text(size=16), axis.title=element_text(size=16), axis.text=element_text(size=16), plot.title=element_text(size=14))
+    p <- toplot %>% ggplot(aes(x=enrichment.log2fc, y=-log10(two.sided.p.adjust))) + geom_point(size=0.5) + mytheme +
+        ggtitle(paste0(SAMPLE[1], " Topic ", t, " Top ", num.top.genes, " ", ranking.type,"\n", ifelse(ep.type=="promoter", "Promoter", "Enhancer"), " Motif Enrichment")) + xlab("Motif Enrichment (log2FC)") + ylab("-log10(adjusted p-value)") +
+        xlim(0,max(toplot$enrichment.log2fc)) +
+        geom_hline(yintercept=-log10(fdr.thr), linetype="dashed", color="gray") +
+        geom_text_repel(data=label, box.padding = 0.25,
+                        aes(label=motif.toshow), size=2.5,
+                        max.overlaps = 15,
+                        color="black")# + theme(text=element_text(size=16), axis.title=element_text(size=16), axis.text=element_text(size=16), plot.title=element_text(size=14))
     print(p)
-    p <- toplot %>% ggplot(aes(x=enrichment.log2fc, y=-log10(p.value))) + geom_point(size=0.5) + mytheme +
-        ggtitle(paste0(SAMPLE[1], " Topic ", t, " Top ", num.top.genes," ", ranking.type," ", ifelse(ep.type=="promoter", "Promoter", "Enhancer"), " Motif Enrichment")) + xlab("Motif Enrichment (log2FC)") + ylab("-log10(p-value)") +
-        geom_text_repel(data=label, box.padding = 0.5,
-                        aes(label=motif.toshow), size=5,
-                        color="black") + theme(text=element_text(size=16), axis.title=element_text(size=16), axis.text=element_text(size=16), plot.title=element_text(size=14))
+    p <- toplot %>% ggplot(aes(x=enrichment.log2fc, y=-log10(p.value))) + geom_point(size=0.25) + mytheme +
+        ggtitle(paste0(SAMPLE[1], " Topic ", t, " Top ", num.top.genes," ", ranking.type,"\n", ifelse(ep.type=="promoter", "Promoter", "Enhancer"), " Motif Enrichment")) + xlab("Motif Enrichment (log2FC)") + ylab("-log10(p-value)") +
+        xlim(0,max(toplot$enrichment.log2fc)) +
+        geom_hline(yintercept=-log10(fdr.thr), linetype="dashed", color="gray") +
+        geom_text_repel(data=label, box.padding = 0.25,
+                        aes(label=motif.toshow), size=2.5,
+                        max.overlaps = 15,
+                        color="black") #+ theme(text=element_text(size=16), axis.title=element_text(size=16), axis.text=element_text(size=16), plot.title=element_text(size=14))
     return(p)
 }
 
@@ -158,7 +166,7 @@ all.volcano.plots <- function(all.fisher.df, ep.type, ranking.type, label.type="
 
 ##########################################################################
 ## motif enrichment plot
-pdf(file=paste0(FIGDIRTOP, "zscore.",ep.type,".motif.count.ttest.enrichment_motif.thr.", motif.match.thr.str, ".pdf"))
+pdf(file=paste0(FIGDIRTOP, "zscore.",ep.type,".motif.count.ttest.enrichment_motif.thr.", motif.match.thr.str, ".pdf"), width=3, height=3)
 all.volcano.plots(get(paste0("ttest.df")) %>% subset(top.gene.mean != 0 & !grepl("X.NA.",motif)), ep.type, ranking.type="z-score")
 dev.off()
     

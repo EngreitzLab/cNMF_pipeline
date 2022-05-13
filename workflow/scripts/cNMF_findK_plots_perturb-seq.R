@@ -13,6 +13,7 @@ suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(ggrepel))
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(gplots))
+suppressPackageStartupMessages(library(cowplot))
 
 ## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
@@ -35,7 +36,7 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## ## for all genes (in sdev)
 ## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/figures/2kG.library/all_genes/2kG.library/acrossK/"
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/acrossK/"
-## opt$aggregated.data <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/acrossK//aggregated.outputs.findK.RData"
+## opt$aggregated.data <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/acrossK//aggregated.outputs.findK.perturb-seq.RData"
 
 
 ## ## ## for testing cNMF_ pipeline
@@ -78,31 +79,107 @@ invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recur
 ## load("/Volumes/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2105_findK/analysis/no_IL1B/aggregated.outputs.findK.RData")
 ## load("/Volumes/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/differential_expression/210526_SeuratDE/outputs/no_IL1B/de.markers.RData")
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
+mytheme <- theme_classic() + theme(axis.text = element_text(size = 5),
+                                   axis.title = element_text(size = 6),
+                                   plot.title = element_text(hjust = 0.5, face = "bold", size=7),
+                                   axis.line = element_line(color = "black", size = 0.25),
+                                   axis.ticks = element_line(color = "black", size = 0.25),
+                                   legend.title  = element_text(size=6),
+                                   legend.text = element_text(size=6))
 palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
 
 ## Load data
-load(opt$aggregated.data) ## all.fdr.df, all.test.df, enhancer.fisher.df, count.by.GWAS, fgsea.results.df, promoter.fisher.df
+load(opt$aggregated.data) ## MAST.df, all.test.df, all.enhancer.ttest.df, all.promoter.ttest.df
 ## ref.table <- read_xlsx(opt$reference.table, sheet="2000_gene_library_annotated") 
 
-
+## process mast data
+MAST.original <- MAST.df <- MAST.df %>% mutate(ProgramID = gsub("topic_", "K60_", primerid)) %>%
+    mutate(perturbation = gsub("MESDC1", "TLNRD1", perturbation))
+## for antiparallel genes, GeneA-and-GeneB, keep {GeneA, GeneB}_multiTarget and remove {GeneA, GeneB} perturbations
+antiparallel.perturbation <- MAST.df %>% subset(grepl("multiTarget", perturbation)) %>% pull(perturbation) %>% unique %>% gsub("_multiTarget", "", .)
+MAST.df <- MAST.df %>%
+    subset(zlm.model.name == "batch.correction") %>%
+    subset(!(perturbation %in% antiparallel.perturbation)) %>%
+    group_by(zlm.model.name, K) %>%
+    mutate(fdr.across.ptb = p.adjust(`Pr(>Chisq)`, method="fdr")) %>%
+    group_by(ProgramID) %>%
+    arrange(desc(coef)) %>%
+    mutate(coef_rank = 1:n()) %>%
+    as.data.frame
+sig.MAST.df <- MAST.df %>% subset(fdr.across.ptb < fdr.thr)
  
 ##################################################
 ## plots
-fig.file.name <- paste0(FIGDIR, "/percent.batch.topics.pdf")
+fig.file.name <- paste0(FIGDIR, "/percent.batch.topics")
 batch.percent.df$batch.thr <- as.character(batch.percent.df$batch.thr)
 ## percent of topics correlated with batch over K
-pdf(fig.file.name, width=6, height=4)
-p <- batch.percent.df %>% ggplot(aes(x = K, y = percent.correlated, color = batch.thr)) + geom_line() + geom_point() + mytheme +
-    ggtitle(paste0(SAMPLE, " Percent of Topics Correlated with Batch")) +
-    scale_x_continuous(breaks = batch.percent.df$K %>% unique) +
-    scale_y_continuous(name = "Percent of Topics Correlated with Batch", labels = scales::percent) +
+pdf(paste0(fig.file.name, ".pdf"), width=3, height=2)
+p <- batch.percent.df %>% ggplot(aes(x = K, y = percent.correlated, color = batch.thr)) + geom_line(size=0.5) + geom_point(size=0.5) + mytheme +
+    ggtitle(paste0(SAMPLE, " Percent of Programs Correlated with Batch")) +
+    ## scale_x_continuous(breaks = batch.percent.df$K %>% unique) + 
+    scale_y_continuous(name = "% Programs Correlated with Batch", labels = scales::percent) +
     scale_color_discrete(name = "Pearson correlation")
 print(p)
+ggsave(paste0(fig.file.name, ".eps"))
 dev.off()
 
 ## MAST DE topics results
+## metrics:
+## # programs 
+## # unique programs
+## fraction of significant programs
+MAST.program.summary.df <- sig.MAST.df %>%
+    select(K, ProgramID) %>%
+    unique %>%
+    group_by(K) %>%
+    summarize(nPrograms = n()) %>%
+    mutate(fractionPrograms = nPrograms / K) %>%
+    as.data.frame
+MAST.ptb.summary.df <- sig.MAST.df %>%
+    select(K, perturbation) %>%
+    unique %>%
+    group_by(K) %>%
+    summarize(nPerturbations = n()) %>%
+    as.data.frame
+MAST.ptb.program.pair.summary.df <- sig.MAST.df %>%
+    select(K, ProgramID, perturbation) %>%
+    unique %>%
+    group_by(K) %>%
+    summarize(nPerturbationProgramPairs = n()) %>%
+    mutate(averagePerturbationProgramPairs = nPerturbationProgramPairs / K) %>%
+    as.data.frame
+MAST.summary.df <- merge(MAST.program.summary.df, MAST.ptb.summary.df, by="K", all=T) %>% merge(MAST.ptb.program.pair.summary.df, by="K", all=T)    
+## function to produce find K plot based on MAST result
+plotMAST <- function(toplot, MAST.metric, MAST.metric.label) {
+    p <- toplot %>% ggplot(aes(x=K, y=get(MAST.metric))) + geom_point(size=0.5) + geom_line(size=0.5) + mytheme +
+    xlab("K") + ylab(paste0(MAST.metric.label))
+    print(p)
+    return(p)
+}
 
-## MAST DE genes results
+toplot <- MAST.summary.df
+MAST.metrics <- MAST.summary.df %>% select(-K) %>% colnames
+MAST.metric.labels <- c("# Significant\nPrograms", "Fraction of\nSignificant\nPrograms", "# Regulators", "# Regulator x\n Program Pairs", "Average #\nRegulator x\nProgram Pairs")
+
+plotFilename <- paste0(FIGDIR, "MAST")
+plot.list <- list()
+pdf(paste0(plotFilename, ".pdf"), width=3, height=3)
+for(i in 1:length(MAST.metrics)) {
+    MAST.metric = MAST.metrics[i] 
+   MAST.metric.label = MAST.metric.labels[i]
+    plot.list[[MAST.metric]] <- plotMAST(toplot, MAST.metric, MAST.metric.label)
+    eval(parse(text = paste0("p.", MAST.metric, " <- p")))
+}
+dev.off()
+
+plotFilename <- paste0(FIGDIR, "All_MAST")
+pdf(paste0(plotFilename, ".pdf"), width=2, height=4)
+p <- plot_grid(plotlist = plot.list, nrow = length(plot.list), align="v", axis="lr")
+p <- annotate_figure(p, top = text_grob("Statistical test by MAST", size=8))
+print(p)
+ggsave(paste0(plotFilename, ".eps"))
+dev.off()
+
 
 ## Wilcoxon Test results
 
