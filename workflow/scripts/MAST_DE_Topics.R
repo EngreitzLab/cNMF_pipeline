@@ -23,7 +23,7 @@ conflict_prefer("filter", "dplyr")
 
 packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
               "tidyr", "grid", "gtable", "gridExtra","ggrepel",#"ramify",
-              "ggpubr","gridExtra",
+              "ggpubr","gridExtra", "parallel", "future",
               "org.Hs.eg.db","limma","conflicted", #"fgsea", 
               "cluster","textshape","readxl", 
               "ggdist", "gghalves", "Seurat", "writexl", "SingleCellExperiment", "MAST") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
@@ -268,14 +268,14 @@ MAST.list <- mclapply(1:num.ptb, function(i) {
     }
     )
     ## MAST.list[[i]] <- fcHurdle %>% mutate(perturbation = gene.here)
-}, mc.cores = floor(detectCores() / 2 - 1))
+}, mc.cores = floor(availableCores() - 1))
 MAST.df <- do.call(rbind, MAST.list) %>%
     group_by(zlm.model.name) %>%
     mutate(fdr.across.ptb = p.adjust(`Pr(>Chisq)`, method='fdr')) %>%
     as.data.frame
 write.table(MAST.df, file=paste0(OUTDIRSAMPLE, "/", SAMPLE, "_MAST_DEtopics.txt"), quote=F, row.names=F, sep="\t")
 
-MAST.df <- read.delim(paste0(OUTDIRSAMPLE, "/", SAMPLE, "_MAST_DEtopics.txt"), stringsAsFactors=F)
+## MAST.df <- read.delim(paste0(OUTDIRSAMPLE, "/", SAMPLE, "_MAST_DEtopics.txt"), stringsAsFactors=F)
 
 ## ## end of 220222 scratch
 
