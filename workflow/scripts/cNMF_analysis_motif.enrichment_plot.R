@@ -144,7 +144,7 @@ volcano.plot <- function(toplot, ep.type, ranking.type, label.type="") {
                         max.overlaps = 15,
                         color="black")# + theme(text=element_text(size=16), axis.title=element_text(size=16), axis.text=element_text(size=16), plot.title=element_text(size=14))
     print(p)
-    p <- toplot %>% ggplot(aes(x=enrichment.log2fc, y=-log10(p.value))) + geom_point(size=0.25) + mytheme +
+    p <- toplot %>% ggplot(aes(x=enrichment.log2fc, y=-log10(two.sided.p.value))) + geom_point(size=0.25) + mytheme +
         ggtitle(paste0(SAMPLE[1], " Topic ", t, " Top ", num.top.genes," ", ranking.type,"\n", ifelse(ep.type=="promoter", "Promoter", "Enhancer"), " Motif Enrichment")) + xlab("Motif Enrichment (log2FC)") + ylab("-log10(p-value)") +
         xlim(0,max(toplot$enrichment.log2fc)) +
         geom_hline(yintercept=-log10(fdr.thr), linetype="dashed", color="gray") +

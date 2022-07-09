@@ -123,8 +123,7 @@ load(opt$aggregated.data) ## all.fdr.df, all.test.df, enhancer.fisher.df, count.
 ## GSEA plots
 ##################################################
 ## labels and parameters for the for loops
-nPathwayMetrics <- toplot %>% select(-K, -type) %>% colnames
-nPathwayMetricLabels <- c("# Total Pathways", "# Unique Pathways", "Average Pathways\nper Program", "Aveage Unique Pathways\nper Program")
+ranking.types <- c("zscore", "raw")
 GSEA.types <- c("GOEnrichment", "ByWeightGSEA", "GSEA")
 GSEA.type.labels <- c("GO Pathway Enrichment\n(Top 300 Program Gene by Hypergeometric Test)", "Gene Set Enrichment\n(All Genes)", "Gene Set Enrichment\n(Top 300 Program Gene by Hypergeomteric Test)")
 ##################################################
@@ -164,6 +163,9 @@ for (GSEA.type.i in 1:length(GSEA.types)) {
     for (ranking.type in ranking.types) {
         toplot <- summary.df %>%
             subset(type == ranking.type) ## subset to selected program gene ranking type (zscore or raw)
+
+        nPathwayMetrics <- toplot %>% select(-K, -type) %>% colnames
+        nPathwayMetricLabels <- c("# Total Pathways", "# Unique Pathways", "Average Pathways\nper Program", "Aveage Unique Pathways\nper Program")
 
         plotFilename <- paste0(FIGDIR, GSEA.type, "_", ranking.type)
         pdf(paste0(plotFilename, ".pdf"), width=3, height=3)

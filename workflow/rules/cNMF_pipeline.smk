@@ -764,6 +764,7 @@ rule analysis:
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
+		conda env info; \
 		Rscript workflow/scripts/cNMF_analysis.R \
 		--topic.model.result.dir {params.outdir}/ \
 		--sampleName {wildcards.sample} \
@@ -960,7 +961,7 @@ rule clusterProfiler_GSEA:
 		# clusterProfiler_allGeneWeight_gsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{{k}}/threshold_{{threshold}}/clusterProfiler_allGene{ranking_type_here}_ByWeight_GSEA.txt"), ranking_type_here = ["zscore", "raw"]),
 		# clusterProfiler_top300Gene_gsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{{k}}/threshold_{{threshold}}/clusterProfiler_top300Genes{ranking_type_here}_GSEA.txt"), ranking_type_here = ["zscore", "raw"])
 	params:
-		time = "3:00:00",
+		time = "7:00:00",
 		mem_gb = "64", ## 64 is fine too
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
 		figdir = os.path.join(config["figDir"], "{folder}"), 
@@ -1043,7 +1044,7 @@ rule findK_plot:
 		toplot = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData")
 	output:
 		GSEA_plots = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/All_GSEA.pdf"),
-		TFMotifEnrichment_plots = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/TFMotifEnrichment.pdf"),
+		TFMotifEnrichment_plots = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/All_TFMotifEnrichment.pdf"),
 		topic_clustering_plot = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/cluster.topic.zscore.by.Pearson.corr.pdf")
 	params:
 		time = "3:00:00",
