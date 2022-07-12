@@ -2,7 +2,7 @@
 
 #################################################
 ## Helen Kang
-## 220505 211011 210625 (adapted from Perturb-seq_CAD snakemake pipeline log.sh)
+## 220710
 ## Script to test and run cNMF snakemake pipeline
 
 conda activate cnmf_env
@@ -13,22 +13,20 @@ QSUB=$GROUP_HOME/bin/quick-sub
 
 cd ${SNAKEMAKEDIR}
 
-# snakemake --use-conda
-
-snakemake -n --rerun-incomplete --configfile ${PROJECT}/config.220505.json --snakefile ${PROJECT}/Snakefile --quiet
-snakemake -n --rerun-incomplete --configfile ${PROJECT}/config.220505.json --quiet
+## dry run
+snakemake -n --rerun-incomplete --configfile ${PROJECT}/config.json --quiet
 
 ## pipeline visualization 
-snakemake --rerun-incomplete --configfile ${PROJECT}/config.220505.json --snakefile ${PROJECT}/Snakefile --forceall --dag | dot -Tsvg > ${PROJECT}/dag.full.pipeline.svg
+snakemake --rerun-incomplete --configfile ${PROJECT}/config.json --forceall --dag | dot -Tsvg > ${PROJECT}/dag.pipeline.svg
 
 
-## running the pipeline via sbatch
+## running the pipeline interactively
 LOGS=${PROJECT}/logs
 mkdir -p ${LOGS}
-snakemake -k --configfile ${PROJECT}/config.220505.json --restart-times 0 --rerun-incomplete --nolock --jobs 1000 --cluster "sbatch -n 1 -c 1 --mem {params.mem_gb}G -t {params.time} -p owners,normal -J Perturb-seq_CAD_{rule} -o $LOGS/{rule}_{wildcards}.qout -e $LOGS/{rule}_{wildcards}.qe"
+snakemake -k --configfile ${PROJECT}/config.json --restart-times 0 --rerun-incomplete --nolock --jobs 1000 --cluster "sbatch -n 1 -c 1 --mem {params.mem_gb}G -t {params.time} -p owners,normal -J Perturb-seq_CAD_{rule} -o $LOGS/{rule}_{wildcards}.qout -e $LOGS/{rule}_{wildcards}.qe"
 
 
-
+## submit the nakemake pipeline as a job
 jobname=2kG.library_qsub
 echo ${jobname}
 LOGS=${PROJECT}/logs
