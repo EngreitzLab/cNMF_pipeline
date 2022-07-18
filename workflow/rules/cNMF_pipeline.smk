@@ -982,6 +982,29 @@ rule clusterProfiler_GSEA:
 		--recompute F ' "
 
 
+rule clusterProfiler_GSEA_plot:
+	input:
+		clusterProfiler_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingType{ranking_type}_EnrichmentType{GSEA_type}.txt")
+	output:
+		clusterProfiler_plot = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top10EnrichedPathways_GeneRankingType{ranking_type}_EnrichmentType{GSEA_type}.pdf")
+	params:
+		time = "1:00:00",
+		mem_gb = "16",
+		figdir = os.path.join(config["figDir"], "{folder}"), 
+		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
+		threshold = get_cNMF_filter_threshold_double
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_analysis_R; \
+		Rscript workflow/scripts/plot_gsea_clusterProfiler.R \
+		--sampleName {wildcards.sample} \
+		--figdir {params.figdir}/ \
+		--outdir {params.analysisdir} \
+		--K.val {wildcards.k} \
+		--density.thr {params.threshold} \
+		--ranking.type {wildcards.ranking_type} \
+		--GSEA.type {wildcards.GSEA_type} '"
+		
 
 # rule clusterTopics:
 # 	input: #add input

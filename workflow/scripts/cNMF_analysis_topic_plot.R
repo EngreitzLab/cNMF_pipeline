@@ -84,8 +84,8 @@ FIGDIR=opt$figdir
 FIGDIRSAMPLE=paste0(FIGDIR, "/", SAMPLE, "/K",k,"/")
 FIGDIRTOP=paste0(FIGDIRSAMPLE,"/",SAMPLE,"_K",k,"_dt_", DENSITY.THRESHOLD,"_")
 OUTDIRSAMPLE=paste0(OUTDIR, "/", SAMPLE, "/K",k,"/threshold_", DENSITY.THRESHOLD, "/")
-FGSEADIR=paste0(OUTDIRSAMPLE,"/fgsea/")
-FGSEAFIG=paste0(FIGDIRSAMPLE,"/fgsea/")
+## FGSEADIR=paste0(OUTDIRSAMPLE,"/fgsea/")
+## FGSEAFIG=paste0(FIGDIRSAMPLE,"/fgsea/")
 
 message(FIGDIRTOP)
 
@@ -99,7 +99,7 @@ p.value.thr <- opt$adj.p.value.thr
 
  
 # create dir if not already
-check.dir <- c(OUTDIR, FIGDIR, paste0(FIGDIR,SAMPLE,"/"), paste0(FIGDIR,SAMPLE,"/K",k,"/"), paste0(OUTDIR,SAMPLE,"/"), OUTDIRSAMPLE, FIGDIRSAMPLE, FGSEADIR, FGSEAFIG)
+check.dir <- c(OUTDIR, FIGDIR, paste0(FIGDIR,SAMPLE,"/"), paste0(FIGDIR,SAMPLE,"/K",k,"/"), paste0(OUTDIR,SAMPLE,"/"), OUTDIRSAMPLE, FIGDIRSAMPLE)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
 
 palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)

@@ -17,7 +17,7 @@ conflict_prefer("desc", "dplyr")
 
 packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
               "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
-              "ggpubr","gridExtra",
+              "ggpubr","gridExtra","RNOmni",
               "org.Hs.eg.db","limma","fgsea", "conflicted",
               "cluster","textshape","readxl", 
               "ggdist", "gghalves", "Seurat", "writexl") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
@@ -34,6 +34,7 @@ conflict_prefer("desc", "dplyr")
 
 
 ## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
+source("./workflow/scripts/topicModelAnalysis.functions.R")
 
 option.list <- list(
   make_option("--figdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes/", help="Figure directory"),
@@ -42,7 +43,7 @@ option.list <- list(
   make_option("--datadir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/data/", help="Input 10x data directory"),
   make_option("--topic.model.result.dir", type="character", default="/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/210707_snakemake_maxParallel/all_genes_acrossK/2kG.library/", help="Topic model results directory"),
   make_option("--sampleName", type="character", default="2kG.library", help="Name of Samples to be processed, separated by commas"),
-  # make_option("--sep", type="logical", default=F, help="Whether to separate replicates or samples"),
+  make_option("--sep", type="logical", default=F, help="Whether to separate replicates or samples"),
   make_option("--K.list", type="character", default="2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,19,21,23,25", help="K values available for analysis"),
   make_option("--K.val", type="numeric", default=60, help="K value to analyze"),
   make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
@@ -105,7 +106,7 @@ SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
 OUTDIR=opt$outdir
 TMDIR=opt$topic.model.result.dir
-# SEP=opt$sep
+SEP=opt$sep
 # K.list <- strsplit(opt$K.list,",") %>% unlist() %>% as.numeric()
 k <- opt$K.val
 DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
@@ -148,8 +149,8 @@ invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recur
 # CAD.focus.gene.set <- gene.list.three.groups %>% subset(Group=="CAD_focus") %>% pull(Gene) %>% append(enhancer.set)
 # EC.pos.ctrl.gene.set <- gene.list.three.groups %>% subset(Group=="EC_pos._ctrls") %>% pull(Gene)
 
-# cell.count.thr <- opt$cell.count.thr # greater than this number, filter to keep the guides with greater than this number of cells
-# guide.count.thr <- opt$guide.count.thr # greater than this number, filter to keep the perturbations with greater than this number of guides
+cell.count.thr <- opt$cell.count.thr # greater than this number, filter to keep the guides with greater than this number of cells
+guide.count.thr <- opt$guide.count.thr # greater than this number, filter to keep the perturbations with greater than this number of guides
 
 # guide.design = read.delim(file=paste0(DATADIR, "/200607_ECPerturbSeqMiniPool.design.txt"), header=T, stringsAsFactors = F)
 
@@ -330,6 +331,7 @@ adjust.multiTargetGuide.rownames <- function(omega) {
     if(file.exists(cNMF.result.file)) {
         print("loading cNMF result file")
         load(cNMF.result.file)
+        print("finished loading cNMF result file")
     } else {
     theta.path <- paste0(TMDIR, "/", SAMPLE, ".gene_spectra_tpm.k_", k, ".dt_", DENSITY.THRESHOLD,".txt")
     theta.zscore.path <- paste0(TMDIR, "/", SAMPLE, ".gene_spectra_score.k_", k, ".dt_", DENSITY.THRESHOLD,".txt")
@@ -342,7 +344,7 @@ adjust.multiTargetGuide.rownames <- function(omega) {
     theta <- tmp.theta %>% apply(1, function(x) x/sum(x)) %>% `colnames<-`(c(1:k))
     theta.raw <- theta.raw %>% t() %>% as.data.frame() %>% `colnames<-`(c(1:k))
     print("loading topic z-score (specificity score)")
-    theta.zscore <- read.delim(theta.zscore.path, header=T, stringsAsFactors=F, check.names=F, row.names=1) %>% t() %>% `colnames<-`(c(1:k))
+    theta.zscore <- read.delim(theta.zscore.path, header=T, stringsAsFactors=F, check.names=F, row.names=1) %>% t() %>% `colnames<-`(c(1:k)) 
     tmp <- rownames(theta) %>% strsplit(., split=":") %>% sapply("[[",1)
     tmpp <- data.frame(table(tmp)) %>% subset(Freq > 1)  # keep row names that have duplicated gene names but different ENSG names
     tmp.copy <- tmp
@@ -359,12 +361,19 @@ adjust.multiTargetGuide.rownames <- function(omega) {
     print(omega.path)
     omega.original <- omega <- read.delim(omega.path, header=T, stringsAsFactors=F, check.names=F, row.names = 1)  %>% apply(1, function(x) x/sum(x)) %>% t()
     colnames(omega) <- paste0("topic_",colnames(omega))
+    print("finished loading omega")
 
-    barcode.names <- read.table(opt$barcode.names, header=F, stringsAsFactors=F) %>% `colnames<-`("long.CBC")
-    if(SAMPLE == "2kG.library") {
-        rownames(omega) <- rownames(omega.original) <- barcode.names %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
-    omega <- adjust.multiTargetGuide.rownames(omega)
-    barcode.names <- data.frame(long.CBC=rownames(omega)) %>% separate(col="long.CBC", into=c("Gene.full.name", "Guide", "CBC"), sep=":", remove=F) %>% mutate(Gene = gsub("_multiTarget|-TSS2$", "", Gene.full.name))
+    barcode.names <- read.table(opt$barcode.names, header=T, stringsAsFactors=F) ## %>% `colnames<-`("long.CBC")
+    if(grepl("2kG.library", SAMPLE)) {
+        rownames(omega) <- rownames(omega.original) <- barcode.names %>% `colnames<-`("long.CBC") %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
+        omega <- adjust.multiTargetGuide.rownames(omega)
+        barcode.names <- data.frame(long.CBC=rownames(omega)) %>%
+            mutate(long.CBC = gsub("CSNK2B-and-CSNK2B", "CSNK2B", long.CBC)) %>%
+            separate(col="long.CBC", into=c("Gene.full.name", "Guide", "CBC"), sep=":", remove=F) %>%
+            separate(col="CBC", into=c("CBC", "sample"), sep="-scRNAseq_2kG_", remove=F) %>%
+            mutate(Gene = gsub("-TSS2$", "", Gene.full.name),
+                   CBC = gsub("RHOA-and-", "", CBC)) %>%
+            as.data.frame
     }
 
     print("save the data")
@@ -395,7 +404,8 @@ adjust.multiTargetGuide.rownames <- function(omega) {
     write.table(theta.zscore.ensembl.scaled, file=paste0(OUTDIRSAMPLE, "/topic.zscore.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep = "\t")
     write.table(theta.raw.ensembl.scaled, file=paste0(OUTDIRSAMPLE, "/topic.raw.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep = "\t")
  
-}  
+}
+
 
   
   # # modify GO.list if "pooled"
@@ -405,345 +415,342 @@ adjust.multiTargetGuide.rownames <- function(omega) {
   #   GO.list <- rbind(tmp.no, tmp.plus)
   # }
   
-  # for ( k in K.list ) {
-  file.name <- ifelse(SEP,
-                    paste0(OUTDIRSAMPLE,"/cNMFAnalysis.",SUBSCRIPT,".sep.RData"),
-                    paste0(OUTDIRSAMPLE,"/cNMFAnalysis.",SUBSCRIPT,".RData"))
-  print(file.name) 
-  if(file.exists((file.name))) { 
-      print(paste0("loading ",file.name))
-      load(file.name) 
-  }
-  if( (opt$subsample.type != "ctrl") & ( !("fc.ann.omega" %in% ls()) | opt$recompute) ) { # if the variable fc.ann.omega is present, then it means the below calculations are done previously
+##   file.name <- paste0(OUTDIRSAMPLE,"/cNMFAnalysis.",SUBSCRIPT,".RData")
+##   print(file.name) 
+##   if(file.exists((file.name))) { 
+##       print(paste0("loading ",file.name))
+##       load(file.name) 
+##   }
+##   if( (opt$subsample.type != "ctrl" | opt$perturb.seq != "True") & ( !("fc.ann.omega" %in% ls()) | opt$recompute) ) { # if the variable fc.ann.omega is present, then it means the below calculations are done previously
 
       
     
-    # get topic colnames
-    topic.names <- colnames(omega)[which(grepl("topic",colnames(omega)))]
+##     # get topic colnames
+##     topic.names <- colnames(omega)[which(grepl("topic",colnames(omega)))]
     
-    ## ann.omega <- cbind(omega, barcode.names)  # annotated.omega
+##     ann.omega <- cbind(omega, barcode.names)  # annotated.omega
     
-    # remove guides with less than 5 cells and remove genes with only one resulting guide
-    ann.omega.filtered <- ann.omega %>% group_by(Gene, Guide) %>% mutate(nCount=n()) %>% subset(nCount > cell.count.thr) %>% select(-nCount) %>% ungroup() %>% group_by(Gene) %>% mutate(nCount = length(unique(Guide))) %>% subset(nCount > guide.count.thr) %>% select(-nCount) %>% as.data.frame()
-      rownames(ann.omega.filtered) <- ann.omega.filtered$long.CBC
+##     # remove guides with less than 5 cells and remove genes with only one resulting guide
+##     ann.omega.filtered <- ann.omega %>% group_by(Gene, Guide) %>% mutate(nCount=n()) %>% subset(nCount > cell.count.thr) %>% select(-nCount) %>% ungroup() %>% group_by(Gene) %>% mutate(nCount = length(unique(Guide))) %>% subset(nCount > guide.count.thr) %>% select(-nCount) %>% as.data.frame()
+##       rownames(ann.omega.filtered) <- ann.omega.filtered$long.CBC
       
-    ## neg.omega <- ann.omega.filtered %>% subset(grepl("^negative|^safe", Gene)) 
+##     ## neg.omega <- ann.omega.filtered %>% subset(grepl("^negative|^safe", Gene)) 
     
-    avg.gene <- ann.omega.filtered %>% group_by(Gene) %>% summarise_at(colnames(omega), mean) %>% as.data.frame()
-    rownames(avg.gene) <- avg.gene$Gene
-    avg.neg <- avg.gene %>% subset(grepl("^negative|^safe", Gene)) %>% mutate(Gene = "combined-control") %>% group_by(Gene) %>% summarise_at(colnames(omega), mean) %>% as.data.frame()
+##     avg.gene <- ann.omega.filtered %>% group_by(Gene) %>% summarise_at(colnames(omega), mean) %>% as.data.frame()
+##     rownames(avg.gene) <- avg.gene$Gene
+##     avg.neg <- avg.gene %>% subset(grepl("^negative|^safe", Gene)) %>% mutate(Gene = "combined-control") %>% group_by(Gene) %>% summarise_at(colnames(omega), mean) %>% as.data.frame()
     
-    ## wilcoxon section ##hiGavin!
+##     ## wilcoxon section ##hiGavin!
     
-##################################################
-      ## local function for computing p.values
-    get.p.value <- function(df.ann.filtered, INT=F) {
+## ##################################################
+##       ## local function for computing p.values
+##     get.p.value <- function(df.ann.filtered, INT=F) {
       
-      if(SEP) {
-        num.reps=2
-        labels <- c(rep1.label, rep2.label) # expand to accomodate multiple samples
-        perguide.gene.test.list <- vector("list", ncol(omega)*num.reps) # iterate through topics + reps
-        for (label.index in 1:num.reps){
-          label.here <- labels[label.index]
-          ctrl.this.rep <- df.ann.filtered %>% subset(grepl("^negative|^safe", Gene) & grepl(label.here, Gene, fixed=TRUE)) 
-          df.ann.filtered.this.rep <- df.ann.filtered %>% subset(grepl(label.here, Gene, fixed=TRUE)) 
-          for ( t in 1:length(colnames(omega)) ) {
-            col <- colnames(omega)[t] # current topic
-            ctrl <- ctrl.this.rep %>% select(all_of(col)) %>% as.matrix() %>% as.numeric()
-            if(INT) {
-              result <- df.ann.filtered.this.rep %>% group_by(Gene) %>% summarise(ttest.p = t.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value)
-            } else {
-              result <- df.ann.filtered.this.rep %>% group_by(Gene) %>% 
-              summarise(wilcox.p = wilcox.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value,
-                        ttest.p = t.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value)
-            }
-            result$Topic <- rep(col, nrow(result))
-            perguide.gene.test.list[[label.index * t]] <- result
-          }
-        }
-      } else {
-        perguide.gene.test.list <- vector("list", ncol(omega)) # iterate through topics
-        for ( t in 1:length(colnames(omega)) ) {
-          col <- colnames(omega)[t] # current topic
+##       if(SEP) {
+##         num.reps=2
+##         labels <- c(rep1.label, rep2.label) # expand to accomodate multiple samples
+##         perguide.gene.test.list <- vector("list", ncol(omega)*num.reps) # iterate through topics + reps
+##         for (label.index in 1:num.reps){
+##           label.here <- labels[label.index]
+##           ctrl.this.rep <- df.ann.filtered %>% subset(grepl("^negative|^safe", Gene) & grepl(label.here, Gene, fixed=TRUE)) 
+##           df.ann.filtered.this.rep <- df.ann.filtered %>% subset(grepl(label.here, Gene, fixed=TRUE)) 
+##           for ( t in 1:length(colnames(omega)) ) {
+##             col <- colnames(omega)[t] # current topic
+##             ctrl <- ctrl.this.rep %>% select(all_of(col)) %>% as.matrix() %>% as.numeric()
+##             if(INT) {
+##               result <- df.ann.filtered.this.rep %>% group_by(Gene) %>% summarise(ttest.p = t.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value)
+##             } else {
+##               result <- df.ann.filtered.this.rep %>% group_by(Gene) %>% 
+##               summarise(wilcox.p = wilcox.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value,
+##                         ttest.p = t.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value)
+##             }
+##             result$Topic <- rep(col, nrow(result))
+##             perguide.gene.test.list[[label.index * t]] <- result
+##           }
+##         }
+##       } else {
+##         perguide.gene.test.list <- vector("list", ncol(omega)) # iterate through topics
+##         for ( t in 1:length(colnames(omega)) ) {
+##           col <- colnames(omega)[t] # current topic
           
-          ctrl <- df.ann.filtered %>% select(all_of(col), Gene) %>% subset(grepl("control|targeting",Gene)) %>% select(-Gene) %>% as.matrix() %>% as.numeric()
-          if(INT) {
-            result <- df.ann.filtered.this.rep %>% group_by(Gene) %>% summarise(ttest.p = t.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value)
-          } else {
-            result <- df.ann.filtered %>% group_by(Gene) %>% summarise(wilcox.p = wilcox.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value,
-                                                                     ttest.p = t.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value)
-          }
-          result$Topic <- rep(col, nrow(result))
-          perguide.gene.test.list[[t]] <- result
-        }
-      }
-      perguide.gene.test <- do.call(rbind, perguide.gene.test.list)
+##           ctrl <- df.ann.filtered %>% select(all_of(col), Gene) %>% subset(grepl("control|targeting",Gene)) %>% select(-Gene) %>% as.matrix() %>% as.numeric()
+##           if(INT) {
+##             result <- df.ann.filtered.this.rep %>% group_by(Gene) %>% summarise(ttest.p = t.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value)
+##           } else {
+##             result <- df.ann.filtered %>% group_by(Gene) %>% summarise(wilcox.p = wilcox.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value,
+##                                                                      ttest.p = t.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value)
+##           }
+##           result$Topic <- rep(col, nrow(result))
+##           perguide.gene.test.list[[t]] <- result
+##         }
+##       }
+##       perguide.gene.test <- do.call(rbind, perguide.gene.test.list)
       
-      if(INT) {
-        perguide.gene.test <- perguide.gene.test %>% mutate(adjusted.ttest.p = p.adjust(ttest.p, method="fdr"))
-      } else { 
-        perguide.gene.test <- perguide.gene.test %>% mutate(adjusted.wilcox.p = p.adjust(wilcox.p, method="fdr"), adjusted.ttest.p = p.adjust(ttest.p, method="fdr"))
-      }
-      return(perguide.gene.test)
-    }
-    ##################################################
+##       if(INT) {
+##         perguide.gene.test <- perguide.gene.test %>% mutate(adjusted.ttest.p = p.adjust(ttest.p, method="fdr"))
+##       } else { 
+##         perguide.gene.test <- perguide.gene.test %>% mutate(adjusted.wilcox.p = p.adjust(wilcox.p, method="fdr"), adjusted.ttest.p = p.adjust(ttest.p, method="fdr"))
+##       }
+##       return(perguide.gene.test)
+##     }
+##     ##################################################
     
     
-    if(!SEP){
-      ## avg cell and avg ctrl before comparing (then log2() + heatmap)
-      avg.gene <- ann.omega.filtered %>% group_by(Gene) %>% summarise_at(colnames(omega), mean)
-      avg.neg <- ann.omega.filtered %>% subset(grepl("^negative|^safe", Gene)) %>% mutate(Gene = "combined-control") %>% group_by(Gene) %>% summarise_at(colnames(omega), mean)
-      mat <- data.frame(avg.gene[,-1], row.names = avg.gene$Gene) %>% as.matrix()
-      vec <- avg.neg %>% select(colnames(omega)) %>% as.matrix()
-        sweep.wrapper <- function(mat, vec, diff=3) {
-            output <- sweep(mat, 2, vec, `/`) %>% log2()
-            output[!is.finite(output)] <- floor(min(output[is.finite(output)]) - diff)
-            output <- output %>% as.data.frame()
-            return(output)
-        }
-        gene.score <- sweep.wrapper(mat,vec)
-        write.table(gene.score, file=paste0(OUTDIRSAMPLE, "/avg.gene_x_topic.mtx_", SUBSCRIPT, ".txt"), row.names=T, col.names=T, quote=F, sep="\t")
-        ##   gene.score <- sweep(mat, 2, vec, `/`) %>% log2()
-      ##   gene.score[!is.finite(gene.score)] <- floor(min(gene.score[is.finite(gene.score)]) - 3)
-      ## gene.score <- gene.score %>% as.data.frame()
+##     if(!SEP){
+##       ## avg cell and avg ctrl before comparing (then log2() + heatmap)
+##       avg.gene <- ann.omega.filtered %>% group_by(Gene) %>% summarise_at(colnames(omega), mean)
+##       avg.neg <- ann.omega.filtered %>% subset(grepl("^negative|^safe", Gene)) %>% mutate(Gene = "combined-control") %>% group_by(Gene) %>% summarise_at(colnames(omega), mean)
+##       mat <- data.frame(avg.gene[,-1], row.names = avg.gene$Gene) %>% as.matrix()
+##       vec <- avg.neg %>% select(colnames(omega)) %>% as.matrix()
+##         sweep.wrapper <- function(mat, vec, diff=3) {
+##             output <- sweep(mat, 2, vec, `/`) %>% log2()
+##             output[!is.finite(output)] <- floor(min(output[is.finite(output)]) - diff)
+##             output <- output %>% as.data.frame()
+##             return(output)
+##         }
+##         gene.score <- sweep.wrapper(mat,vec)
+##         write.table(gene.score, file=paste0(OUTDIRSAMPLE, "/avg.gene_x_topic.mtx_", SUBSCRIPT, ".txt"), row.names=T, col.names=T, quote=F, sep="\t")
+##         ##   gene.score <- sweep(mat, 2, vec, `/`) %>% log2()
+##       ##   gene.score[!is.finite(gene.score)] <- floor(min(gene.score[is.finite(gene.score)]) - 3)
+##       ## gene.score <- gene.score %>% as.data.frame()
       
-      ## avg guide and avg ctrl before comparing (then log2() + heatmap)
-      avg.guide <- ann.omega.filtered %>% mutate(Guide = paste0(Guide,"::",Gene)) %>% group_by(Guide) %>% mutate(cell.count = n()) %>% summarise_at(c(colnames(omega),"cell.count"), mean)
-      mat <- data.frame(avg.guide %>% select(-Guide, -cell.count), row.names = avg.guide$Guide) %>% as.matrix()
-      ## guide.score <- sweep(mat, 2, vec, `/`) %>% log2() %>% as.data.frame()
-        guide.score <- sweep.wrapper(mat,vec)
+##       ## avg guide and avg ctrl before comparing (then log2() + heatmap)
+##       avg.guide <- ann.omega.filtered %>% mutate(Guide = paste0(Guide,"::",Gene)) %>% group_by(Guide) %>% mutate(cell.count = n()) %>% summarise_at(c(colnames(omega),"cell.count"), mean)
+##       mat <- data.frame(avg.guide %>% select(-Guide, -cell.count), row.names = avg.guide$Guide) %>% as.matrix()
+##       ## guide.score <- sweep(mat, 2, vec, `/`) %>% log2() %>% as.data.frame()
+##         guide.score <- sweep.wrapper(mat,vec)
       
-      # ## asinh on control topics
-      # asinh.neg <- neg.omega %>% select(colnames(omega)) %>% asinh() %>% `rownames<-`(neg.omega$Row.names)
-      # asinh.all <- ann.omega %>% select(colnames(omega)) %>% asinh() %>% `rownames<-`(ann.omega$Row.names)
+##       # ## asinh on control topics
+##       # asinh.neg <- neg.omega %>% select(colnames(omega)) %>% asinh() %>% `rownames<-`(neg.omega$Row.names)
+##       # asinh.all <- ann.omega %>% select(colnames(omega)) %>% asinh() %>% `rownames<-`(ann.omega$Row.names)
       
-      ## Wilcoxon Test
-      gene.test <- get.p.value(ann.omega.filtered)
-      wilcox.gene.score <- merge.score.with.test(gene.score, gene.test, "wilcox.p", p.value.thr=0.05, adj.p.value.thr=0.1)
-      
-      
-      # test gene on per-guide averages [more conservative, 201209.7]
-      # perguide.gene.score is basically the same as guide.score except it's annotated
-        ## might not need this anymore! [210628]
-        guide.score.ann <- guide.score %>% as.data.frame() %>% mutate(Guide=rownames(guide.score)) %>%
-        merge(., avg.guide %>% select(Guide,cell.count), by="Guide")
-      
-      # # remove genes with only one guide (and guide with less than 5 cells [201216.2])
-      # guide.score.ann.filtered <- guide.score.ann %>% subset(cell.count >=5) %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
-      # avg.guide.ann <- merge(avg.guide %>% separate(col="Guide", into=c("Guide","Gene"), sep="::") %>% select(-Gene), barcode.names %>% select(Gene, Guide) %>% unique() %>% mutate(Guide.Gene = paste0(Guide,"::",Gene)), by.x="Guide", by.y="Guide.Gene") [210628, old]
-       avg.guide.ann <- merge(avg.guide %>% mutate(Guide.Gene=Guide) %>% select(-Guide), barcode.names %>% select(Gene, Guide) %>% unique() %>% mutate(Guide.Gene = paste0(Guide,"::",Gene)), by="Guide.Gene")
-      # avg.guide.ann.filtered <- avg.guide.ann %>% subset(cell.count >=5) %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
-      
-      # wilcoxon and t.test on normalized and unnormalized per guide average data
-      perguide.gene.test <- get.p.value(avg.guide.ann)
-      wilcox.perguide.gene.score <- merge.score.with.test(gene.score, perguide.gene.test, "wilcox.p", p.value.thr=0.05, adj.p.value.thr=0.1)
-      
-      # end of Wilcoxon Test section
+##       ## Wilcoxon Test
+##       gene.test <- get.p.value(ann.omega.filtered)
+##       wilcox.gene.score <- merge.score.with.test(gene.score, gene.test, "wilcox.p", p.value.thr=0.05, adj.p.value.thr=0.1)
       
       
-      ## # for testing purposes 210105
-      ## here.perguide.gene.test <- perguide.gene.test 
-      ## here.gene.test <- gene.test
-      ## here.wilcox.gene.score <- wilcox.gene.score
-      ## here.wilcox.perguide.gene.score <- wilcox.perguide.gene.score 
+##       # test gene on per-guide averages [more conservative, 201209.7]
+##       # perguide.gene.score is basically the same as guide.score except it's annotated
+##         ## might not need this anymore! [210628]
+##         guide.score.ann <- guide.score %>% as.data.frame() %>% mutate(Guide=rownames(guide.score)) %>%
+##         merge(., avg.guide %>% select(Guide,cell.count), by="Guide")
       
-        ## Perturbation z-score [210809]
-        ptb.zscore <- apply(gene.score, 1, function(x) (x - mean(x)) / sd(x)) %>% t
-        write.table(ptb.zscore, file=paste0(OUTDIRSAMPLE, "Perturbation.zscore.txt"), row.names=F, quote=F, sep="\t")
+##       # # remove genes with only one guide (and guide with less than 5 cells [201216.2])
+##       # guide.score.ann.filtered <- guide.score.ann %>% subset(cell.count >=5) %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
+##       # avg.guide.ann <- merge(avg.guide %>% separate(col="Guide", into=c("Guide","Gene"), sep="::") %>% select(-Gene), barcode.names %>% select(Gene, Guide) %>% unique() %>% mutate(Guide.Gene = paste0(Guide,"::",Gene)), by.x="Guide", by.y="Guide.Gene") [210628, old]
+##        avg.guide.ann <- merge(avg.guide %>% mutate(Guide.Gene=Guide) %>% select(-Guide), barcode.names %>% select(Gene, Guide) %>% unique() %>% mutate(Guide.Gene = paste0(Guide,"::",Gene)), by="Guide.Gene")
+##       # avg.guide.ann.filtered <- avg.guide.ann %>% subset(cell.count >=5) %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
+      
+##       # wilcoxon and t.test on normalized and unnormalized per guide average data
+##       perguide.gene.test <- get.p.value(avg.guide.ann)
+##       wilcox.perguide.gene.score <- merge.score.with.test(gene.score, perguide.gene.test, "wilcox.p", p.value.thr=0.05, adj.p.value.thr=0.1)
+      
+##       # end of Wilcoxon Test section
+      
+      
+##       ## # for testing purposes 210105
+##       ## here.perguide.gene.test <- perguide.gene.test 
+##       ## here.gene.test <- gene.test
+##       ## here.wilcox.gene.score <- wilcox.gene.score
+##       ## here.wilcox.perguide.gene.score <- wilcox.perguide.gene.score 
+      
+##         ## Perturbation z-score [210809]
+##         ptb.zscore <- apply(gene.score, 1, function(x) (x - mean(x)) / sd(x)) %>% t
+##         write.table(ptb.zscore, file=paste0(OUTDIRSAMPLE, "Perturbation.zscore.txt"), row.names=F, quote=F, sep="\t")
 
-        save(omega, theta, ann.omega, ann.omega.filtered, avg.gene, avg.neg, gene.score,
-           avg.guide, guide.score, gene.test, 
-           wilcox.gene.score, perguide.gene.test, wilcox.perguide.gene.score, ptb.zscore,
-           file=file.name) # 916 MB for n=1, K=2 # maybe put these in scratch space?
+##         save(omega, theta, ann.omega, ann.omega.filtered, avg.gene, avg.neg, gene.score,
+##            avg.guide, guide.score, gene.test, 
+##            wilcox.gene.score, perguide.gene.test, wilcox.perguide.gene.score, ptb.zscore,
+##            file=file.name) # 916 MB for n=1, K=2 # maybe put these in scratch space?
       
       
-    } else {
-      ## avg cell and avg ctrl before comparing (then log2() + heatmap)
-      tmp <- avg.neg %>% group_by(grepl(all_of(rep1.label),Gene, fixed=TRUE) ) %>% summarise_at(colnames(omega), mean)
-      colnames(tmp) <- colnames(avg.gene)
-      avg.neg <- rbind(avg.neg,tmp)
-      mat <- avg.gene %>% subset(grepl(rep1.label,Gene, fixed=TRUE)) %>% select(colnames(omega)) %>% as.matrix()
-      vec <- avg.neg %>% subset(Gene==TRUE) %>% select(colnames(omega)) %>% as.matrix()
-      ## gene.score <- sweep(mat, 2, vec, `/`) %>% log2() %>% as.data.frame()
-        gene.score <- sweep.wrapper(mat,vec)
-      mat <- avg.gene %>% subset(grepl(rep2.label,Gene, fixed=TRUE)) %>% select(colnames(omega)) %>% as.matrix()
-      vec <- avg.neg %>% subset(Gene==FALSE) %>% select(colnames(omega)) %>% as.matrix()
-      ## gene.score <- rbind(gene.score, sweep(mat, 2, vec, `/`) %>% log2() %>% as.data.frame())
-        gene.score <- rbind(gene.score, sweep.wrapper(mat,vec))
+##     } else {
+##       ## avg cell and avg ctrl before comparing (then log2() + heatmap)
+##       tmp <- avg.neg %>% group_by(grepl(all_of(rep1.label),Gene, fixed=TRUE) ) %>% summarise_at(colnames(omega), mean)
+##       colnames(tmp) <- colnames(avg.gene)
+##       avg.neg <- rbind(avg.neg,tmp)
+##       mat <- avg.gene %>% subset(grepl(rep1.label,Gene, fixed=TRUE)) %>% select(colnames(omega)) %>% as.matrix()
+##       vec <- avg.neg %>% subset(Gene==TRUE) %>% select(colnames(omega)) %>% as.matrix()
+##       ## gene.score <- sweep(mat, 2, vec, `/`) %>% log2() %>% as.data.frame()
+##         gene.score <- sweep.wrapper(mat,vec)
+##       mat <- avg.gene %>% subset(grepl(rep2.label,Gene, fixed=TRUE)) %>% select(colnames(omega)) %>% as.matrix()
+##       vec <- avg.neg %>% subset(Gene==FALSE) %>% select(colnames(omega)) %>% as.matrix()
+##       ## gene.score <- rbind(gene.score, sweep(mat, 2, vec, `/`) %>% log2() %>% as.data.frame())
+##         gene.score <- rbind(gene.score, sweep.wrapper(mat,vec))
 
         
-      ## avg guide and avg ctrl before comparing (then log2() + heatmap)
-      avg.guide <- ann.omega.filtered %>% mutate(Guide = paste0(Guide,"::",Gene)) %>% group_by(Guide) %>% mutate(cell.count = n()) %>% summarise_at(c(colnames(omega),"cell.count"), mean)
-      mat <- avg.guide %>% column_to_rownames("Guide") %>% subset(grepl(rep2.label,rownames(.), fixed=TRUE)) %>% select(-cell.count) %>% as.matrix()
-      guide.score <- sweep.wrapper(mat,vec)  # sweep(mat, 2, vec, `/`) %>% log2() %>% as.data.frame()
-      mat <- avg.guide %>% column_to_rownames("Guide") %>% subset(grepl(rep1.label,rownames(.), fixed=TRUE)) %>% select(-cell.count) %>% as.matrix()
-      vec <- avg.neg %>% subset(Gene==TRUE) %>% select(colnames(omega)) %>% as.matrix()
-      guide.score <- rbind(guide.score, sweep.wrapper(mat,vec)) ## sweep(mat, 2, vec, `/`) %>% log2() %>% as.data.frame())
+##       ## avg guide and avg ctrl before comparing (then log2() + heatmap)
+##       avg.guide <- ann.omega.filtered %>% mutate(Guide = paste0(Guide,"::",Gene)) %>% group_by(Guide) %>% mutate(cell.count = n()) %>% summarise_at(c(colnames(omega),"cell.count"), mean)
+##       mat <- avg.guide %>% column_to_rownames("Guide") %>% subset(grepl(rep2.label,rownames(.), fixed=TRUE)) %>% select(-cell.count) %>% as.matrix()
+##       guide.score <- sweep.wrapper(mat,vec)  # sweep(mat, 2, vec, `/`) %>% log2() %>% as.data.frame()
+##       mat <- avg.guide %>% column_to_rownames("Guide") %>% subset(grepl(rep1.label,rownames(.), fixed=TRUE)) %>% select(-cell.count) %>% as.matrix()
+##       vec <- avg.neg %>% subset(Gene==TRUE) %>% select(colnames(omega)) %>% as.matrix()
+##       guide.score <- rbind(guide.score, sweep.wrapper(mat,vec)) ## sweep(mat, 2, vec, `/`) %>% log2() %>% as.data.frame())
       
-      # ## asinh on control topics
-      # asinh.neg <- neg.omega %>% select(colnames(omega)) %>% asinh() %>% `rownames<-`(neg.omega$Row.names)
-      # asinh.all <- ann.omega %>% select(colnames(omega)) %>% asinh() %>% `rownames<-`(ann.omega$Row.names)
+##       # ## asinh on control topics
+##       # asinh.neg <- neg.omega %>% select(colnames(omega)) %>% asinh() %>% `rownames<-`(neg.omega$Row.names)
+##       # asinh.all <- ann.omega %>% select(colnames(omega)) %>% asinh() %>% `rownames<-`(ann.omega$Row.names)
       
-      ## Wilcoxon Test      
-      gene.test <- get.p.value(ann.omega.filtered)
-      wilcox.gene.score <- merge.score.with.test(gene.score, gene.test, "wilcox.p")
-      # test gene on per-guide averages [more conservative, 201209.7]
-      # perguide.gene.score is basically the same as guide.score except it's annotated
-      guide.score.ann <- guide.score %>% as.data.frame() %>% #mutate(Guide=rownames(guide.score)) %>%
-        merge(avg.guide %>% select(Guide,cell.count), ., by.x="Guide", by.y=0) %>%
-        separate(., col="Guide", into=c("Guide", "Gene"), sep="::")
+##       ## Wilcoxon Test      
+##       gene.test <- get.p.value(ann.omega.filtered)
+##       wilcox.gene.score <- merge.score.with.test(gene.score, gene.test, "wilcox.p")
+##       # test gene on per-guide averages [more conservative, 201209.7]
+##       # perguide.gene.score is basically the same as guide.score except it's annotated
+##       guide.score.ann <- guide.score %>% as.data.frame() %>% #mutate(Guide=rownames(guide.score)) %>%
+##         merge(avg.guide %>% select(Guide,cell.count), ., by.x="Guide", by.y=0) %>%
+##         separate(., col="Guide", into=c("Guide", "Gene"), sep="::")
       
-      # # remove genes with only one guide (and guide with less than 5 cells [201216.2])
-      # guide.score.ann.filtered <- guide.score.ann %>% subset(cell.count >=5) %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
-      avg.guide.ann <- avg.guide %>% separate(col="Guide", into=c("Guide","Gene"), sep="::")
-      # avg.guide.ann.filtered <- avg.guide.ann %>% subset(cell.count >=5) %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
+##       # # remove genes with only one guide (and guide with less than 5 cells [201216.2])
+##       # guide.score.ann.filtered <- guide.score.ann %>% subset(cell.count >=5) %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
+##       avg.guide.ann <- avg.guide %>% separate(col="Guide", into=c("Guide","Gene"), sep="::")
+##       # avg.guide.ann.filtered <- avg.guide.ann %>% subset(cell.count >=5) %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
       
-      # wilcoxon and t.test on normalized and unnormalized per guide average data
-      perguide.gene.test <- get.p.value(avg.guide.ann)
-      wilcox.perguide.gene.score <- merge.score.with.test(gene.score, perguide.gene.test, "wilcox.p", p.value.thr=0.05, adj.p.value.thr=0.1)
+##       # wilcoxon and t.test on normalized and unnormalized per guide average data
+##       perguide.gene.test <- get.p.value(avg.guide.ann)
+##       wilcox.perguide.gene.score <- merge.score.with.test(gene.score, perguide.gene.test, "wilcox.p", p.value.thr=0.05, adj.p.value.thr=0.1)
       
-      # end of Wilcoxon Test section
-        ## Perturbation z-score [210809]
-        ptb.zscore <- apply(gene.score, 1, function(x) (x - mean(x)) / sd(x)) %>% t
-        write.table(ptb.zscore, file=paste0(OUTDIRSAMPLE, "Perturbation.zscore.txt"), row.names=F, quote=F, sep="\t")
+##       # end of Wilcoxon Test section
+##         ## Perturbation z-score [210809]
+##         ptb.zscore <- apply(gene.score, 1, function(x) (x - mean(x)) / sd(x)) %>% t
+##         write.table(ptb.zscore, file=paste0(OUTDIRSAMPLE, "Perturbation.zscore.txt"), row.names=F, quote=F, sep="\t")
       
-      save(omega, theta, ann.omega, ann.omega.filtered, avg.gene, avg.neg, gene.score,
-           avg.guide, guide.score, gene.test,
-           wilcox.gene.score, perguide.gene.test, wilcox.perguide.gene.score, ptb.zscore,
-           file=file.name) 
+##       save(omega, theta, ann.omega, ann.omega.filtered, avg.gene, avg.neg, gene.score,
+##            avg.guide, guide.score, gene.test,
+##            wilcox.gene.score, perguide.gene.test, wilcox.perguide.gene.score, ptb.zscore,
+##            file=file.name) 
       
       
-    }
+##     }
     
-    print("starting INT")
-    ##### INT section
-    ## rank norm on all cells # 210105 using filtered omega
-      rankNorm.omega <- ann.omega.filtered %>% `rownames<-`(ann.omega.filtered$long.CBC) %>% select(all_of(topic.names)) %>% apply(2,RankNorm) %>% as.data.frame()
-    # old <210105
-    # rankNorm.omega <- omega %>% apply(2,RankNorm) %>% as.data.frame()
+##     print("starting INT")
+##     ##### INT section
+##     ## rank norm on all cells # 210105 using filtered omega
+##       rankNorm.omega <- ann.omega.filtered %>% `rownames<-`(ann.omega.filtered$long.CBC) %>% select(all_of(topic.names)) %>% apply(2,RankNorm) %>% as.data.frame()
+##     # old <210105
+##     # rankNorm.omega <- omega %>% apply(2,RankNorm) %>% as.data.frame()
     
-    ann.rankNorm.omega <- merge(barcode.names,rankNorm.omega,by.x="long.CBC", by.y=0)
-    # old <210105
-    # ann.rankNorm.omega.filtered <- ann.rankNorm.omega %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
+##     ann.rankNorm.omega <- merge(barcode.names,rankNorm.omega,by.x="long.CBC", by.y=0)
+##     # old <210105
+##     # ann.rankNorm.omega.filtered <- ann.rankNorm.omega %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
     
-    ## rank norm on all guide averages
-    rankNorm.avg.guide <- avg.guide %>% column_to_rownames("Guide") %>% select(-cell.count) %>% apply(2,RankNorm) %>% as.data.frame()
-    ann.rankNorm.avg.guide <- merge(avg.guide %>% select(Guide,cell.count) %>% unique(), rankNorm.avg.guide, by.x="Guide", by.y=0) %>%
-      separate(., col="Guide", into=c("Guide", "Gene"), sep="::")
-    # old <210105
-    # ann.rankNorm.avg.guide.filtered <- ann.rankNorm.avg.guide %>% subset(cell.count >= 5) %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
+##     ## rank norm on all guide averages
+##     rankNorm.avg.guide <- avg.guide %>% column_to_rownames("Guide") %>% select(-cell.count) %>% apply(2,RankNorm) %>% as.data.frame()
+##     ann.rankNorm.avg.guide <- merge(avg.guide %>% select(Guide,cell.count) %>% unique(), rankNorm.avg.guide, by.x="Guide", by.y=0) %>%
+##       separate(., col="Guide", into=c("Guide", "Gene"), sep="::")
+##     # old <210105
+##     # ann.rankNorm.avg.guide.filtered <- ann.rankNorm.avg.guide %>% subset(cell.count >= 5) %>% group_by(Gene) %>% mutate(nCount = n()) %>% subset(nCount > 1) %>% select(-nCount) %>% as.data.frame()
     
-    ## branching off for pooled #TODO: how to merge the two?
-    if (SEP) {  
-      INT.gene.test <- get.p.value(ann.rankNorm.omega, INT=T)
-      INT.avg.guide.test <- get.p.value(ann.rankNorm.avg.guide, INT=T)
+##     ## branching off for pooled #TODO: how to merge the two?
+##     if (SEP) {  
+##       INT.gene.test <- get.p.value(ann.rankNorm.omega, INT=T)
+##       INT.avg.guide.test <- get.p.value(ann.rankNorm.avg.guide, INT=T)
       
-    } else {
-      ## # get negative controls
-      ## rankNorm.neg <- ann.rankNorm.omega %>% subset(Gene %in% c("negative-control", "safe-targeting")) %>% as.data.frame() # there must be a away to subset rows that contains the keywords and doens't have to be exact.
-      # rankNorm.neg <- ann.rankNorm.omega.filtered %>% subset(Gene %in% c("negative-control", "safe-targeting")) %>% as.data.frame() # there must be a away to subset rows that contains the keywords and doens't have to be exact.
+##     } else {
+##       ## # get negative controls
+##       ## rankNorm.neg <- ann.rankNorm.omega %>% subset(Gene %in% c("negative-control", "safe-targeting")) %>% as.data.frame() # there must be a away to subset rows that contains the keywords and doens't have to be exact.
+##       # rankNorm.neg <- ann.rankNorm.omega.filtered %>% subset(Gene %in% c("negative-control", "safe-targeting")) %>% as.data.frame() # there must be a away to subset rows that contains the keywords and doens't have to be exact.
       
-      # t-test on INT
-      ##################################################
-      ## local function for INT.ttest
-      get.p.value <- function(ann.rankNorm.omega.filtered){
-        INT.gene.test.list <- vector("list", k) # iterate through topics
-        for ( t in 1:length(topic.names) ) {
-          col <- topic.names[t] # current topic
-          ctrl <- ann.rankNorm.omega.filtered %>% subset(grepl("control$|targeting$", Gene)) %>% select(all_of(col)) %>% as.matrix() %>% as.numeric()
-          result <- ann.rankNorm.omega.filtered %>% group_by(Gene) %>% summarise(ttest.p = t.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value)
-          result$Topic <- rep(col, nrow(result))
-          INT.gene.test.list[[t]] <- result
-        }
-        INT.gene.test <- do.call(rbind, INT.gene.test.list)
-      }
-      ##################################################
-      INT.gene.test <- get.p.value(ann.rankNorm.omega)
-      INT.avg.guide.test <- get.p.value(ann.rankNorm.avg.guide)
-      # INT.gene.test <- get.p.value(ann.rankNorm.omega.filtered)
-      # INT.avg.guide.test <- get.p.value(ann.rankNorm.avg.guide.filtered)
+##       # t-test on INT
+##       ##################################################
+##       ## local function for INT.ttest
+##       get.p.value <- function(ann.rankNorm.omega.filtered){
+##         INT.gene.test.list <- vector("list", k) # iterate through topics
+##         for ( t in 1:length(topic.names) ) {
+##           col <- topic.names[t] # current topic
+##           ctrl <- ann.rankNorm.omega.filtered %>% subset(grepl("control$|targeting$", Gene)) %>% select(all_of(col)) %>% as.matrix() %>% as.numeric()
+##           result <- ann.rankNorm.omega.filtered %>% group_by(Gene) %>% summarise(ttest.p = t.test(x = get(col) %>% as.numeric(), y = ctrl)$p.value)
+##           result$Topic <- rep(col, nrow(result))
+##           INT.gene.test.list[[t]] <- result
+##         }
+##         INT.gene.test <- do.call(rbind, INT.gene.test.list)
+##       }
+##       ##################################################
+##       INT.gene.test <- get.p.value(ann.rankNorm.omega)
+##       INT.avg.guide.test <- get.p.value(ann.rankNorm.avg.guide)
+##       # INT.gene.test <- get.p.value(ann.rankNorm.omega.filtered)
+##       # INT.avg.guide.test <- get.p.value(ann.rankNorm.avg.guide.filtered)
       
-    }
+##     }
     
-    print("done with INT")
+##     print("done with INT")
     
-    ## merge "pooled" back in
-    # INT.gene.test.mtx <- INT.gene.test %>% spread(key=Topic, value=ttest.p) # stretch this out into a matrix of ( gene x topic )
-    INT.gene.test <- INT.gene.test %>% mutate(adjusted.ttest.p = p.adjust(ttest.p, method = "fdr"))
-    INT.avg.guide.test <- INT.avg.guide.test %>% mutate(adjusted.ttest.p = p.adjust(ttest.p, method = "fdr"))
+##     ## merge "pooled" back in
+##     # INT.gene.test.mtx <- INT.gene.test %>% spread(key=Topic, value=ttest.p) # stretch this out into a matrix of ( gene x topic )
+##     INT.gene.test <- INT.gene.test %>% mutate(adjusted.ttest.p = p.adjust(ttest.p, method = "fdr"))
+##     INT.avg.guide.test <- INT.avg.guide.test %>% mutate(adjusted.ttest.p = p.adjust(ttest.p, method = "fdr"))
     
-    INT.ttest.gene.score <- merge.score.with.test(gene.score, INT.gene.test, "ttest.p")
-    INT.ttest.avg.guide.score <- merge.score.with.test(gene.score, INT.avg.guide.test, "ttest.p", p.value.thr=0.05, adj.p.value.thr=0.1)
-    # end of INT t-test section
-    
-    
-    # # for testing purposes 210105
-    # here.INT.gene.test <- INT.gene.test
-    # here.INT.avg.guide.test <- INT.avg.guide.test
-    # here.INT.ttest.gene.score <- INT.ttest.gene.score 
-    # here.INT.ttest.avg.guide.score <- INT.ttest.avg.guide.score
-    # here.ann.rankNorm.omega <- ann.rankNorm.omega
-    # here.ann.rankNorm.avg.guide <- ann.rankNorm.avg.guide 
+##     INT.ttest.gene.score <- merge.score.with.test(gene.score, INT.gene.test, "ttest.p")
+##     INT.ttest.avg.guide.score <- merge.score.with.test(gene.score, INT.avg.guide.test, "ttest.p", p.value.thr=0.05, adj.p.value.thr=0.1)
+##     # end of INT t-test section
     
     
-    ## add individual log2fc against average of control ## add sep
-    
-    if(SEP) {
-      num.reps=2
-      labels <- c(rep1.label, rep2.label) # expand to accomodate multiple samples
-      fc.omega.list <- vector("list", num.reps) # iterate through topics + reps
-      for (label.index in 1:num.reps){
-        label.here <- labels[label.index]
-        ctrl.vec <- ann.omega.filtered %>% subset(grepl(label.here, Gene, fixed=T) & grepl(paste0("^safe-targeting|^negative-control"), Gene)) %>% select(all_of(topic.names)) %>% apply(2,mean) %>% as.array()
-        omega.filtered <- ann.omega.filtered %>% `rownames<-`(ann.omega.filtered$long.CBC) %>% subset(grepl(label.here, Gene, fixed=T)) %>% select(all_of(topic.names)) #210105
-        fc.omega.list[[label.index]] <- sweep(omega.filtered,2,ctrl.vec,"/") # use this to plot # and save this!
-      }
-      fc.omega <- do.call(rbind, fc.omega.list)
-    } else {
-      ctrl.vec <- ann.omega.filtered %>% subset(grepl(paste0("^safe-targeting|^negative-control"), Gene)) %>% select(all_of(topic.names)) %>% apply(2,mean) %>% as.array()
-      omega.filtered <- ann.omega.filtered %>% `rownames<-`(ann.omega.filtered$long.CBC) %>% select(all_of(topic.names)) #210105
-      fc.omega <- sweep(omega.filtered,2,ctrl.vec,"/") # use this to plot # and save this!
-      # old <210105
-      # fc.omega <- sweep(omega,2,ctrl.vec,"/") # use this to plot # and save this!
-    }
-    
-    log2fc.omega <- log2(fc.omega)
-    tmp <- log2fc.omega %>% `colnames<-`(topic.names) # keep log2fc.omega colnames same as omega, alter tmp for merging with guide information
-    log2fc.ann.omega <- merge(ann.omega.filtered %>% select(long.CBC, CBC, Gene, Guide), tmp, by.x="long.CBC", by.y=0)
-    fc.ann.omega <- merge(ann.omega.filtered %>% select(long.CBC, CBC, Gene, Guide), fc.omega %>% `colnames<-`(topic.names), by.x="long.CBC", by.y=0) %>% `rownames<-`(.$long.CBC)
-    # old <210105
-    # log2fc.ann.omega <- merge(ann.omega %>% select(Row.names,Gene, Guide), tmp, by.x="Row.names", by.y=0)
-    # fc.ann.omega <- merge(ann.omega %>% select(Row.names, Gene, Guide), fc.omega %>% `colnames<-`(topic.names), by.x="Row.names", by.y=0)
+##     # # for testing purposes 210105
+##     # here.INT.gene.test <- INT.gene.test
+##     # here.INT.avg.guide.test <- INT.avg.guide.test
+##     # here.INT.ttest.gene.score <- INT.ttest.gene.score 
+##     # here.INT.ttest.avg.guide.score <- INT.ttest.avg.guide.score
+##     # here.ann.rankNorm.omega <- ann.rankNorm.omega
+##     # here.ann.rankNorm.avg.guide <- ann.rankNorm.avg.guide 
     
     
-    # # for testing purposes 210105
-    # here.log2fc.ann.omega <-log2fc.ann.omega
-    # here.fc.ann.omega <- fc.ann.omega
+##     ## add individual log2fc against average of control ## add sep
+    
+##     if(SEP) {
+##       num.reps=2
+##       labels <- c(rep1.label, rep2.label) # expand to accomodate multiple samples
+##       fc.omega.list <- vector("list", num.reps) # iterate through topics + reps
+##       for (label.index in 1:num.reps){
+##         label.here <- labels[label.index]
+##         ctrl.vec <- ann.omega.filtered %>% subset(grepl(label.here, Gene, fixed=T) & grepl(paste0("^safe-targeting|^negative-control"), Gene)) %>% select(all_of(topic.names)) %>% apply(2,mean) %>% as.array()
+##         omega.filtered <- ann.omega.filtered %>% `rownames<-`(ann.omega.filtered$long.CBC) %>% subset(grepl(label.here, Gene, fixed=T)) %>% select(all_of(topic.names)) #210105
+##         fc.omega.list[[label.index]] <- sweep(omega.filtered,2,ctrl.vec,"/") # use this to plot # and save this!
+##       }
+##       fc.omega <- do.call(rbind, fc.omega.list)
+##     } else {
+##       ctrl.vec <- ann.omega.filtered %>% subset(grepl(paste0("^safe-targeting|^negative-control"), Gene)) %>% select(all_of(topic.names)) %>% apply(2,mean) %>% as.array()
+##       omega.filtered <- ann.omega.filtered %>% `rownames<-`(ann.omega.filtered$long.CBC) %>% select(all_of(topic.names)) #210105
+##       fc.omega <- sweep(omega.filtered,2,ctrl.vec,"/") # use this to plot # and save this!
+##       # old <210105
+##       # fc.omega <- sweep(omega,2,ctrl.vec,"/") # use this to plot # and save this!
+##     }
+    
+##     log2fc.omega <- log2(fc.omega)
+##     tmp <- log2fc.omega %>% `colnames<-`(topic.names) # keep log2fc.omega colnames same as omega, alter tmp for merging with guide information
+##     log2fc.ann.omega <- merge(ann.omega.filtered %>% select(long.CBC, CBC, Gene, Guide), tmp, by.x="long.CBC", by.y=0)
+##     fc.ann.omega <- merge(ann.omega.filtered %>% select(long.CBC, CBC, Gene, Guide), fc.omega %>% `colnames<-`(topic.names), by.x="long.CBC", by.y=0) %>% `rownames<-`(.$long.CBC)
+##     # old <210105
+##     # log2fc.ann.omega <- merge(ann.omega %>% select(Row.names,Gene, Guide), tmp, by.x="Row.names", by.y=0)
+##     # fc.ann.omega <- merge(ann.omega %>% select(Row.names, Gene, Guide), fc.omega %>% `colnames<-`(topic.names), by.x="Row.names", by.y=0)
+    
+    
+##     # # for testing purposes 210105
+##     # here.log2fc.ann.omega <-log2fc.ann.omega
+##     # here.fc.ann.omega <- fc.ann.omega
     
 
-    ## save the results
-    if (SEP) {  # removed rankNorm.neg
-      save(omega, theta, theta.zscore, ann.omega, ann.omega.filtered, avg.gene, avg.neg, gene.score, avg.guide, 
-         guide.score, gene.test, wilcox.gene.score,
-         perguide.gene.test, wilcox.perguide.gene.score, ptb.zscore,
-         ## ann.GO.omega, topic.names, avg.GO, GO.score, GO.test, GO.test.mtx, wilcox.GO.score,
-         ann.rankNorm.omega, INT.gene.test, INT.ttest.gene.score, 
-         INT.avg.guide.test, INT.ttest.avg.guide.score,
-         log2fc.omega, log2fc.ann.omega, fc.omega, fc.ann.omega,
-         file=file.name) 
-      } else {
-         save(omega, theta, theta.zscore,
-              ann.omega, ann.omega.filtered, avg.gene, avg.neg, gene.score, avg.guide, 
-              guide.score, gene.test, wilcox.gene.score,
-              perguide.gene.test, wilcox.perguide.gene.score, ptb.zscore,
-              ## ann.GO.omega, topic.names, avg.GO, GO.score, GO.test, GO.test.mtx, wilcox.GO.score,
-              ann.rankNorm.omega, INT.gene.test, INT.ttest.gene.score, 
-              INT.avg.guide.test, INT.ttest.avg.guide.score,
-              log2fc.omega, log2fc.ann.omega, fc.omega, fc.ann.omega,
-              file=file.name)
-      }
-  }
-}
+##     ## save the results
+##     if (SEP) {  # removed rankNorm.neg
+##       save(omega, theta, theta.zscore, ann.omega, ann.omega.filtered, avg.gene, avg.neg, gene.score, avg.guide, 
+##          guide.score, gene.test, wilcox.gene.score,
+##          perguide.gene.test, wilcox.perguide.gene.score, ptb.zscore,
+##          ## ann.GO.omega, topic.names, avg.GO, GO.score, GO.test, GO.test.mtx, wilcox.GO.score,
+##          ann.rankNorm.omega, INT.gene.test, INT.ttest.gene.score, 
+##          INT.avg.guide.test, INT.ttest.avg.guide.score,
+##          log2fc.omega, log2fc.ann.omega, fc.omega, fc.ann.omega,
+##          file=file.name) 
+##       } else {
+##          save(omega, theta, theta.zscore,
+##               ann.omega, ann.omega.filtered, avg.gene, avg.neg, gene.score, avg.guide, 
+##               guide.score, gene.test, wilcox.gene.score,
+##               perguide.gene.test, wilcox.perguide.gene.score, ptb.zscore,
+##               ## ann.GO.omega, topic.names, avg.GO, GO.score, GO.test, GO.test.mtx, wilcox.GO.score,
+##               ann.rankNorm.omega, INT.gene.test, INT.ttest.gene.score, 
+##               INT.avg.guide.test, INT.ttest.avg.guide.score,
+##               log2fc.omega, log2fc.ann.omega, fc.omega, fc.ann.omega,
+##               file=file.name)
+##       }
+##   }
+## }
 
 
 
