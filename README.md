@@ -7,8 +7,7 @@
 | total_workers | number of processes to run in parallel |
 | seed | a number to set seed for reproducibility |
 | num_runs | number of NMF run (recommend 100 for analyzing the data, and 10 for testing the pipeline) |
-| run_per_worker | number of run assign to each process/worker to run in series (num_runs = total_workers * run_per_worker)
-|
+| run_per_worker | number of run assign to each process/worker to run in series (num_runs = total_workers * run_per_worker)|
 | k | number of topics to factorize |
 | thresholds | spectra threshold for filtering outlier spectras, 2 means no filtering, recommend 0.2 |
 | analysisDir | directory for outputting results |

@@ -843,7 +843,8 @@ rule topic_plot:
 rule motif_enrichment_analysis:
 	input:
 		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
-		fimo_formatted = config["fimo_formatted"] # os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
+		promoter_fimo_formatted = config["promoter_fimo_formatted"],
+		enhancer_fimo_formatted = config["enhancer_fimo_formatted"] # os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
 	output: 
 		# motif_enrichment = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData")
 		# motif_table_qval = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{ep_type}.topic.top.300.zscore.gene_motif.count.ttest.enrichment_motif.thr.qval0.1_k_{k}.dt_{threshold}.txt")
@@ -866,8 +867,8 @@ rule motif_enrichment_analysis:
 		--recompute F \
 		--ep.type {wildcards.ep_type} \
 		--motif.match.thr.str {wildcards.motif_match_thr} \
-		--motif.enhancer.background {input.fimo_formatted} \
-		--motif.promoter.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv \
+		--motif.enhancer.background {input.enhancer_fimo_formatted} \
+		--motif.promoter.background {input.promoter_fimo_formatted} \
 		' "
 		# --motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
 		

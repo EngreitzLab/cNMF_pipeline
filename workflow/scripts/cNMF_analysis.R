@@ -34,6 +34,7 @@ conflict_prefer("desc", "dplyr")
 
 
 ## source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
+source("./topicModelAnalysis.functions.R")
 
 option.list <- list(
   make_option("--figdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/figures/all_genes/", help="Figure directory"),
