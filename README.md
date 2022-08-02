@@ -34,6 +34,8 @@
 | cNMF_gene_selection | "all_genes" for using all expressed genes as input, "top3000VariableGenes" for using the top 3,000 most variable genes as an input, the number of top variable genes can be adjusted by the user, e.g. "top2000VariableGenes" for using the top 2,000 most variable genes |
 | Perturb-seq | True for an Perturb-seq experiment. The pipeline will generate additional results based on comparison between perturbation and control. False for any scRNA-seq experiment. |
 
+Note: please keep all optional items in the config file, even if it points to a non-existing path. The snakemake pipeline might return an error if they are not there. 
+
 
 ### Conda Environment:
 Download the .yml files from conda_envs/ and install via
@@ -44,5 +46,6 @@ conda create -f cnmf_analysis_R.yml
 cnmf_env contains snakemake. If you do not have snakemake installed already, you can activate the environment via `conda activate cnmf_env`, then run the pipeline.
 
 ### Running the pipeline:
-Example script in log.sh
-Recommend doing a dry-run to double check that the workflow is working properly.
+Example script in log.sh.  
+Recommend doing a dry-run to double check that the workflow is working properly.  
+
