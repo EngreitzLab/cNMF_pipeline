@@ -49,3 +49,27 @@ cnmf_env contains snakemake. If you do not have snakemake installed already, you
 Example script in log.sh.  
 Recommend doing a dry-run to double check that the workflow is working properly.  
 
+#### Example dry run results
+Job counts:
+        count   jobs
+        1       Seurat_Object_to_h5ad
+        1       aggregate_combined_runs
+        1       aggregate_over_K
+        1       all
+        1       analysis
+        3       clusterProfiler_GSEA
+        3       clusterProfiler_GSEA_plot
+        1       combine_runs_varGenes
+        1       create_Seurat_Object
+        1       findK_cNMF
+        1       findK_plot
+        1       get_concensus_factors
+        6       motif_enrichment_analysis
+        6       motif_enrichment_analysis_plot
+        1       pool_together_results
+        1       prepare_combine_geneSet
+        1       prepare_findK_geneSet
+        10      prepare_geneSet_cNMF
+        10      run_cNMF
+        1       topic_plot
+        52
