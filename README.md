@@ -40,8 +40,8 @@ Note: please keep all optional items in the config file, even if it points to a 
 ### Conda Environment:
 Download the .yml files from conda_envs/ and install via
 ```bash
-conda create -f cnmf_env.yml
-conda create -f cnmf_analysis_R.yml
+conda env create -f cnmf_env.yml
+conda env create -f cnmf_analysis_R.yml
 ```
 cnmf_env contains snakemake. If you do not have snakemake installed already, you can activate the environment via `conda activate cnmf_env`, then run the pipeline.
 
