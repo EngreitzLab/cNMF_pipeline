@@ -10,10 +10,9 @@ rule cNMF_PoPS_result_table:
 		# preds_with_cNMF = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/{magma_prefix}_cNMF{k}.preds"),
 		coefs_with_cNMF = os.path.join("/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/{magma_prefix}_cNMF60.coefs"),
 		marginals_with_cNMF = os.path.join("/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/{magma_prefix}_cNMF60.marginals"),
-		preds_with_cNMF = os.path.join("/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/{magma_prefix}_cNMF60.preds"),
-		batch_topic_list = os.path.join(config["analysisDir"], "{sample}/{folder}/{sample}/K{k}/threshold_{threshold}/batch.topics.txt")
+		preds_with_cNMF = os.path.join("/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210831_PoPS/211108_withoutBBJ/outputs/{magma_prefix}_cNMF60.preds")
 	output:
-		input_table_for_compute_enrichment = os.path.join(config["analysisDir"], "{sample}/{folder}/{sample}/K{k}/threshold_{threshold}/cNMF.PoPS.input.to.large.table.pipeline_k_{k}.dt_{threshold}.minGuidePerPtb_1.minCellPerGuide_2.{magma_prefix}.txt")
+		input_table_for_compute_enrichment = os.path.join(config["analysisDir"], "{sample}/{folder}/{sample}/K{k}/threshold_{threshold}/cNMF.PoPS.input.to.large.table.pipeline_k_{k}.dt_{threshold}.magma_{magma_prefix}.txt")
 	params:
 		time = "6:00:00",
 		mem_gb = "64",
@@ -36,10 +35,11 @@ rule cNMF_PoPS_result_table:
 
 rule compute_enrichment:
 	input:
-		input_table_for_compute_enrichment = os.path.join(config["analysisDir"], "{sample}/{folder}/{sample}/K{k}/threshold_{threshold}/cNMF.PoPS.input.to.large.table.pipeline_k_{k}.dt_{threshold}.minGuidePerPtb_1.minCellPerGuide_2.{magma_prefix}.txt"),
-		input_GWAS_table = os.path.join(config["GWASTableDir"], "CAD_GWAS_gene_incl_ubq_genes.{version}.csv")
+		input_table_for_compute_enrichment = os.path.join(config["analysisDir"], "{sample}/{folder}/{sample}/K{k}/threshold_{threshold}/cNMF.PoPS.input.to.large.table.pipeline_k_{k}.dt_{threshold}.magma_{magma_prefix}.txt"),
+		input_GWAS_table = os.path.join(config["GWASTableDir"], "CAD_GWAS_gene_incl_ubq_genes.csv"),
+		batch_topic_list = os.path.join(config["analysisDir"], "{sample}/{folder}/{sample}/K{k}/threshold_{threshold}/batch.topics.txt")
 	output:
-		statistical_test_result = os.path.join(config["analysisDir"], "{sample}/{folder}/{sample}/K{k}/threshold_{threshold}/statistical.test.to.prioritize.topics.{magma_prefix}.{version}.txt")
+		statistical_test_result = os.path.join(config["analysisDir"], "{sample}/{folder}/{sample}/K{k}/threshold_{threshold}/program_prioritization.{magma_prefix}.txt")
 	params:
 		time = "6:00:00",
 		mem_gb = "64",

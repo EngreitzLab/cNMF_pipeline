@@ -27,6 +27,10 @@ def get_output_files(wildcards):
 	
 	aggregated_output = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
 		
+	## variance explained
+	Var_k_txt = expand(os.path.join(config["analysisDir"],"{folder}/{sample}/K{k}/threshold_{threshold}/metrics.varianceExplained.df.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+	Var_k_summary_txt = expand(os.path.join(config["analysisDir"],"{folder}/{sample}/K{k}/threshold_{threshold}/summary.varianceExplained.df.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+
 	cNMF_Results = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 	topic_zscore_top50 = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top50GeneInTopics.zscore.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 	topic_zscore_correlation = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_topic.Pearson.correlation.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
@@ -61,6 +65,8 @@ def get_output_files(wildcards):
 	# output_files.extend(list(usages))
 	output_files.extend(list(findK_plot_cNMF))
 	output_files.extend(list(aggregated_output))
+	output_files.extend(list(Var_k_txt))
+	output_files.extend(list(Var_k_summary_txt))
 	output_files.extend(list(cNMF_Results))
 	# output_files.extend(list(topic_zscore_top50))
 	output_files.extend(list(topic_zscore_correlation))

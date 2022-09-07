@@ -115,8 +115,10 @@ geneDetectedPerCell.df <- read.delim("/oak/stanford/groups/engreitz/Users/kangh/
     merge(sample.to.10X.lane, by="sample") %>%
     mutate(CBC_10x = paste0(CBC, "-", sample_num))  
 
+print("organize meta data")
 ## get metadata from log2.X.full rownames
-if(SAMPLE %in% c("2kG.library", "Perturb_2kG_dup4")) {
+# if(SAMPLE %in% c("2kG.library", "Perturb_2kG_dup4")) {
+if( grepl("2kG.library|Perturb_2kG_dup4", SAMPLE) ) {
     ## barcode.names <- read.table(opt$barcode.names, header=F, stringsAsFactors=F) %>% `colnames<-`("long.CBC")
     ## rownames(omega) <- barcode.names %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
     meta_data <- omega %>%
@@ -139,6 +141,9 @@ if(SAMPLE %in% c("2kG.library", "Perturb_2kG_dup4")) {
     ##     merge(geneDetectedPerCell.df, by.x="long.CBC", by.y=0)
 } else {
     barcode.names <- read.table(opt$barcode.names, header=F, stringsAsFactors=F) %>% `colnames<-`("long.CBC")
+    print("finished loading barcode names")
+    print(paste0("omega dimensions: ", dim(omega)))
+    print(paste0("barcode names dimensions: ", dim(barcode.names)))
     rownames(omega) <- barcode.names %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
     meta_data <- omega %>%
         rownames %>%
@@ -268,7 +273,8 @@ MAST.list <- mclapply(1:num.ptb, function(i) {
     }
     )
     ## MAST.list[[i]] <- fcHurdle %>% mutate(perturbation = gene.here)
-}, mc.cores = floor(availableCores() - 1))
+}, mc.cores = max(1, floor(availableCores() - 1)))
+
 MAST.df <- do.call(rbind, MAST.list) %>%
     group_by(zlm.model.name) %>%
     mutate(fdr.across.ptb = p.adjust(`Pr(>Chisq)`, method='fdr')) %>%

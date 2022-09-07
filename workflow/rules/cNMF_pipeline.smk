@@ -601,7 +601,7 @@ rule get_concensus_factors:
 	# resources: mem_mb=96000
 	params:
 		time = get_concensus_factors_time,
-		mem_gb = "256", # 96 for top 3000 genes
+		mem_gb = "255", # 96 for top 3000 genes
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK")
 	# resources: 
 	# 	mem_mb=196000,
@@ -730,6 +730,34 @@ rule plot_UMAP:
 # 	output:
 # 	params:
 # 	shell:
+
+
+rule variance_explained:
+	input:
+		tpm_counts = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
+		spectra_tpm = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_tpm.k_{k}.dt_{threshold}.txt"),
+		spectra_zscore = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_score.k_{k}.dt_{threshold}.txt"),
+		spectra_consensus = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.spectra.k_{k}.dt_{threshold}.consensus.txt")
+	output:
+		Var_k_txt = os.path.join(config["analysisDir"],"{folder}/{sample}/K{k}/threshold_{threshold}/metrics.varianceExplained.df.txt"),
+		Var_k_summary_txt = os.path.join(config["analysisDir"],"{folder}/{sample}/K{k}/threshold_{threshold}/summary.varianceExplained.df.txt")
+	params:
+		time = "6:00:00",
+		mem_gb = "200",
+		path_to_topics = os.path.join(config["analysisDir"], "{folder}_acrossK/"),
+		tpm_counts_path = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}/cnmf_tmp/"),
+		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
+		threshold = get_cNMF_filter_threshold_double
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		python workflow/scripts/variance_explained.py \
+		--path_to_topics {params.path_to_topics} \
+		--topic_sampleName {wildcards.sample} \
+		--tpm_counts_path {input.tpm_counts} \
+		--outdir {params.outdir} \
+		--k {wildcards.k} \
+		--density_threshold {params.threshold} ' "
 
 
 rule analysis:
