@@ -43,6 +43,12 @@ option.list <- list(
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
+## ## overdispersed genes (for sdev)
+## opt$sampleName <- "2kG.library_overdispersedGenes"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/figures/top2000VariableGenes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/analysis/top2000VariableGenes"
+## opt$K.val <- 100
+
 
 OUTDIR <- opt$outdir
 FIGDIR <- opt$figdir

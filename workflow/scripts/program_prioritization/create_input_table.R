@@ -51,7 +51,7 @@ option.list <- list(
     make_option("--datadir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/ECPerturbSeq2021-Analysis/data/", help="Input 10x data directory"),
     make_option("--topic.model.result.dir", type="character", default="/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/210625_snakemake_output/top3000VariableGenes_acrossK/2kG.library/", help="Topic model results directory"),
     make_option("--sampleName", type="character", default="2kG.library.ctrl.only", help="Name of Samples to be processed, separated by commas"),
-    make_option("--K.val", type="numeric", default=60, help="K value to analyze"),
+    make_option("--K.val", type="numeric", default=25, help="K value to analyze"),
     make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
     make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
     make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),

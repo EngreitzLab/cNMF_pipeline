@@ -106,7 +106,8 @@ rule create_Seurat_Object:
 		time = "2:00:00",
 		mem_gb = "200",
 		datadir = config["dataDir"],
-		outdir = os.path.join(config["analysisDir"], "data")
+		outdir = os.path.join(config["analysisDir"], "data"),
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -126,7 +127,8 @@ rule Seurat_Object_to_h5ad:
 		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
 	params:
 		time = "2:00:00",
-		mem_gb = "64"
+		mem_gb = "64",
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -135,6 +137,24 @@ rule Seurat_Object_to_h5ad:
 		--output_h5ad {output.h5ad_mtx} \
 		--output_gene_name_txt {output.gene_name_txt} ' "
 
+
+# rule raw_h5ad_to_filtered_h5ad:
+# 	input:
+# 		raw_h5ad_file = os.path.join(config["analysisDir"], "data/{sample}.raw.h5ad")
+# 	output:	
+# 		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
+# 		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
+# 	params:
+# 		time = "2:00:00",
+# 		mem_gb = "64"
+# 	shell:
+# 		"bash -c ' source $HOME/.bashrc; \
+# 		conda activate cnmf_env; \
+# 		python workflow/scripts/raw_h5ad_to_h5ad.py \
+# 		--input_h5ad {input.seurat_object} \
+# 		--output_h5ad {output.h5ad_mtx} \
+# 		--output_gene_name_txt {output.gene_name_txt} ' "
+	
 
 # ## need a rule to convert txt to h5ad or RDS to h5ad ## outdated but keeping it here for reference
 # rule txt_to_h5ad:
@@ -152,6 +172,24 @@ rule Seurat_Object_to_h5ad:
 # 		--output_gene_name_txt {output.gene_name_txt} ' "
 
 
+def get_num_cells(wildcards):
+	return config["num_cells"]
+
+def get_rule_prepare_cNMF_memory(wildcards):
+	num_cells = config["num_cells"]
+	if num_cells > 1e6:
+		return "300"
+	else:
+		return "196"
+
+def get_rule_prepare_cNMF_partition(wildcards):
+	num_cells = config["num_cells"]
+	if num_cells > 1e6:
+		return "bigmem"
+	else:
+		return "owners,normal"
+
+
 rule prepare_varGenes_cNMF:
 	input:
 		# h5ad = os.path.join(config["analysisDir"], "{folder}/{sample}/{sample}.h5ad")
@@ -165,11 +203,12 @@ rule prepare_varGenes_cNMF:
 		overdispersed_genes = os.path.join(config["scratchDir"],"top{num_genes}VariableGenes/K{k}/worker{workerIndex}/{sample}/{sample}.overdispersed_genes.txt")
 	params:
 		time = "3:00:00",
-		mem_gb = "64",
+		mem_gb = get_rule_prepare_cNMF_memory, #"64"
 		seed = config["seed"],
 		run_per_worker = config["run_per_worker"],
 		total_workers = config["total_workers"],
-		outdir = os.path.join(config["scratchDir"], "top{num_genes}VariableGenes/K{k}/worker{workerIndex}/")
+		outdir = os.path.join(config["scratchDir"], "top{num_genes}VariableGenes/K{k}/worker{workerIndex}/"),
+		partition = get_rule_prepare_cNMF_partition #"owners,normal"
 	# resources: 
 	# 	mem_mb=128*1000,
 	# 	time = "3:00:00"
@@ -204,11 +243,12 @@ rule prepare_geneSet_cNMF:
 		overdispersed_genes = os.path.join(config["scratchDir"],"{gene_selection_method}_genes/K{k}/worker{workerIndex}/{sample}/{sample}.overdispersed_genes.txt")
 	params:
 		time = "5:00:00",
-		mem_gb = "196",
+		mem_gb = get_rule_prepare_cNMF_memory, #"196"
         seed = config["seed"],
 		run_per_worker = config["run_per_worker"],
 		total_workers = config["total_workers"],
-		outdir = os.path.join(config["scratchDir"], "{gene_selection_method}_genes/K{k}/worker{workerIndex}/")
+		outdir = os.path.join(config["scratchDir"], "{gene_selection_method}_genes/K{k}/worker{workerIndex}/"),
+		partition = get_rule_prepare_cNMF_partition #"owners,normal"
 	# resources: 
 	# 	mem_mb=128*1000,
 	# 	time = "3:00:00"
@@ -229,12 +269,15 @@ rule prepare_geneSet_cNMF:
 
 
 def get_cNMF_memory(wildcards): ## add condition to allot more memory for large matrices
-	if "VariableGenes" in wildcards.folder:
-		return "16"
-	elif int(wildcards.k) > 100:
+	if config["num_cells"] > 1e6:
 		return "64"
 	else:
-		return "32"
+		if "VariableGenes" in wildcards.folder:
+			return "16"
+		elif int(wildcards.k) >= 100:
+			return "64"
+		else:
+			return "32"
 
 def get_cNMF_time(wildcards):
 	if int(wildcards.k) > 100 and wildcards.folder == "all_genes":
@@ -279,7 +322,8 @@ rule run_cNMF: # we don't know which worker will be working on which run, and sn
 		mem_gb = get_cNMF_memory,
 		total_workers = config["total_workers"],
 		num_runs = config["num_runs"],
-		outdir = os.path.join(config["scratchDir"],"{folder}/K{k}/worker{workerIndex}/")
+		outdir = os.path.join(config["scratchDir"],"{folder}/K{k}/worker{workerIndex}/"),
+		partition = "owners,normal"
 	# resources: 
 	# 	mem_mb=get_cNMF_memory_slurm,
 	# 	time = get_cNMF_time,
@@ -303,7 +347,8 @@ rule pool_together_results:
 		inputdir = os.path.join(config["scratchDir"],"{folder}/K{k}"),
 		outdir = os.path.join(config["scratchDir"],"{folder}_combined/K{k}"),
 		num_workers = config["total_workers"],
-		run_per_worker = config["run_per_worker"]
+		run_per_worker = config["run_per_worker"],
+		partition = "owners,normal"
 	# resources: 
 	# 	mem_mb=64*1000,
 	# 	time = "3:00:00"
@@ -336,7 +381,8 @@ rule prepare_combine_varGene: # this step causes snakemake hanging at "Building 
 		mem_gb = "64",
 		seed = config["seed"],
 		num_runs = config["num_runs"],
-		outdir = os.path.join(config["scratchDir"], "top{num_genes}VariableGenes_combined/K{k}")
+		outdir = os.path.join(config["scratchDir"], "top{num_genes}VariableGenes_combined/K{k}"),
+		partition = "owners,normal"
 	# resources: 
 	# 	mem_mb=64*1000,
 	# 	time = "3:00:00"
@@ -374,7 +420,8 @@ rule prepare_combine_geneSet: # this step causes snakemake hanging at "Building 
 		mem_gb = "160",
 		seed = config["seed"],
 		num_runs = config["num_runs"],
-		outdir = os.path.join(config["scratchDir"], "{gene_selection_method}_genes_combined/K{k}")
+		outdir = os.path.join(config["scratchDir"], "{gene_selection_method}_genes_combined/K{k}"),
+		partition = "owners,normal"
 	# resources: 
 	# 	mem_mb=160*1000,
 	# 	time = "3:00:00"
@@ -409,7 +456,8 @@ rule combine_runs_varGenes:
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
-		outdir = os.path.join(config["scratchDir"],"{folder}_combined/K{k}/")
+		outdir = os.path.join(config["scratchDir"],"{folder}_combined/K{k}/"),
+		partition = "owners,normal"
 	# resources: 
 	# 	mem_mb=64*1000,
 	# 	time = "3:00:00"
@@ -430,7 +478,8 @@ rule aggregate_combined_runs:
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
-		outdir = config["scratchDir"]
+		outdir = config["scratchDir"],
+		partition = "owners,normal"
 	# resources: 
 	# 	mem_mb=64*1000,
 	# 	time = "3:00:00"
@@ -460,7 +509,8 @@ rule prepare_findK_varGene:
 		seed = config["seed"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["analysisDir"], "top{num_genes}VariableGenes_acrossK"),
-		klist = " ".join(str(k) for k in config["k"])
+		klist = " ".join(str(k) for k in config["k"]),
+		partition = "owners,normal"
 	threads: config["total_workers"]
 	# resources: 
 	# 	mem_mb=64*1000,
@@ -500,7 +550,8 @@ rule prepare_findK_geneSet:
 		seed = config["seed"],
 		num_runs = config["num_runs"],
 		outdir = os.path.join(config["analysisDir"], "{gene_selection_method}_genes_acrossK"),
-		klist = " ".join(str(k) for k in config["k"])
+		klist = " ".join(str(k) for k in config["k"]),
+		partition = "owners,normal"
 	threads: config["total_workers"]
 	# resources: 
 	# 	mem_mb=128*1000,
@@ -549,7 +600,8 @@ rule findK_cNMF:
 	params:
 		time = "24:00:00",
 		mem_gb = get_findK_cNMF_mem_gb,
-		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK")
+		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK"),
+		partition = "owners,normal"
 	# resources: 
 	# 	mem_mb=get_findK_cNMF_mem_gb_slurm,
 	# 	time = "24:00:00"
@@ -561,7 +613,7 @@ rule findK_cNMF:
 
 
 def get_concensus_factors_time(wildcards):
-	if int(wildcards.k) >= 100:
+	if int(wildcards.k) >= 70:
 		return "36:00:00"
 	elif int(wildcards.k) >= 40 and wildcards.folder == "all_genes":
 		return "9:00:00"
@@ -602,7 +654,8 @@ rule get_concensus_factors:
 	params:
 		time = get_concensus_factors_time,
 		mem_gb = "255", # 96 for top 3000 genes
-		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK")
+		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK"),
+		partition = "owners,normal"
 	# resources: 
 	# 	mem_mb=196000,
 	# 	time = get_concensus_factors_time_slurm
@@ -636,7 +689,8 @@ rule get_concensus_factors_plot:
 		time = get_concensus_factors_time,
 		mem_gb = "256", # 96 for top 3000 genes
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK"),
-		figdir = os.path.join(config["figDir"])
+		figdir = os.path.join(config["figDir"]),
+		partition = "owners,normal"
 	run:
 		threshold_here = wildcards.threshold.replace("_",".")
 		shell("bash -c ' source $HOME/.bashrc; \
@@ -685,7 +739,8 @@ rule calc_UMAP:
 		mem_gb = "200",
 		analysisdir = config["analysisDir"],
 		datadir = config["dataDir"],
-		outdir = os.path.join(config["analysisDir"], "data")
+		outdir = os.path.join(config["analysisDir"], "data"),
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -711,7 +766,8 @@ rule plot_UMAP:
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
-		threshold = get_cNMF_filter_threshold_double
+		threshold = get_cNMF_filter_threshold_double,
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -743,21 +799,24 @@ rule variance_explained:
 		Var_k_summary_txt = os.path.join(config["analysisDir"],"{folder}/{sample}/K{k}/threshold_{threshold}/summary.varianceExplained.df.txt")
 	params:
 		time = "6:00:00",
-		mem_gb = "200",
+		mem_gb = "160",
 		path_to_topics = os.path.join(config["analysisDir"], "{folder}_acrossK/"),
-		tpm_counts_path = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}/cnmf_tmp/"),
+		# tpm_counts_path = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}/cnmf_tmp/"),
+		X_normalized_path = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad"),
 		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
-		threshold = get_cNMF_filter_threshold_double
+		threshold = get_cNMF_filter_threshold_double,
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
-		python workflow/scripts/variance_explained.py \
+		python workflow/scripts/variance_explained_v2.py \
 		--path_to_topics {params.path_to_topics} \
 		--topic_sampleName {wildcards.sample} \
-		--tpm_counts_path {input.tpm_counts} \
+		--X_normalized {params.X_normalized_path} \
 		--outdir {params.outdir} \
 		--k {wildcards.k} \
 		--density_threshold {params.threshold} ' "
+# --tpm_counts_path {input.tpm_counts} \
 
 
 rule analysis:
@@ -783,7 +842,8 @@ rule analysis:
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
 		# barcode = os.path.join(config["barcodeDir"], "{sample}.barcodes.tsv"),
 		threshold = get_cNMF_filter_threshold_double,
-		barcode_names = config["barcodeDir"]
+		barcode_names = config["barcodeDir"],
+		partition = "owners,normal"
 		# subsample_type = config["subsample_type"]
 	# resources:
 	# 	mem_mb=get_topicModelAnalysis_memory_slurm,
@@ -822,7 +882,8 @@ rule topic_plot:
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
-		threshold = get_cNMF_filter_threshold_double
+		threshold = get_cNMF_filter_threshold_double,
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -881,7 +942,8 @@ rule motif_enrichment_analysis:
 		mem_gb = "64",
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
-		threshold = get_cNMF_filter_threshold_double
+		threshold = get_cNMF_filter_threshold_double,
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -939,7 +1001,8 @@ rule motif_enrichment_analysis_plot:
 		mem_gb = "64",
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
-		threshold = get_cNMF_filter_threshold_double
+		threshold = get_cNMF_filter_threshold_double,
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -994,7 +1057,8 @@ rule clusterProfiler_GSEA:
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
-		threshold = get_cNMF_filter_threshold_double
+		threshold = get_cNMF_filter_threshold_double,
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -1020,7 +1084,8 @@ rule clusterProfiler_GSEA_plot:
 		mem_gb = "16",
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
-		threshold = get_cNMF_filter_threshold_double
+		threshold = get_cNMF_filter_threshold_double,
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -1057,9 +1122,11 @@ rule clusterProfiler_GSEA_plot:
 
 rule aggregate_over_K:
 	input:
-		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_0_2.RData"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 		motif_table = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/{ep_type}.topic.top.300.zscore.gene_motif.count.ttest.enrichment_motif.thr.{motif_match_thr}_k_{k}.dt_{threshold}.txt"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]], ep_type = ["enhancer", "promoter"], motif_match_thr = ["qval0.1", "pval1e-4", "pval1e-6"]),
-		clusterProfiler_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingType{ranking_type}_EnrichmentType{GSEA_type}.txt"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]], ranking_type = ["zscore"], GSEA_type = ["GOEnrichment", "ByWeightGSEA", "GSEA"]) ## skipping raw x ByWeightGSEA
+		clusterProfiler_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingType{ranking_type}_EnrichmentType{GSEA_type}.txt"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]], ranking_type = ["zscore"], GSEA_type = ["GOEnrichment", "ByWeightGSEA", "GSEA"]), ## skipping raw x ByWeightGSEA
+		variance_explained_txt = expand(os.path.join(config["analysisDir"],"{{folder}}/{{sample}}/K{k}/threshold_{threshold}/metrics.varianceExplained.df.txt"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+		variance_explained_summary_txt = expand(os.path.join(config["analysisDir"],"{{folder}}/{{sample}}/K{k}/threshold_{threshold}/summary.varianceExplained.df.txt"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]])
 		# clusterProfiler_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingType{ranking_type}_EnrichmentType{GSEA_type}.txt"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]], ranking_type = ["zscore", "raw"], GSEA_type = ["GOEnrichment", "ByWeightGSEA", "GSEA"])
 		# clusterProfiler_top300Gene_GO_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/clusterProfiler_top300Genes{ranking_type_here}_GOEnrichment.txt"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]], ranking_type_here = ["zscore", "raw"]),
 		# clusterProfiler_allGeneWeight_gsea_result = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/clusterProfiler_allGene{ranking_type_here}_ByWeight_GSEA.txt"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]], ranking_type_here = ["zscore", "raw"]),
@@ -1077,14 +1144,14 @@ rule aggregate_over_K:
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"),
 		datadir = config["dataDir"],
 		klist_comma = ",".join(str(k) for k in config["k"]),
-		K_spectra_threshold_table = config["K_spectra_threshold_table"]
+		K_spectra_threshold_table = config["K_spectra_threshold_table"],
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/aggregate_across_K.R \
 		--figdir {params.figdir} \
 		--outdir {params.analysisdir} \
-		--datadir {params.datadir} \
 		--sampleName {wildcards.sample} \
 		--K.list {params.klist_comma} \
 		--K.table {params.K_spectra_threshold_table} ' " ## how to create this automatically?
@@ -1096,13 +1163,15 @@ rule findK_plot:
 	output:
 		GSEA_plots = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/All_GSEA.pdf"),
 		TFMotifEnrichment_plots = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/All_TFMotifEnrichment.pdf"),
-		topic_clustering_plot = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/cluster.topic.zscore.by.Pearson.corr.pdf")
+		topic_clustering_plot = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/cluster.topic.zscore.by.Pearson.corr.pdf"),
+		variance_explained_plot = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/variance.explained.by.model.pdf")
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
 		figdir = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/"),
 		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/"),
-		GO_threshold = 0.1
+		GO_threshold = 0.1,
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -1132,7 +1201,8 @@ checkpoint munge_features_without_cNMF:
 		gene_annot_path = config["PoPS_gene_annotation_path"],
 		munged_features_dir = os.path.join(config["scratchDir"], "pops/features/pops_features_munged_{magma_prefix}"),
 		magma_prefix = config["magma_prefix"],
-		pipelineDir = config["pipelineDir"]
+		pipelineDir = config["pipelineDir"],
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -1160,7 +1230,8 @@ checkpoint munge_features_with_cNMF: ## need to test pops in cnmf_env
 		external_features = config["PoPS_raw_featureDir"],
 		gene_annot_path = config["PoPS_gene_annotation_path"],
 		munged_features_dir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/features/pops_features_munged_{magma_prefix}_cNMF"),
-		pipelineDir = config["pipelineDir"]
+		pipelineDir = config["pipelineDir"],
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -1218,7 +1289,8 @@ rule run_PoPS_with_cNMF: ## num_feature_chunks: needs specification
 		PoPS_control_features = config["PoPS_control_features"],
 		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops"),
 		num_munged_feature_chunks = get_pops_feature_chunk_number_with_cNMF,
-		pipelineDir = config["pipelineDir"]
+		pipelineDir = config["pipelineDir"],
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -1248,7 +1320,8 @@ rule run_PoPS_without_cNMF: ## num_feature_chunks: needs specification
 		PoPS_control_features = config["PoPS_control_features"],
 		outdir = os.path.join(config["analysisDir"], "pops"),
 		num_munged_feature_chunks = get_pops_feature_chunk_number_without_cNMF,
-		pipelineDir = config["pipelineDir"]
+		pipelineDir = config["pipelineDir"],
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -1278,7 +1351,8 @@ rule aggregate_features_txt_to_RDS: ## aggregate all external features
 		time = "3:00:00",
 		mem_gb = "128",
 		outdir = os.path.join(config["analysisDir"], "pops/features/processed_features"),
-		raw_features_dir = os.path.join(config["scratchDir"], "pops/features/pops_features_raw")
+		raw_features_dir = os.path.join(config["scratchDir"], "pops/features/pops_features_raw"),
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -1297,7 +1371,8 @@ rule aggregate_features_txt_to_RDS_with_cNMF:
 	params:
 		time = "3:00:00",
 		mem_gb = "128",
-		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops")
+		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops"),
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -1330,7 +1405,8 @@ rule analyze_PoPS_results: ## need RDS file with all features
 		mem_gb = "128",
 		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops"),
 		scratch_outdir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops"),
-		external_features_metadata = config["PoPS_features_metadata_path"]
+		external_features_metadata = config["PoPS_features_metadata_path"],
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -1376,7 +1452,8 @@ rule PoPS_plots:
 		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops"),
 		figdir = os.path.join(config["figDir"], "{folder}/{sample}/K{k}"),
 		scratch_outdir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops"),
-		external_features_metadata = config["PoPS_features_metadata_path"]
+		external_features_metadata = config["PoPS_features_metadata_path"],
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \

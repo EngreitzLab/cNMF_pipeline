@@ -28,6 +28,10 @@ option.list <- list(
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
+
+## ## for overdispersedGenes 220617
+## opt$figdi <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/figures/top2000VariableGenes/2kG.library_overdispersedGenes/acrossK/"
+
 ## ## for all genes 210707 folder
 ## ## ## all genes directories (for sdev)
 ## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/figures/2kG.library/all_genes/2kG.library/acrossK/"
@@ -363,6 +367,17 @@ png(file=paste0(FIGDIR, "/cluster.topic.raw.by.Pearson.corr.K30_higher.threshold
 plotHeatmap(m, labCol=rownames(m), margins=c(12,12), title=paste0("cNMF, topic raw weight clustering by Pearson Correlation"))
 dev.off()
 
+
+##########################################################################################
+## Variance Explained Plots
+##########################################################################################
+toplot <- varianceExplainedByModel.df
+p <- toplot %>% ggplot(aes(x=K, y=Total)) + geom_point(size=0.5) + geom_line(size=0.5) + mytheme +
+    xlab("K") + ylab("Fraction of Variance\nExplained by the Model")
+filename <- paste0(FIGDIR, "/variance.explained.by.model")
+pdf(paste0(filename, ".pdf"), width=3, height=1.5)
+print(p)
+dev.off()
 
 
 

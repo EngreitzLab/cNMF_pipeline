@@ -75,8 +75,8 @@ FIGDIR=opt$figdir
 FIGDIRSAMPLE=paste0(FIGDIR, "/", SAMPLE, "/K",k,"/")
 FIGDIRTOP=paste0(FIGDIRSAMPLE,"/",SAMPLE,"_K",k,"_dt_", DENSITY.THRESHOLD,"_")
 OUTDIRSAMPLE=paste0(OUTDIR, "/", SAMPLE, "/K",k,"/threshold_", DENSITY.THRESHOLD, "/")
-FGSEADIR=paste0(OUTDIRSAMPLE,"/fgsea/")
-FGSEAFIG=paste0(FIGDIRSAMPLE,"/fgsea/")
+## FGSEADIR=paste0(OUTDIRSAMPLE,"/fgsea/")
+## FGSEAFIG=paste0(FIGDIRSAMPLE,"/fgsea/")
 
 ## subscript for files
 SUBSCRIPT.SHORT=paste0("k_", k, ".dt_", DENSITY.THRESHOLD)
@@ -88,7 +88,7 @@ p.value.thr <- opt$adj.p.value.thr
 
 
 # create dir if not already
-check.dir <- c(OUTDIR, FIGDIR, paste0(FIGDIR,SAMPLE,"/"), paste0(FIGDIR,SAMPLE,"/K",k,"/"), paste0(OUTDIR,SAMPLE,"/"), OUTDIRSAMPLE, FIGDIRSAMPLE, FGSEADIR, FGSEAFIG)
+check.dir <- c(OUTDIR, FIGDIR, paste0(FIGDIR,SAMPLE,"/"), paste0(FIGDIR,SAMPLE,"/K",k,"/"), paste0(OUTDIR,SAMPLE,"/"), OUTDIRSAMPLE, FIGDIRSAMPLE)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
 
 palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
@@ -164,28 +164,39 @@ ranking.type.varname.ary <- c("theta.rank.df", "theta.raw.rank.df")
 
 getData <- function(t) {
     programID.here <- paste0("K60_", t)
+    ranking.type.varname.here <- ranking.type.varname.ary[i]
+    ranking.score.colname.here <- paste0("topic.", ranking.type.ary[i])
     i <- which(ranking.type.ary == opt$ranking.type)
-    gene.df <- get(ranking.type.varname.ary[i]) %>%
+    gene.df <- get(ranking.type.varname.here) %>%
         subset(ProgramID == programID.here) %>%
         mutate(gene = Gene) %>%
         symbolToEntrez() %>%
         as.data.frame
-    gene.weights <- gene.df %>% pull(get(paste0("topic.", ranking.type.ary[i]))) %>% `names<-`(gene.df$EntrezID)
+
+    gene.weights <- gene.df %>% pull(get(ranking.score.colname.here)) %>% `names<-`(gene.df$EntrezID)
+    gene.weights[gene.weights < 0] <- 0    
 
     top.gene.df <- gene.df %>%
         subset(get(ranking.rank.colname.ary[i]) <= 300) %>%
         as.data.frame
     top.genes <- unlist(mget(top.gene.df$Gene, envir=org.Hs.egSYMBOL2EG, ifnotfound=NA))
     ## top.genes <- top.gene.df %>% pull(EntrezID) ## same as above
+    
+    pos.gene.df <- gene.df %>%
+        subset(get(ranking.score.colname.here) > 0) %>%
+        as.data.frame
+    pos.genes <- unlist(mget(pos.gene.df$Gene, envir=org.Hs.egSYMBOL2EG, ifnotfound=NA))
+
     geneUniverse <- unlist(mget(get(ranking.type.varname.ary[i])$Gene %>% unique, envir=org.Hs.egSYMBOL2EG, ifnotfound=NA))
  
-    return(list(top.genes = top.genes, geneUniverse = geneUniverse, gene.weights = gene.weights))
+    return(list(top.genes = top.genes, pos.genes = pos.genes, geneUniverse = geneUniverse, gene.weights = gene.weights))
 }
 
 m_df <- msigdbr(species = "Homo sapiens")
 
 ## save this as a txt file and read in ## for future if needed
 functionsToRun <- list(GOEnrichment = "out <- enrichGO(gene = top.genes, ont = 'ALL', OrgDb = 'org.Hs.eg.db', universe = geneUniverse, readable=T, pvalueCutoff=1, pAdjustMethod = 'fdr') %>% as.data.frame %>% mutate(fdr.across.ont = p.adjust, ProgramID = paste0('K60_', t))",
+                       PosGenesGOEnrichment = "out <- enrichGO(gene = pos.genes, ont = 'ALL', OrgDb = 'org.Hs.eg.db', universe = geneUniverse, readable=T, pvalueCutoff=1, pAdjustMethod='fdr') %>% as.data.frame %>% mutate(fdr.across.ont = p.adjust, ProgramID = paste0('K60_', t))",
                        ByWeightGSEA = "out <- GSEA(gene.weights, TERM2GENE = m_df %>% select(gs_name, entrez_gene), pAdjustMethod = 'fdr', pvalueCutoff = 1) %>% as.data.frame %>% mutate(ProgramID = paste0('K60_', t)) ",
                        GSEA = "out <- enricher(top.genes, TERM2GENE = m_df %>% select(gs_name, entrez_gene), universe = geneUniverse, pAdjustMethod = 'fdr', qvalueCutoff=1) %>% as.data.frame %>% mutate(ProgramID = paste0('K60_', t))"
                        )
@@ -204,6 +215,7 @@ GSEA.type <- opt$GSEA.type
 out <- do.call(rbind, lapply(c(1:k), function(t) {
     data.here <- getData(t)
     top.genes <- data.here$top.genes
+    pos.genes <- data.here$pos.genes
     geneUniverse <- data.here$geneUniverse
     gene.weights <- data.here$gene.weights
     message(paste0("Ranking type: ", ranking.type.here, ", Program ", t, ", function ", GSEA.type, ", top gene class: ", class(top.genes),

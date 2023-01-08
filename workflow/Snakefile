@@ -71,7 +71,7 @@ def get_output_files(wildcards):
 	# output_files.extend(list(topic_zscore_top50))
 	output_files.extend(list(topic_zscore_correlation))
 	# output_files.extend(list(motif_table))
-	output_files.extend(list(motif_plot))
+	# output_files.extend(list(motif_plot))
 	output_files.extend(list(gsea_clusterProfiler_plot)) ## single K
 	output_files.extend(list(clusterProfiler_result)) ## rule: clusterProfiler_GSEA, across K plots
 	output_files.extend(list(GSEA_plots))

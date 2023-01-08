@@ -67,6 +67,11 @@ opt <- parse_args(OptionParser(option_list=option.list))
 # opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ctrl_only_snakemake/analysis/all_genes/"
 # opt$K.val <- 60
 
+## ## overdispersed gene directories (for sdev)
+## opt$sampleName <- "2kG.library_overdispersedGenes"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/figures/top2000VariableGenes"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/analysis/top2000VariableGenes"
+## opt$K.val <- 120
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
@@ -119,9 +124,9 @@ if(file.exists(cNMF.result.file)) {
 ##     mutate(long.CBC = rownames(.)) %>%
 ##     separate(col=long.CBC, into=c("Gene", "Guide", "CBC-sample"), sep=":", remove=F) %>%
 ##     separate(col=`CBC-sample`, into=c("CBC", "sample"), sep="-")
-ann.omega <- cbind(omega, barcode.names) %>%
-    mutate(CBC = gsub("RHOA-and-", "", CBC)) %>%
-    separate(col=`CBC`, into=c("CBC", "sample"), sep="-")
+ann.omega <- cbind(omega, barcode.names)  ## %>%
+##    mutate(CBC = gsub("RHOA-and-", "", CBC)) ## %>%
+##    separate(col=`CBC`, into=c("CBC", "sample"), sep="-")
 
 
 ## Batch Effect QC: correlate batch binary labels with topic expression

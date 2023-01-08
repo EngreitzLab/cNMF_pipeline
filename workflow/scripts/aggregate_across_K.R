@@ -23,7 +23,7 @@ option.list <- list(
   # make_option("--sep", type="logical", default=F, help="Whether to separate replicates or samples"),
   make_option("--K.list", type="character", default="14,30,60", help="K values available for analysis"),
   # make_option("--K.val", type="numeric", default=14, help="K value to analyze"),
-  make_option("--K.table", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210625_snakemake_output/analysis/2kG.library/K.spectra.threshold.table.txt", help="table for defining spectra threshold"), # opt$K.table <-"/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/all_genes/2kG.library/K.spectra.threshold.table.txt"
+  make_option("--K.table", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/K.spectra.threshold.table.txt", help="table for defining spectra threshold"), # opt$K.table <-"/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/all_genes/2kG.library/K.spectra.threshold.table.txt"
   # make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
   # make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
   # make_option("--ABCdir",type="character", default="/oak/stanford/groups/engreitz/Projects/ABC/200220_CAD/ABC_out/TeloHAEC_Ctrl/Neighborhoods/", help="Path to ABC enhancer directory"),
@@ -57,6 +57,13 @@ mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.titl
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/"
 ## opt$K.table <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/K.spectra.threshold.table.txt"
 
+## ## overdispersed Genes
+## opt$figdir <- "//oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/figures/top2000VariableGenes/"
+## opt$outdir <- "//oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/analysis/top2000VariableGenes/"
+## opt$K.table <- ""
+## opt$K.list <- "3,5,7,12,14,19,21,23,25,27,29,31,35,40,45,50,60,70,80,90,100,120"
+## opt$sampleName <- "2kG.library_overdispersedGenes"
+
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
@@ -72,61 +79,12 @@ FIGDIR=opt$figdir
 ## adjusted p-value threshold
 p.value.thr <- opt$adj.p.value.thr
 
-## ## directories for factor motif enrichment
-## FILENAME=opt$filename
-
 
 
 ## # create dir if not already
-## if(SEP) check.dir <- c(OUTDIR, FIGDIR, paste0(FIGDIR,SAMPLE, ".sep/"), paste0(FIGDIR,SAMPLE, ".sep/K",k,"/"), OUTDIRSAMPLE, FIGDIRSAMPLE, paste0(OUTDIR,SAMPLE, ".sep/"),FGSEADIR, FGSEAFIG, OUTDIR.ACROSS.K) else 
-##   check.dir <- c(OUTDIR, FIGDIR, paste0(FIGDIR,SAMPLE,"/"), paste0(FIGDIR,SAMPLE,"/K",k,"/"), paste0(OUTDIR,SAMPLE,"/"), OUTDIRSAMPLE, FIGDIRSAMPLE, FGSEADIR, FGSEAFIG, OUTDIR.ACROSS.K)
 check.dir <- c(OUTDIR, FIGDIR, OUTDIR.ACROSS.K)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x) }))
 
-
-## palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
-## selected.gene <- c("EDN1", "NOS3", "TP53", "GOSR2", "CDKN1A")
-## # ABC genes
-## gene.set <- c("INPP5B", "SF3A3", "SERPINH1", "NR2C1", "FGD6", "VEZT", "SMAD3", "AAGAB", "GOSR2", "ATP5G1", "ANGPTL4", "SRBD1", "PRKCE", "DAGLB") # ABC_0.015_CAD_pp.1_genes
-## # cell cycle genes
-## gene.list.three.groups <- read.delim(paste0(DATADIR,"/ptbd.genes_three.groups.txt"), header=T, stringsAsFactors=F)
-## enhancer.set <- gene.list.three.groups$Gene[grep("E_at_", gene.list.three.groups$Gene)]
-## CAD.focus.gene.set <- gene.list.three.groups %>% subset(Group=="CAD_focus") %>% pull(Gene) %>% append(enhancer.set)
-## EC.pos.ctrl.gene.set <- gene.list.three.groups %>% subset(Group=="EC_pos._ctrls") %>% pull(Gene)
-
-## cell.count.thr <- opt$cell.count.thr # greater than this number, filter to keep the guides with greater than this number of cells
-## guide.count.thr <- opt$guide.count.thr # greater than this number, filter to keep the perturbations with greater than this number of guides
-
-## guide.design = read.delim(file=paste0(opt$datadir, "/200607_ECPerturbSeqMiniPool.design.txt"), header=T, stringsAsFactors = F)
-
-
-## ## add GO pathway log2FC
-## GO <- read.delim(file=paste0("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/data/GO.Pathway.table.brief.txt"), header=T, check.names=FALSE)
-## GO.list <- read.delim(file="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/data/GO.Pathway.list.brief.txt", header=T, check.names=F)
-## colnames(GO)[1] <- "Gene"
-## colnames(GO.list)[1] <- "Gene"
-## ## load all sample, K, topic's top 100 genes (by TopFeatures() KL-score measure)
-## ## allGeneKtopic100 <- read.delim(paste0(TMDIR, "no.plus.pooled.top100.topicStats.txt"), header=T)
-## # load non-expressed control gene list
-## non.expressed.genes <- read.delim(file="/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/data/non.expressed.ctrl.genes.txt", header=F, stringsAsFactors=F) %>% unlist %>% as.character() %>% sort()
-
-## # perturbation type list
-## gene.set.type.df <- data.frame(Gene=guide.design %>% pull(guideSet) %>% unique(),
-##                                type=rep("other", guide.design %>% pull(guideSet) %>% unique() %>% length())) 
-## gene.set.type.df$Gene <- gene.set.type.df$Gene %>% as.character()
-## gene.set.type.df$type <- gene.set.type.df$type %>% as.character()
-## gene.set.type.df$type[which(gene.set.type.df$Gene %in% non.expressed.genes)] <- "non-expressed"
-## gene.set.type.df$type[which(gene.set.type.df$Gene %in% CAD.focus.gene.set)] <- "CAD focus"
-## gene.set.type.df$type[grepl("^safe|^negative", gene.set.type.df$Gene)] <- "negative-control"
-## gene.set.type.df$Gene[which(gene.set.type.df$Gene == "negative_control")] <- "negative-control"
-## gene.set.type.df$Gene[which(gene.set.type.df$Gene == "safe_targeting")] <- "safe-targeting"
-## # gene.set.type.df$type[which(gene.set.type.df$Gene %in% gene.set)] <- "ABC"
-
-## # convert enhancer SNP rs number to enhancer target gene name
-## enh.snp.to.gene <- read.delim(paste0(DATADIR, "/enhancer.SNP.to.gene.name.txt"), header=T, stringsAsFactors = F) %>% mutate(Enhancer_name=gsub("_","-", Enhancer_name))
-
-## # gene corresponding pathway
-## gene.def.pathways <- read_excel(paste0(DATADIR,"topic.gene.definition.pathways.xlsx"), sheet="Gene_Pathway")
 
 # K spectra threshold table
 if(file.exists(opt$K.table)) {
@@ -144,7 +102,7 @@ for (j in 1:length(GSEA.types)) {
     to.eval <- paste0("clusterProfiler.", GSEA.type, ".list <- vector(\"list\",nrow(K.spectra.threshold))")
     eval(parse(text = to.eval))
 }
-all.MAST.df.list <- all.test.df.list <- all.fdr.df.list <- count.by.GWAS.list <- count.by.GWAS.withTopic.list <- theta.zscore.list <- theta.raw.list <-  all.promoter.ttest.df.list <- all.enhancer.ttest.df.list <- vector("list", nrow(K.spectra.threshold))
+all.MAST.df.list <- all.test.df.list <- all.fdr.df.list <- count.by.GWAS.list <- count.by.GWAS.withTopic.list <- theta.zscore.list <- theta.raw.list <-  all.promoter.ttest.df.list <- all.enhancer.ttest.df.list <- varianceExplainedByModel.list <- varianceExplainedPerProgram.list <- vector("list", nrow(K.spectra.threshold))
 ## loop over all values of K and aggregate results
 for (n in 1:nrow(K.spectra.threshold)) {
     k <- K.spectra.threshold[n,"K"]
@@ -158,8 +116,6 @@ for (n in 1:nrow(K.spectra.threshold)) {
     # FIGDIRSAMPLE=ifelse(SEP, paste0(FIGDIR,SAMPLE,".sep/K",k,"/"), paste0(FIGDIR, SAMPLE, "/K",k,"/"))
     # FIGDIRTOP=paste0(FIGDIRSAMPLE,"/",SAMPLE,"_K",k,"_dt_", DENSITY.THRESHOLD,"_")
     OUTDIRSAMPLE=paste0(OUTDIR, "/", SAMPLE, "/K",k, "/threshold_", DENSITY.THRESHOLD)
-    FGSEADIR=paste0(OUTDIRSAMPLE,"/fgsea/")
-    # FGSEAFIG=paste0(FIGDIRSAMPLE,"/fgsea/")
 
     ## if (SEP) {
     ##     guideCounts <- loadGuides(n, sep=T) %>% mutate(Gene=Gene.marked)
@@ -283,6 +239,23 @@ for (n in 1:nrow(K.spectra.threshold)) {
         to.eval <- paste0("clusterProfiler.", GSEA.type, ".list[[n]] <- do.call(rbind, clusterProfiler.", GSEA.type, ".list.here)")
         eval(parse(text = to.eval))
     }
+
+
+    ## variance explained by the model
+    file.name <- paste0(OUTDIRSAMPLE, "/summary.varianceExplained.df.txt")
+    if(file.exists(file.name)) {
+        varianceExplainedByModel.list[[n]] <- read.delim(file.name, stringsAsFactors=F) %>% mutate(K = k)
+    } else {
+        message(paste0(file.name, " does not exist"))
+    }
+    
+    ## variance explained per program
+    file.name <- paste0(OUTDIRSAMPLE, "/metrics.varianceExplained.df.txt")
+    if(file.exists(file.name)) {
+        varianceExplainedPerProgram.list[[n]] <- read.delim(file.name, stringsAsFactors=F)
+    } else {
+        message(paste0(file.name, " does not exist"))
+    }        
     
     # ## all statistical tests
     # file.name <- paste0(OUTDIRSAMPLE, "/all.test.", SUBSCRIPT, ".txt")
@@ -349,11 +322,10 @@ all.promoter.ttest.df <- do.call(rbind, all.promoter.ttest.df.list)
 # all.promoter.ttest.df.10en6 <- do.call(rbind, all.promoter.ttest.df.10en6.list)
 all.enhancer.ttest.df <- do.call(rbind, all.enhancer.ttest.df.list)
 # all.enhancer.ttest.df.10en6 <- do.call(rbind, all.enhancer.ttest.df.10en6.list)
-
+varianceExplainedByModel.df <- do.call(rbind, varianceExplainedByModel.list)
+varianceExplainedPerProgram.df <- do.call(rbind, varianceExplainedPerProgram.list)
 
 file.name <- paste0(OUTDIR.ACROSS.K, "/aggregated.outputs.findK.RData")
-# save(promoter.fisher.df, enhancer.fisher.df, fgsea.results.df, all.test.df, all.fdr.df, count.by.GWAS, count.by.GWAS.withTopic, theta.zscore.df, theta.raw.df, theta.KL.df,
-#      file=file.name)
-save(clusterProfiler.GOEnrichment.df, clusterProfiler.ByWeightGSEA.df, clusterProfiler.GSEA.df, theta.zscore.df, theta.raw.df, all.promoter.ttest.df, all.enhancer.ttest.df,
+save(clusterProfiler.GOEnrichment.df, clusterProfiler.ByWeightGSEA.df, clusterProfiler.GSEA.df, theta.zscore.df, theta.raw.df, all.promoter.ttest.df, all.enhancer.ttest.df, varianceExplainedByModel, varianceExplainedPerProgram,
      file=file.name)
 

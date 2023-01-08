@@ -82,7 +82,8 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## ## all genes directories (for sdev)
 ## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/figures/2kG.library/all_genes/"
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/"
-## opt$K.val <- 60
+## opt$topic.model.result.dir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/all_genes_acrossK/all_genes_acrossK/2kG.library/"
+## opt$K.val <- 70
 
 ## ## debug ctrl
 ## opt$topic.model.result.dir <- "/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/210810_snakemake_ctrls/all_genes_acrossK/2kG.library.no.DE.gene.with.FDR.less.than.0.1.perturbation"
@@ -134,7 +135,7 @@ p.value.thr <- opt$adj.p.value.thr
 
  
 # create dir if not already
-check.dir <- c(OUTDIR, FIGDIR, OUTDIRSAMPLE, FIGDIRSAMPLE, FGSEADIR, FGSEAFIG)
+check.dir <- c(OUTDIR, FIGDIR, OUTDIRSAMPLE, FIGDIRSAMPLE)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
 
 ## palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
@@ -335,21 +336,41 @@ adjust.multiTargetGuide.rownames <- function(omega) {
     } else {
     theta.path <- paste0(TMDIR, "/", SAMPLE, ".gene_spectra_tpm.k_", k, ".dt_", DENSITY.THRESHOLD,".txt")
     theta.zscore.path <- paste0(TMDIR, "/", SAMPLE, ".gene_spectra_score.k_", k, ".dt_", DENSITY.THRESHOLD,".txt")
+    median.spectra.path <- paste0(TMDIR, "/", SAMPLE, ".spectra.k_", k, ".dt_", DENSITY.THRESHOLD,".consensus.txt")
     print(theta.path)
     theta.raw <- read.delim(theta.path, header=T, stringsAsFactors=F, check.names=F, row.names=1)
+    median.spectra <- read.delim(median.spectra.path, header=T, stringsAsFactors=F, check.names=F, row.names=1)
     ## theta.raw <- read.delim(theta.path, header=T, stringsAsFactors=F, check.names=F) %>% select(-``)
     print("finished reading raw weights for topics")
     tmp.theta <- theta.raw
     tmp.theta[tmp.theta==0] <- min(tmp.theta[tmp.theta > 0])/100
     theta <- tmp.theta %>% apply(1, function(x) x/sum(x)) %>% `colnames<-`(c(1:k))
     theta.raw <- theta.raw %>% t() %>% as.data.frame() %>% `colnames<-`(c(1:k))
-    print("loading topic z-score (specificity score)")
+    median.spectra <- median.spectra %>% t() %>% as.data.frame %>% `colnames<-`(c(1:k))
+    print("loading topic z-score coefficient")
     theta.zscore <- read.delim(theta.zscore.path, header=T, stringsAsFactors=F, check.names=F, row.names=1) %>% t() %>% `colnames<-`(c(1:k)) 
     tmp <- rownames(theta) %>% strsplit(., split=":") %>% sapply("[[",1)
     tmpp <- data.frame(table(tmp)) %>% subset(Freq > 1)  # keep row names that have duplicated gene names but different ENSG names
     tmp.copy <- tmp
     tmp.copy[grepl(paste0(tmpp$tmp,collapse="|"),tmp)] <- rownames(theta)[grepl(paste0(tmpp$tmp,collapse="|"),rownames(theta))]
     rownames(theta) <- rownames(theta.raw) <- rownames(theta.zscore) <- tmp.copy
+
+    ## median.spectra.names <- median.spectra %>% rownames %>% strsplit(split=":") %>% sapply(`[[`,1)
+    ## rownames(median.spectra) <- median.spectra.names
+    median.spectra.zscore <- apply(median.spectra, MARGIN=1, function(x) (x - mean(x)) / sd(x)) %>% t
+    median.spectra.zscore.df <- median.spectra.zscore %>%
+        as.data.frame %>%
+        mutate(Gene.full.name = rownames(.)) %>%
+        separate(col="Gene.full.name", sep=":", remove=F, into = c("Gene", "ENSGID")) %>%
+        melt(id.vars = c("Gene.full.name", "Gene", "ENSGID"), variable.name="ProgramID", value.name="median.spectra.zscore") %>%
+        mutate(ProgramID = paste0("K", k, "_", ProgramID)) %>%
+        as.data.frame %>%
+        group_by(ProgramID) %>%
+        arrange(desc(median.spectra.zscore)) %>%
+        mutate(median.spectra.zscore.rank = 1:n()) %>%
+        select(-Gene.full.name) %>%
+        as.data.frame 
+
     ## truncate.theta.names <- function(theta) {
     ##     theta.gene.names <- rownames(theta) %>% strsplit(., split=":") %>% sapply("[[",1) # remove ENSG names
     ##     rownames(theta) <- theta.gene.names
@@ -365,14 +386,16 @@ adjust.multiTargetGuide.rownames <- function(omega) {
 
     barcode.names <- read.table(opt$barcode.names, header=T, stringsAsFactors=F) ## %>% `colnames<-`("long.CBC")
     if(grepl("2kG.library", SAMPLE)) {
-        rownames(omega) <- rownames(omega.original) <- barcode.names %>% `colnames<-`("long.CBC") %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
+        barcode.names <- read.table(opt$barcode.names, header=F, stringsAsFactors=F) ## %>% `colnames<-`("long.CBC")
+        rownames(omega) <- rownames(omega.original) <- barcode.names %>% `colnames<-`("long.CBC") %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.) %>% gsub("[(]'", "", .) %>% gsub("',[)]", "", .)
         omega <- adjust.multiTargetGuide.rownames(omega)
         barcode.names <- data.frame(long.CBC=rownames(omega)) %>%
             mutate(long.CBC = gsub("CSNK2B-and-CSNK2B", "CSNK2B", long.CBC)) %>%
             separate(col="long.CBC", into=c("Gene.full.name", "Guide", "CBC"), sep=":", remove=F) %>%
             separate(col="CBC", into=c("CBC", "sample"), sep="-scRNAseq_2kG_", remove=F) %>%
             mutate(Gene = gsub("-TSS2$", "", Gene.full.name),
-                   CBC = gsub("RHOA-and-", "", CBC)) %>%
+                   CBC = gsub("RHOA-and-", "", CBC),
+                   Guide = gsub("RHOA-and-", "", Guide)) %>%
             as.data.frame
     }
 
@@ -392,9 +415,10 @@ adjust.multiTargetGuide.rownames <- function(omega) {
     ## normalize to zero mean + unit variance
     theta.raw.ensembl.scaled <- theta.raw.ensembl %>% select(-ENSGID) %>% apply(2, scale)  %>% as.data.frame %>% mutate(ENSGID=ensembl.theta.zscore.names,.before=paste0("raw_K",k,"_topic1"))
     theta.zscore.ensembl.scaled <- theta.zscore.ensembl %>% select(-ENSGID) %>% apply(2, scale) %>% as.data.frame %>% mutate(ENSGID=ensembl.theta.zscore.names,.before=paste0("zscore_K",k,"_topic1"))
+
+    ## store median spectra z-score
     
-    
-    save(theta, theta.raw, theta.zscore, omega, theta.path, omega.path, barcode.names,
+    save(theta, theta.raw, theta.zscore, median.spectra.zscore.df, median.spectra, omega, theta.path, omega.path, median.spectra.path, barcode.names,
          file=cNMF.result.file)
 
     write.table(theta.zscore, file=paste0(OUTDIRSAMPLE, "/topic.zscore_",SUBSCRIPT.SHORT, ".txt"), row.names=T, quote=F, sep="\t")
@@ -403,8 +427,11 @@ adjust.multiTargetGuide.rownames <- function(omega) {
     write.table(theta.raw.ensembl, file=paste0(OUTDIRSAMPLE, "/topic.raw.ensembl_",SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep="\t")
     write.table(theta.zscore.ensembl.scaled, file=paste0(OUTDIRSAMPLE, "/topic.zscore.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep = "\t")
     write.table(theta.raw.ensembl.scaled, file=paste0(OUTDIRSAMPLE, "/topic.raw.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep = "\t")
- 
+    write.table(median.spectra.zscore.df, file=paste0(OUTDIRSAMPLE, "/median.spectra.zscore.df_", SUBSCRIPT.SHORT, ".txt"), sep="\t", quote=F, row.names=F)
+
+    print("finished writing all tables")
 }
+print("finished analysis script")
 
 
   
