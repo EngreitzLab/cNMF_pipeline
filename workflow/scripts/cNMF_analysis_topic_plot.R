@@ -13,7 +13,9 @@
 #               "ggdist", "patchwork", "gghalves", "Seurat", "writexl")
 # library(textshape)
 # library(readxl)
-packages <- c("optparse","dplyr", "ggplot2", "reshape2", "ggrepel", "conflicted", "gplots")
+library(conflicted)
+conflict_prefer("Position", "base")
+packages <- c("optparse","dplyr", "ggplot2", "reshape2", "ggrepel", "conflicted", "gplots", "org.Hs.eg.db")
 ## library(Seurat)
 xfun::pkg_attach(packages)
 conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
@@ -69,7 +71,36 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/"
 ## opt$K.val <- 60
 
+## ## mouse ENCODE adrenal data sdev
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230117_snakemake_mouse_ENCODE_adrenal/figures/top2000VariableGenes/"
+## opt$sampleName <- "mouse_ENCODE_adrenal"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230117_snakemake_mouse_ENCODE_adrenal/analysis/top2000VariableGenes"
+## opt$K.val <- 60
+
+## ## mouse ENCODE heart data sdev
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/figures/top2000VariableGenes/"
+## opt$sampleName <- "mouse_ENCODE_heart"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/analysis/top2000VariableGenes"
+## opt$K.val <- 15
+
+## ## K562 gwps sdev
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/figures/top2000VariableGenes/"
+## opt$sampleName <- "WeissmanK562gwps"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/"
+## opt$K.val <- 20
+
+
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
+mytheme <- theme_classic() + theme(axis.text = element_text(size = 7),
+                                   axis.title = element_text(size = 8),
+                                   plot.title = element_text(hjust = 0.5, face = "bold", size=10),
+                                   axis.line = element_line(color = "black", size = 0.25),
+                                   axis.ticks = element_line(color = "black", size = 0.25),
+                                   legend.key.size = unit(10, units="pt"),
+                                   legend.text = element_text(size=7),
+                                   legend.title = element_text(size=8)
+                                   )
+
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 # STATIC.SAMPLE=c("Telo_no_IL1B_T200_1", "Telo_no_IL1B_T200_2", "Telo_plus_IL1B_T200_1", "Telo_plus_IL1B_T200_2", "no_IL1B", "plus_IL1B",  "pooled")
@@ -122,6 +153,40 @@ if(file.exists(cNMF.result.file)) {
 ## End of data loading
 
 
+## (patch up cNMF_analysis.R ENSGID to Gene conversion)
+## gene mapping function
+map.ENSGID.SYMBOL <- function(topFeatures) {
+    gene.type <- ifelse(sum(as.numeric(colnames(topFeatures) %in% "Gene")) > 0,
+                        ##(median.spectra.zscore.df) == sum(as.numeric(grepl("^ENS", median.spectra.zscore %>% rownames))),
+                        "Gene",
+                        "ENSGID")
+    db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
+    library(!!db)
+    if(gene.type == "Gene") {
+        if (nrow(topFeatures) == sum(as.numeric(grepl("^ENS", topFeatures$Gene)))) {
+            ## put median spectra zscore into ENSGID format for PoPS
+            mapped.genes <- mapIds(get(db), keys=topFeatures$Gene, keytype = "ENSEMBL", column = "SYMBOL")
+            topFeatures <- topFeatures %>%
+                mutate(ENSGID = Gene) %>%
+                as.data.frame %>%
+                mutate(Gene = mapped.genes)
+            na.index <- which(is.na(topFeatures$Gene))
+            if(length(na.index) > 0) topFeatures$Gene[na.index] <- topFeatures$ENSGID[na.index]
+        }
+
+    } else {
+        mapped.genes <- mapIds(get(db), keys=topFeatures$ENSGID, keytype = "ENSEMBL", column = "SYMBOL")
+        topFeatures <- topFeatures %>%
+            as.data.frame %>%
+            mutate(Gene = mapped.genes)
+        
+    }
+    return(topFeatures)
+}
+
+## end of ENSGID to Gene conversion
+
+
 
 ##########################################################################
 ## Plots
@@ -129,8 +194,8 @@ if(file.exists(cNMF.result.file)) {
 
 ##########################################################################
 ## topic gene z-score list
-pdf(file=paste0(FIGDIRTOP,"top50GeneInTopics.zscore.pdf"), width=4, height=6)
-topFeatures.raw.weight <- theta.zscore %>% as.data.frame() %>% mutate(Gene=rownames(.)) %>% melt(id.vars="Gene", variable.name="topic", value.name="scores") %>% group_by(topic) %>% arrange(desc(scores)) %>% slice(1:50)
+pdf(file=paste0(FIGDIRTOP,"top50GeneInTopics.zscore.pdf"), width=2.5, height=4.5)
+topFeatures.raw.weight <- theta.zscore %>% as.data.frame() %>% mutate(Gene=rownames(.)) %>% melt(id.vars="Gene", variable.name="topic", value.name="scores") %>% group_by(topic) %>% arrange(desc(scores)) %>% slice(1:50) %>% map.ENSGID.SYMBOL
 for ( t in 1:dim(theta)[2] ) {
     toPlot <- data.frame(Gene=topFeatures.raw.weight %>% subset(topic == t) %>% pull(Gene),
                          Score=topFeatures.raw.weight %>% subset(topic == t) %>% pull(scores))
@@ -143,10 +208,10 @@ dev.off()
 
 ##########################################################################
 ## Topic's top gene list, ranked by raw weight
-pdf(file=paste0(FIGDIRTOP,"top50GeneInTopics.rawWeight.pdf"), width=4, height=6)
-topFeatures <- theta %>% as.data.frame() %>% mutate(genes=rownames(.)) %>% melt(id.vars="genes",value.name="scores", variable.name="topic") %>% group_by(topic) %>% arrange(desc(scores)) %>% slice(1:50)
+pdf(file=paste0(FIGDIRTOP,"top50GeneInTopics.rawWeight.pdf"), width=2.5, height=4.5)
+topFeatures <- theta %>% as.data.frame() %>% mutate(Gene=rownames(.)) %>% melt(id.vars="Gene",value.name="scores", variable.name="topic") %>% group_by(topic) %>% arrange(desc(scores)) %>% slice(1:50) %>% map.ENSGID.SYMBOL
 for ( t in 1:dim(theta)[2] ) {
-    toPlot <- data.frame(Gene=topFeatures %>% subset(topic == t) %>% pull(genes),
+    toPlot <- data.frame(Gene=topFeatures %>% subset(topic == t) %>% pull(Gene),
                          Score=topFeatures %>% subset(topic == t) %>% pull(scores))
     p <- toPlot %>% ggplot(aes(x=reorder(Gene, Score), y=Score) ) + geom_col() + theme_minimal()
     p <- p + coord_flip() + xlab("Top 50 Genes") + ylab("Raw Score (gene's weight in topic)") + ggtitle(paste(SAMPLE, ", Topic ", t, sep="")) + mytheme
@@ -157,10 +222,10 @@ dev.off()
 
 ##########################################################################
 ## raw program TPM list with annotataion
-pdf(file=paste0(FIGDIRTOP,"top10GeneInTopics.rawWeight.pdf"), width=4.5, height=5)
-topFeatures <- theta %>% as.data.frame() %>% mutate(genes=rownames(.)) %>% melt(id.vars="genes",value.name="scores", variable.name="topic") %>% group_by(topic) %>% arrange(desc(scores)) %>% slice(1:10)
+pdf(file=paste0(FIGDIRTOP,"top10GeneInTopics.rawWeight.pdf"), width=2.5, height=3)
+topFeatures <- theta %>% as.data.frame() %>% mutate(Gene=rownames(.)) %>% melt(id.vars="Gene",value.name="scores", variable.name="topic") %>% group_by(topic) %>% arrange(desc(scores)) %>% slice(1:10) %>% map.ENSGID.SYMBOL
 for ( t in 1:dim(theta)[2] ) {
-    toPlot <- data.frame(Gene=topFeatures %>% subset(topic == t) %>% pull(genes),
+    toPlot <- data.frame(Gene=topFeatures %>% subset(topic == t) %>% pull(Gene),
                          Score=topFeatures %>% subset(topic == t) %>% pull(scores)) # %>%
         ## merge(., gene.def.pathways, by="Gene", all.x=T)
     ## toPlot$Pathway[is.na(toPlot$Pathway)] <- "Other/Unclassified"
@@ -175,24 +240,101 @@ dev.off()
 
 ##########################################################################
 ## raw program zscore list (top 10)  (can potentially include annotation)
-pdf(file=paste0(FIGDIRTOP,"top10GeneInTopics.zscore.pdf"), width=4.5, height=5)
-topFeatures <- theta.zscore %>% as.data.frame() %>% mutate(genes=rownames(.)) %>% melt(id.vars="genes",value.name="scores", variable.name="topic") %>% group_by(topic) %>% arrange(desc(scores)) %>% slice(1:10)
+pdf(file=paste0(FIGDIRTOP,"top10GeneInTopics.zscore.pdf"), width=2.5, height=3)
+topFeatures <- theta.zscore %>% as.data.frame() %>% mutate(Gene=rownames(.)) %>% melt(id.vars="Gene",value.name="scores", variable.name="topic") %>% group_by(topic) %>% arrange(desc(scores)) %>% slice(1:10) %>% map.ENSGID.SYMBOL
 for ( t in 1:dim(theta)[2] ) {
-    toPlot <- data.frame(Gene=topFeatures %>% subset(topic == t) %>% pull(genes),
+    toPlot <- data.frame(Gene=topFeatures %>% subset(topic == t) %>% pull(Gene),
                          Score=topFeatures %>% subset(topic == t) %>% pull(scores)) # %>%
         ## merge(., gene.def.pathways, by="Gene", all.x=T)
     ## toPlot$Pathway[is.na(toPlot$Pathway)] <- "Other/Unclassified"
     p4 <- toPlot %>% ggplot(aes(x=reorder(Gene, Score), y=Score) ) + geom_col(width=0.5, fill="#38b4f7") + theme_minimal()
     p4 <- p4 + coord_flip() + xlab("Top 10 Genes") + ylab("z-score") +
-        mytheme + theme(legend.position="bottom", legend.direction="vertical") + ggtitle(paste0(SAMPLE, ", K = ", k, ", Topic ", t))
+        mytheme + theme(legend.position="bottom", legend.direction="vertical") + ggtitle(paste0(SAMPLE, "\nK = ", k, ", Topic ", t))
     print(p4)
+}
+dev.off()
+
+
+
+##########################################################################
+## median spectra list (top 10)  (can potentially include annotation)
+pdf(file=paste0(FIGDIRTOP,"top10GeneInTopics.median_spectra.zscore.pdf"), width=2.5, height=3)
+topFeatures <- median.spectra.zscore.df %>% as.data.frame() %>% group_by(ProgramID) %>% arrange(desc(median.spectra.zscore)) %>% slice(1:10)  %>% map.ENSGID.SYMBOL
+for ( t in 1:dim(theta)[2] ) {
+    ProgramID.here <- paste0("K", k, "_", t)
+    toPlot <- data.frame(Gene=topFeatures %>% subset(ProgramID == ProgramID.here) %>% pull(Gene),
+                         Score=topFeatures %>% subset(ProgramID == ProgramID.here) %>% pull(median.spectra.zscore)) # %>%
+        ## merge(., gene.def.pathways, by="Gene", all.x=T)
+    ## toPlot$Pathway[is.na(toPlot$Pathway)] <- "Other/Unclassified"
+    p7 <- toPlot %>% ggplot(aes(x=reorder(Gene, Score), y=Score) ) + geom_col(width=0.5, fill="#38b4f7") + theme_minimal()
+    p7 <- p7 + coord_flip() + xlab("Top 10 Genes") + ylab("z-score") +
+        mytheme + theme(legend.position="bottom", legend.direction="vertical") + ggtitle(paste0(SAMPLE, ",\nK = ", k, ", Program ", t, "\nMedian Spectra"))
+    print(p7)
+}
+dev.off()
+
+
+
+##########################################################################
+## median spectra raw list (top 10)  (can potentially include annotation)
+pdf(file=paste0(FIGDIRTOP,"top10GeneInTopics.median_spectra.raw.pdf"), width=2.5, height=3)
+topFeatures <- median.spectra %>% as.data.frame() %>% mutate(Gene=rownames(.)) %>% melt(id.vars="Gene",value.name="Score", variable.name="ProgramID") %>% group_by(ProgramID) %>% arrange(desc(Score)) %>% slice(1:10) %>% mutate(ProgramID = paste0("K", k, "_", ProgramID)) %>% map.ENSGID.SYMBOL
+for ( t in 1:dim(theta)[2] ) {
+    ProgramID.here <- paste0("K", k, "_", t)
+    toPlot <- data.frame(Gene=topFeatures %>% subset(ProgramID == ProgramID.here) %>% pull(Gene),
+                         Score=topFeatures %>% subset(ProgramID == ProgramID.here) %>% pull(Score)) # %>%
+        ## merge(., gene.def.pathways, by="Gene", all.x=T)
+    ## toPlot$Pathway[is.na(toPlot$Pathway)] <- "Other/Unclassified"
+    p8 <- toPlot %>% ggplot(aes(x=reorder(Gene, Score), y=Score) ) + geom_col(width=0.5, fill="#38b4f7") + theme_minimal()
+    p8 <- p8 + coord_flip() + xlab("Top 10 Genes") + ylab("Weight in Program") +
+        mytheme + theme(legend.position="bottom", legend.direction="vertical") + ggtitle(paste0(SAMPLE, ",\nK = ", k, ", Program ", t, "\nMedian Spectra"))
+    print(p8)
+}
+dev.off()
+
+
+
+##########################################################################
+## Topic's top gene list, ranked by median spectra zscore
+pdf(file=paste0(FIGDIRTOP,"top50GeneInProgram.median_spectra.zscore.pdf"), width=2.5, height=4.5)
+topFeatures <- median.spectra.zscore.df %>% as.data.frame() %>% group_by(ProgramID) %>% arrange(desc(median.spectra.zscore)) %>% slice(1:50) %>% map.ENSGID.SYMBOL
+for ( t in 1:dim(theta)[2] ) {
+    ProgramID.here <- paste0("K", k, "_", t)
+    toPlot <- data.frame(Gene=topFeatures %>% subset(ProgramID == ProgramID.here) %>% pull(Gene),
+                         Score=topFeatures %>% subset(ProgramID == ProgramID.here) %>% pull(median.spectra.zscore)) # %>%
+        ## merge(., gene.def.pathways, by="Gene", all.x=T)
+    ## toPlot$Pathway[is.na(toPlot$Pathway)] <- "Other/Unclassified"
+    p9 <- toPlot %>% ggplot(aes(x=reorder(Gene, Score), y=Score) ) + geom_col(width=0.5, fill="gray30") + theme_minimal()
+    p9 <- p9 + coord_flip() + xlab("Top 50 Genes") + ylab("z-score") +
+        mytheme + theme(legend.position="bottom", legend.direction="vertical") + ggtitle(paste0(SAMPLE, ",\nK = ", k, ", Program ", t, "\nMedian Spectra"))
+    print(p9)
+}
+dev.off()
+
+
+##########################################################################
+## median spectra raw list (top 50)  (can potentially include annotation)
+pdf(file=paste0(FIGDIRTOP,"top50GeneInProgram.median_spectra.raw.pdf"), width=2.5, height=4.5)
+topFeatures <- median.spectra %>% as.data.frame() %>% mutate(Gene=rownames(.)) %>% melt(id.vars="Gene",value.name="Score", variable.name="ProgramID") %>% group_by(ProgramID) %>% arrange(desc(Score)) %>% slice(1:50) %>% mutate(ProgramID = paste0("K", k, "_", ProgramID)) %>% map.ENSGID.SYMBOL
+for ( t in 1:dim(theta)[2] ) {
+    ProgramID.here <- paste0("K", k, "_", t)
+    toPlot <- data.frame(Gene=topFeatures %>% subset(ProgramID == ProgramID.here) %>% pull(Gene),
+                         Score=topFeatures %>% subset(ProgramID == ProgramID.here) %>% pull(Score)) # %>%
+        ## merge(., gene.def.pathways, by="Gene", all.x=T)
+    ## toPlot$Pathway[is.na(toPlot$Pathway)] <- "Other/Unclassified"
+    p10 <- toPlot %>% ggplot(aes(x=reorder(Gene, Score), y=Score) ) + geom_col(width=0.5, fill="gray30") + theme_minimal()
+    p10 <- p10 + coord_flip() + xlab("Top 50 Genes") + ylab("Weight in Program") +
+        mytheme + theme(legend.position="bottom", legend.direction="vertical") + ggtitle(paste0(SAMPLE, ",\nK = ", k, ", Program ", t, "\nMedian Spectra"))
+    print(p10)
 }
 dev.off()
 
 
 ##########################################################################
 ## topic Pearson correlation heatmap
-d <- cor(theta.zscore, method="pearson")
+## remove NA from theta.zscore
+tokeep <- (!is.na(theta.zscore)) %>% apply(1, sum) == k ## remove genes with NA ## why is there NA?
+d <- cor(theta.zscore[tokeep,], method="pearson")
 m <- as.matrix(d)
 
 ## Function for plotting heatmap  # new version (adjusted font size)

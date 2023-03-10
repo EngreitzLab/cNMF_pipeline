@@ -93,6 +93,12 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210806_curate_ctrl_mtx/outputs/2kG.library.no.DE.gene.with.FDR.less.than.0.1.perturbation.barcodes.tsv"
 ## opt$K.val <- 60
 
+## ## K562 gwps sdev
+## opt$sampleName <- "WeissmanK562gwps"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/figures/top2000VariableGenes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/"
+## opt$K.val <- 15
+
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
 
@@ -173,8 +179,13 @@ if (ep.type == "promoter") {
     motif.background <- motif.background %>% filter(!grepl("promoter", enhancer_type))
     motif.background <- motif.background %>%
         mutate(motif.short = strsplit(motif_id, split="_") %>% sapply("[[", 1) %>% as.character)
+
 }
 expressed.genes <- rownames(theta.zscore)
+## todo: convert expressed genes to symbol if they are not in symbol
+db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
+gene.type <- ifelse(length(expressed.genes) == sum(as.numeric(grepl("^ENS", expressed.genes))), "ENSGID", "Gene")
+if(gene.type == "ENSGID") expressed.genes = mapIds(get(db), keys=expressed.genes, keytype="ENSEMBL", column="SYMBOL")
 motif.background <- motif.background %>%
     subset(sequence_name %in% expressed.genes)
 
@@ -195,7 +206,7 @@ for(i in 1:ncol(theta.zscore)) {
 theta.rank.df <- do.call(rbind, theta.rank.list) ## combine list to df
 topic.defining.gene.df <- theta.rank.df %>%
     subset(zscore.specificity.rank <= num.top.genes) ## select top 300 genes for each topic
-
+if(gene.type=="ENSGID") topic.defining.gene.df <- topic.defining.gene.df %>% mutate(ENSGID = Gene) %>% mutate(Gene = mapIds(get(db), keys=.$ENSGID, keytype="ENSEMBL", column="SYMBOL"))
 
 topic.motif.match.df <- merge(topic.defining.gene.df, motif.background %>%
                                                       select(motif_id, motif.short, sequence_name, score, p.value, q.value, motif.matched.strand), by.x="Gene", by.y="sequence_name", all.y=T) ## filtered motif.background to genes expressed in this data set, so keep all

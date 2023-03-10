@@ -49,6 +49,14 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/analysis/top2000VariableGenes"
 ## opt$K.val <- 100
 
+## ## K562 gwps sdev
+## opt$sampleName <- "WeissmanK562gwps"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/figures/top2000VariableGenes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/"
+## opt$K.val <- 55
+## opt$ranking.type <- "zscore"
+## opt$GSEA.type <- "GSEA"
+
 
 OUTDIR <- opt$outdir
 FIGDIR <- opt$figdir
@@ -89,14 +97,14 @@ mytheme <- theme_classic() + theme(axis.text = element_text(size = 7),
 file.name <- paste0(OUTDIRSAMPLE, "/clusterProfiler_GeneRankingType", ranking.type.here, "_EnrichmentType", GSEA.type,".txt")
 gsea.df <- read.delim(file.name, stringsAsFactors=F)
 toplot <- gsea.df %>%
-    subset(fdr.across.ont < fdr.thr) %>%
+    subset(p.adjust < fdr.thr) %>%
     group_by(ProgramID) %>%
-    arrange(fdr.across.ont) %>%
+    arrange(p.adjust) %>%
     unique %>%
     slice(1:10) %>%
     mutate(TruncatedDescription = str_trunc(paste0(ID, "; ", Description), width=50, side="right"),
            t = gsub("K60_", "", ProgramID) %>% as.numeric) %>%
-    arrange(t, fdr.across.ont) %>%
+    arrange(t, p.adjust) %>%
     as.data.frame
 
 plot.title <- paste0(ifelse(grepl("GO", GSEA.type), "GO Term Enrichment", "MSigDB Pathway Enrichment"),
@@ -107,15 +115,15 @@ plot.title <- paste0(ifelse(grepl("GO", GSEA.type), "GO Term Enrichment", "MSigD
 
 
 pdf(file=paste0(FIGDIRTOP,"top10EnrichedPathways_GeneRankingType", ranking.type.here, "_EnrichmentType", GSEA.type, ".pdf"), width=4, height=4)
-for(program in (toplot$ProgramID %>% unique)) {
+for(program in (paste0("K", k, "_", c(1:k)))) {
     t <- strsplit(program, split="_") %>% sapply(`[[`,2)
     toplot.here <- toplot %>%
         subset(ProgramID %in% program) %>%
-        arrange(fdr.across.ont)
+        arrange(p.adjust)
     labels <- toplot.here$TruncatedDescription %>% unique %>% rev
     toplot.here <- toplot.here %>%
         mutate(TruncatedDescription = factor(TruncatedDescription, levels = labels))
-    p <- toplot.here %>% ggplot(aes(x=TruncatedDescription, y=-log10(fdr.across.ont))) + geom_col(fill="gray") + coord_flip() + mytheme +
+    p <- toplot.here %>% ggplot(aes(x=TruncatedDescription, y=-log10(p.adjust))) + geom_col(fill="gray") + coord_flip() + mytheme +
         xlab(ifelse(grepl("GO", GSEA.type), "GO Terms", "Pathways")) + ylab("FDR (-log10)") +
         ggtitle(paste0(plot.title, "\nProgram ", t))    
     print(p)

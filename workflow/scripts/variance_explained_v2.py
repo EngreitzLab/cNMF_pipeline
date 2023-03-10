@@ -14,13 +14,22 @@ from sklearn.decomposition import PCA
 
 ## argparse
 parser = argparse.ArgumentParser()
+
+## add arguments
 parser.add_argument('--path_to_topics', type=str, help='path to the topic (cNMF directory) to project data on', default='/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/analysis/top2000VariableGenes_acrossK/')
 parser.add_argument('--topic_sampleName', type=str, help='sample name for topics to project on, use the same sample name as used for the cNMF directory', default='2kG.library_overdispersedGenes')
-# parser.add_argument('--tpm_counts_path', type=str, help='path to tpm input cell x gene matrix', default='/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/analysis/top2000VariableGenes_acrossK/2kG.library_overdispersedGenes/cnmf_tmp/2kG.library_overdispersedGenes.tpm.h5ad') #/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/220505_snakemake_moreK_findK/all_genes/K60/worker0/2kG.library/cnmf_tmp/2kG.library.norm_counts.h5ad')
 parser.add_argument('--X_normalized', type=str,  help='path to normalized input cell x gene matrix from cNMF pipeline', default='/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/analysis/top2000VariableGenes_acrossK/2kG.library_overdispersedGenes/cnmf_tmp/2kG.library_overdispersedGenes.norm_counts.h5ad')
 parser.add_argument('--outdir', dest = 'outdir', type=str, help = 'path to output directory', default='/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/analysis/top2000VariableGenes/2kG.library_overdispersedGenes/K60/threshold_0_2/')
 parser.add_argument('--k', dest = 'k', type=int, help = 'number of components', default='60')
 parser.add_argument('--density_threshold', dest = 'density_threshold', type=float, help = 'component spectra clustering threshold, 2 for no filtering, recommend 0_2 (means 0.2)', default="0.2")
+
+# ## sdev for K562 gwps
+# parser.add_argument('--path_to_topics', type=str, help='path to the topic (cNMF directory) to project data on', default='/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes_acrossK/')
+# parser.add_argument('--topic_sampleName', type=str, help='sample name for topics to project on, use the same sample name as used for the cNMF directory', default='WeissmanK562gwps')
+# parser.add_argument('--X_normalized', type=str,  help='path to normalized input cell x gene matrix from cNMF pipeline', default='/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes_acrossK/WeissmanK562gwps/cnmf_tmp/WeissmanK562gwps.norm_counts.h5ad')
+# parser.add_argument('--outdir', dest = 'outdir', type=str, help = 'path to output directory', default='/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/WeissmanK562gwps/K35/threshold_0_2/')
+# parser.add_argument('--k', dest = 'k', type=int, help = 'number of components', default='35')
+# parser.add_argument('--density_threshold', dest = 'density_threshold', type=float, help = 'component spectra clustering threshold, 2 for no filtering, recommend 0_2 (means 0.2)', default="0.2")
 
 args = parser.parse_args()
 
@@ -54,7 +63,8 @@ def compute_Var(X):
 # X_tpm_dense = X_original.X.todense()
 # X_tpm_dense[0:10,].sum(axis=1) ## check TPM normalization
 
-X = X_norm.X.todense() ## 221203
+# X = X_norm.X.todense() ## 221203
+X = X_norm.X
 H_path = cnmf_obj.paths['consensus_spectra__txt'] % (selected_K, '0_2') ## median_spectra_file
 H_df = pd.read_csv(H_path, sep='\t', index_col=0).T
 H = H_df.to_numpy()

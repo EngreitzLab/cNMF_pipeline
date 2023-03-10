@@ -69,6 +69,9 @@ opt <- parse_args(OptionParser(option_list=option.list))
 # opt$aggregated.data <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ctrl_only_snakemake/analysis/all_genes/2kG.library.ctrl.only/acrossK/aggregated.outputs.findK.RData"
 
 
+## ## K562 gwps 2k overdispersed genes
+## opt$figdir <- ""
+
 ## Directories and Constants
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 threshold <- opt$p.adj.threshold

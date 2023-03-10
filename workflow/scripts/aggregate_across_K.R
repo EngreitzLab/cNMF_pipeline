@@ -64,6 +64,12 @@ mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.titl
 ## opt$K.list <- "3,5,7,12,14,19,21,23,25,27,29,31,35,40,45,50,60,70,80,90,100,120"
 ## opt$sampleName <- "2kG.library_overdispersedGenes"
 
+## ## sdev K562 gwps 2k most dispersed genes cNMF
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/figures/top2000VariableGenes"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes"
+## opt$sampleName <- "WeissmanK562gwps"
+## opt$K.list <- "3,5,10,15,20,25,30,35,40,45,50,55,60,70,80,90,100,110,120"
+## opt$K.table <- "/to/use/for/specifying/spectra/cut/off/threshold//default/0.2"
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
@@ -96,7 +102,7 @@ if(file.exists(opt$K.table)) {
 
 
 ## initialize storage variables
-GSEA.types <- c("GOEnrichment", "ByWeightGSEA", "GSEA")
+GSEA.types <- c("GOEnrichment", "PosGenesGOEnrichment", "ByWeightGSEA", "GSEA")
 for (j in 1:length(GSEA.types)) {
     GSEA.type <- GSEA.types[j]
     to.eval <- paste0("clusterProfiler.", GSEA.type, ".list <- vector(\"list\",nrow(K.spectra.threshold))")
@@ -220,7 +226,7 @@ for (n in 1:nrow(K.spectra.threshold)) {
 
 
     ## GSEA results
-    ranking.types <- c("zscore", "raw")
+    ranking.types <- c("zscore", "raw", "median_spectra", "median_spectra_zscore")
     for (j in 1:length(GSEA.types)) {
         GSEA.type <- GSEA.types[j]
         to.eval <- paste0("clusterProfiler.", GSEA.type, ".list.here <- vector(\"list\",length(ranking.types))")
@@ -233,7 +239,7 @@ for (n in 1:nrow(K.spectra.threshold)) {
                 to.eval <- paste0("clusterProfiler.", GSEA.type, ".list.here[[i]] <- read.delim(file.name, header=T, stringsAsFactors = F) %>% mutate(type = ranking.type, K = k)")
                 eval(parse(text = to.eval))
             } else {
-                print(paste0(file.name, " file does not exist"))
+                warning(paste0(file.name, " file does not exist"))
             }
         }
         to.eval <- paste0("clusterProfiler.", GSEA.type, ".list[[n]] <- do.call(rbind, clusterProfiler.", GSEA.type, ".list.here)")
@@ -326,6 +332,6 @@ varianceExplainedByModel.df <- do.call(rbind, varianceExplainedByModel.list)
 varianceExplainedPerProgram.df <- do.call(rbind, varianceExplainedPerProgram.list)
 
 file.name <- paste0(OUTDIR.ACROSS.K, "/aggregated.outputs.findK.RData")
-save(clusterProfiler.GOEnrichment.df, clusterProfiler.ByWeightGSEA.df, clusterProfiler.GSEA.df, theta.zscore.df, theta.raw.df, all.promoter.ttest.df, all.enhancer.ttest.df, varianceExplainedByModel, varianceExplainedPerProgram,
+save(clusterProfiler.GOEnrichment.df, clusterProfiler.ByWeightGSEA.df, clusterProfiler.GSEA.df, theta.zscore.df, theta.raw.df, all.promoter.ttest.df, all.enhancer.ttest.df, varianceExplainedByModel.df, varianceExplainedPerProgram.df,
      file=file.name)
 

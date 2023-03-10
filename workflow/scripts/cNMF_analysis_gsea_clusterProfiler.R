@@ -62,6 +62,19 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/"
 ## opt$K.val <- 60
 
+## ## ## K562 gwps sdev
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/figures/top2000VariableGenes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/"
+## opt$K.val <- 35
+## opt$sampleName <- "WeissmanK562gwps"
+## opt$GSEA.type <- "ByWeightGSEA"
+## opt$ranking.type <- "median_spectra_zscore"
+
+## ## ENCODE mouse heart
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/figures/top2000VariableGenes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/analysis/top2000VariableGenes"
+## opt$K.val <- 15
+## opt$sampleName <- "mouse_ENCODE_heart"
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
@@ -96,8 +109,7 @@ palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
 
 
 ######################################################################
-## Load topic model results
-    
+## Load topic model results    
 cNMF.result.file <- paste0(OUTDIRSAMPLE,"/cNMF_results.",SUBSCRIPT.SHORT, ".RData")
 print(cNMF.result.file)
 if(file.exists(cNMF.result.file)) {
@@ -120,7 +132,7 @@ for(i in 1:ncol(theta.zscore)) {
 }
 theta.rank.df <- do.call(rbind, theta.rank.list) %>%  ## combine list to df
     `colnames<-`(c("topic.zscore", "Gene", "zscore.specificity.rank", "ProgramID")) %>%
-    mutate(ProgramID = gsub("topic_", "K60_", ProgramID)) %>%
+    mutate(ProgramID = gsub("topic_", paste0("K", k, "_"), ProgramID)) %>%
     as.data.frame
 
 ## get list of topic genes by raw weight
@@ -138,40 +150,78 @@ for(i in 1:ncol(theta.raw)) {
 }
 theta.raw.rank.df <- do.call(rbind, theta.raw.rank.list) %>%  ## combine list to df
     `colnames<-`(c("topic.raw", "Gene", "raw.score.rank", "ProgramID")) %>%
-    mutate(ProgramID = gsub("topic_", "K60_", ProgramID)) %>%
+    mutate(ProgramID = gsub("topic_", paste0("K", k, "_"), ProgramID)) %>%
     as.data.frame
 
+
+## get list of topic genes by median spectra weight
+median.spectra.rank.list <- vector("list", ncol(median.spectra))## initialize storage list
+for(i in 1:ncol(median.spectra)) {
+    topic <- paste0("topic_", colnames(median.spectra)[i])
+    median.spectra.rank.list[[i]] <- median.spectra %>%
+        as.data.frame %>%
+        select(all_of(i)) %>%
+        `colnames<-`("median.spectra") %>%
+        mutate(Gene = rownames(.)) %>%
+        arrange(desc(median.spectra), .before="median.spectra") %>%
+        mutate(median.spectra.rank = 1:n()) %>% ## add rank column
+        mutate(Topic = topic) ## add topic column
+}
+median.spectra.rank.df <- do.call(rbind, median.spectra.rank.list) %>%  ## combine list to df
+    `colnames<-`(c("median.spectra", "Gene", "median.spectra.rank", "ProgramID")) %>%
+    mutate(ProgramID = gsub("topic_", paste0("K", k, "_"), ProgramID)) %>%
+    as.data.frame
+median.spectra.zscore.df <- median.spectra.zscore.df %>% mutate(Gene = ENSGID) ## quick fix, need to add "Gene" column to this dataframe in analysis script
 
 ######################################################################
 ## run cluster profiler GSEA on top 300 genes
 
-## map between EntrezID and Gene Symbol
-z <- org.Hs.egSYMBOL
-z_mapped_genes <- mappedkeys(z)
-entrez.to.symbol <- as.list(z[z_mapped_genes])
+## ## map between EntrezID and Gene Symbol
+## z <- org.Hs.egSYMBOL
+## z_mapped_genes <- mappedkeys(z)
+## entrez.to.symbol <- as.list(z[z_mapped_genes])
 
-## entrez.to.symbol <- as.list(org.Hs.egSYMBOL)
-symbol.to.entrez <- as.list(org.Hs.egSYMBOL2EG)
+## ## entrez.to.symbol <- as.list(org.Hs.egSYMBOL)
+## symbol.to.entrez <- as.list(org.Hs.egSYMBOL2EG)
 
-## map to entrez id (function)
-symbolToEntrez <- function(df) df %>% mutate(EntrezID = symbol.to.entrez[.$gene %>% as.character] %>% sapply("[[",1) %>% as.character)
+## ## map to entrez id (function)
+## symbolToEntrez <- function(df) df %>% mutate(EntrezID = symbol.to.entrez[.$gene %>% as.character] %>% sapply("[[",1) %>% as.character)
 
 ## subset to top 300 genes
 
-ranking.type.ary <- c("zscore", "raw")
-ranking.rank.colname.ary <- c("zscore.specificity.rank", "raw.score.rank")
-ranking.type.varname.ary <- c("theta.rank.df", "theta.raw.rank.df")
+ranking.type.ary <- c("zscore", "raw", "median_spectra_zscore", "median_spectra")
+score.colname.ary <- c("zscore", "raw", "median.spectra.zscore", "median.spectra")
+ranking.rank.colname.ary <- c("zscore.specificity.rank", "raw.score.rank", "median.spectra.zscore.rank", "median.spectra.rank")
+ranking.type.varname.ary <- c("theta.rank.df", "theta.raw.rank.df", "median.spectra.zscore.df", "median.spectra.rank.df")
+db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
+library(!!db) ## load the appropriate database
 
 getData <- function(t) {
-    programID.here <- paste0("K60_", t)
-    ranking.type.varname.here <- ranking.type.varname.ary[i]
-    ranking.score.colname.here <- paste0("topic.", ranking.type.ary[i])
     i <- which(ranking.type.ary == opt$ranking.type)
+    programID.here <- paste0("K", k, "_", t)
+    ranking.type.varname.here <- ranking.type.varname.ary[i]
+    if(grepl("median.spectra", ranking.type.varname.here)) {
+       ranking.score.colname.here <- score.colname.ary[i] 
+    } else {
+        ranking.score.colname.here <- paste0("topic.", ranking.type.ary[i])
+    }
     gene.df <- get(ranking.type.varname.here) %>%
-        subset(ProgramID == programID.here) %>%
-        mutate(gene = Gene) %>%
-        symbolToEntrez() %>%
+        subset(ProgramID == programID.here)
+    gene.type <- ifelse(nrow(gene.df) == sum(as.numeric(grepl("^ENS", gene.df$Gene))), "ENSGID", "Gene")
+    mapped.genes <- mapIds(get(db),
+                           keys=gene.df$Gene,
+                           keytype = ifelse(gene.type == "Gene", "SYMBOL", "ENSEMBL"),
+                           column = ifelse(gene.type == "Gene", "ENSEMBL", "SYMBOL"))
+    mapped.entrez.genes <- mapIds(get(db),
+                           keys=gene.df$Gene,
+                           keytype = ifelse(gene.type == "Gene", "SYMBOL", "ENSEMBL"),
+                           column = "ENTREZID")
+    gene.df <- gene.df %>%
+        mutate(!!gene.type := Gene,
+               !!ifelse(gene.type=="ENSGID", "Gene", "ENSGID") := mapped.genes,
+               EntrezID = mapped.entrez.genes) %>%
         as.data.frame
+
 
     gene.weights <- gene.df %>% pull(get(ranking.score.colname.here)) %>% `names<-`(gene.df$EntrezID)
     gene.weights[gene.weights < 0] <- 0    
@@ -179,26 +229,28 @@ getData <- function(t) {
     top.gene.df <- gene.df %>%
         subset(get(ranking.rank.colname.ary[i]) <= 300) %>%
         as.data.frame
-    top.genes <- unlist(mget(top.gene.df$Gene, envir=org.Hs.egSYMBOL2EG, ifnotfound=NA))
-    ## top.genes <- top.gene.df %>% pull(EntrezID) ## same as above
+    ## top.genes <- unlist(mget(top.gene.df$Gene, envir=org.Hs.egSYMBOL2EG, ifnotfound=NA)) ## old
+    top.genes <- top.gene.df %>% pull(EntrezID) ## same as above
     
     pos.gene.df <- gene.df %>%
         subset(get(ranking.score.colname.here) > 0) %>%
         as.data.frame
-    pos.genes <- unlist(mget(pos.gene.df$Gene, envir=org.Hs.egSYMBOL2EG, ifnotfound=NA))
+    pos.genes <- pos.gene.df %>% pull(EntrezID)
+    ## pos.genes <- unlist(mget(pos.gene.df$Gene, envir=org.Hs.egSYMBOL2EG, ifnotfound=NA))
 
-    geneUniverse <- unlist(mget(get(ranking.type.varname.ary[i])$Gene %>% unique, envir=org.Hs.egSYMBOL2EG, ifnotfound=NA))
- 
+    ## geneUniverse <- unlist(mget(get(ranking.type.varname.ary[i])$Gene %>% unique, envir=org.Hs.egSYMBOL2EG, ifnotfound=NA))
+    geneUniverse <- gene.df$EntrezID
+    
     return(list(top.genes = top.genes, pos.genes = pos.genes, geneUniverse = geneUniverse, gene.weights = gene.weights))
 }
 
-m_df <- msigdbr(species = "Homo sapiens")
+m_df <- msigdbr(species = ifelse(grepl("mouse", SAMPLE), "Mus musculus", "Homo sapiens"))
 
 ## save this as a txt file and read in ## for future if needed
-functionsToRun <- list(GOEnrichment = "out <- enrichGO(gene = top.genes, ont = 'ALL', OrgDb = 'org.Hs.eg.db', universe = geneUniverse, readable=T, pvalueCutoff=1, pAdjustMethod = 'fdr') %>% as.data.frame %>% mutate(fdr.across.ont = p.adjust, ProgramID = paste0('K60_', t))",
-                       PosGenesGOEnrichment = "out <- enrichGO(gene = pos.genes, ont = 'ALL', OrgDb = 'org.Hs.eg.db', universe = geneUniverse, readable=T, pvalueCutoff=1, pAdjustMethod='fdr') %>% as.data.frame %>% mutate(fdr.across.ont = p.adjust, ProgramID = paste0('K60_', t))",
-                       ByWeightGSEA = "out <- GSEA(gene.weights, TERM2GENE = m_df %>% select(gs_name, entrez_gene), pAdjustMethod = 'fdr', pvalueCutoff = 1) %>% as.data.frame %>% mutate(ProgramID = paste0('K60_', t)) ",
-                       GSEA = "out <- enricher(top.genes, TERM2GENE = m_df %>% select(gs_name, entrez_gene), universe = geneUniverse, pAdjustMethod = 'fdr', qvalueCutoff=1) %>% as.data.frame %>% mutate(ProgramID = paste0('K60_', t))"
+functionsToRun <- list(GOEnrichment = "out <- enrichGO(gene = top.genes, ont = 'ALL', OrgDb = db, universe = geneUniverse, readable=T, pvalueCutoff=1, pAdjustMethod = 'fdr') %>% as.data.frame %>% mutate(fdr.across.ont = p.adjust, ProgramID = paste0('K', k, '_', t))",
+                       PosGenesGOEnrichment = "out <- enrichGO(gene = pos.genes, ont = 'ALL', OrgDb = db, universe = geneUniverse, readable=T, pvalueCutoff=1, pAdjustMethod='fdr') %>% as.data.frame %>% mutate(fdr.across.ont = p.adjust, ProgramID = paste0('K', k, '_', t))",
+                       ByWeightGSEA = "out <- GSEA(gene.weights, TERM2GENE = m_df %>% select(gs_name, entrez_gene), pAdjustMethod = 'fdr', pvalueCutoff = 1) %>% as.data.frame %>% mutate(ProgramID = paste0('K', k, '_', t)) ",
+                       GSEA = "out <- enricher(top.genes, TERM2GENE = m_df %>% select(gs_name, entrez_gene), universe = geneUniverse, pAdjustMethod = 'fdr', qvalueCutoff=1) %>% as.data.frame %>% mutate(ProgramID = paste0('K', k, '_', t))"
                        )
 
 ## for(i in 1:length(ranking.type.ary)) {
@@ -211,15 +263,30 @@ GSEA.type <- opt$GSEA.type
 ## BP: Biological Process
 ## ans.go <- do.call(rbind, lapply(1:60, function(t) {
 
+message("starting enrichment")
+
 ## out.list <- lapply(1:length(functionsToRun), function(j) {
-out <- do.call(rbind, lapply(c(1:k), function(t) {
+out <- do.call(rbind, lapply(c(1:k) %>% rev, function(t) {
     data.here <- getData(t)
     top.genes <- data.here$top.genes
+    if(sum(as.numeric(is.na(names(top.genes)))) > 0) top.genes <- top.genes[-which(is.na(names(top.genes)))] ## remove genes that doesn't have matched Entrez ID
+    ## print(head(top.genes))
+
     pos.genes <- data.here$pos.genes
+    if(sum(as.numeric(is.na(names(pos.genes)))) > 0) pos.genes <- pos.genes[-which(is.na(names(pos.genes)))]
+    ## print(head(pos.genes))
+
     geneUniverse <- data.here$geneUniverse
+    ## print(head(geneUniverse))
+    
     gene.weights <- data.here$gene.weights
-    message(paste0("Ranking type: ", ranking.type.here, ", Program ", t, ", function ", GSEA.type, ", top gene class: ", class(top.genes),
+    if(sum(as.numeric(is.na(names(gene.weights)))) > 0) gene.weights <- gene.weights[-which(is.na(names(gene.weights)))]
+    gene.weights <- gene.weights[-which(gene.weights==0)] ## can't have zero weights?
+    ## print(head(gene.weights))
+    
+    message(paste0("Ranking type: ", ranking.type.here, ", Program ", t, ", out of ", k, ", function ", GSEA.type, ", top gene class: ", class(top.genes),
                    "\n geneUniverse class: ", class(geneUniverse), ", gene.weights class: ", class(gene.weights)))
+    ## message(paste0("Function to run: \n", functionsToRun[[GSEA.type]]))
     eval(parse(text = functionsToRun[[GSEA.type]]))
     return(out)
 }))
@@ -250,7 +317,7 @@ write.table(out, file.name, sep="\t", row.names=F, quote=F)
 ## }
 
 ## out.GSEA.list <- GSEA(gene.weights,
-##                       TERM2GENE = m_df %>% select(gs_name, entrez_gene),
+##                       TERM2GENE = m_dfo %>% select(gs_name, entrez_gene),
 ##                       pAdjustMethod = "fdr") %>%
 ##     mutate(ProgramID = paste0("K60_", t))
 
