@@ -10,9 +10,12 @@ A pipeline to connect GWAS variants to genes to disease-associate gene programs.
 ### Step 2: Install conda environment
 Install Snakemake and conda environment using conda:
 
-```sh
-conda env create --file workflow/envs/cnmf_env.yml
+```bash
+conda create -f conda_env/cnmf_env.yml
+conda create -f conda_env/cnmf_analysis_R.yml
 ```
+cnmf_env contains snakemake. If you do not have snakemake installed already, you can activate the environment via `conda activate cnmf_env`, then run the pipeline.
+
 
 ### Step 2: Gather all input data
 #### Necessary inputs:
@@ -85,14 +88,6 @@ MAST_DEtopics.txt
 
 ### Perturb-seq data outputs
 
-
-### Conda Environment:
-Download the .yml files from conda_envs/ and install via
-```bash
-conda create -f cnmf_env.yml
-conda create -f cnmf_analysis_R.yml
-```
-cnmf_env contains snakemake. If you do not have snakemake installed already, you can activate the environment via `conda activate cnmf_env`, then run the pipeline.
 
 ### Running the pipeline:
 
