@@ -721,10 +721,7 @@ rule findK_cNMF:
 
 def get_concensus_factors_time(wildcards):
 	if config["num_cells"] > 1e6:
-		if int(wildcards.k) >= 50:
-			return "36:00:00"
-		else:
-			return "24:00:00"
+		return "24:00:00"
 	else:
 		if int(wildcards.k) >= 70:
 			return "36:00:00"
@@ -743,7 +740,9 @@ def get_concensus_factors_time_slurm(wildcards):
 
 def get_concensus_factors_memory(wildcards):
 	if config["num_cells"] > 1e6:
-		if int(wildcards.k) >= 50:
+		if int(wildcards.k) >= 150:
+			return "1200"
+		elif int(wildcards.k) >= 50: 
 			return "800"
 		else:
 			return "500"
@@ -752,10 +751,10 @@ def get_concensus_factors_memory(wildcards):
 
 def get_concensus_factors_partition(wildcards):
 	if config["num_cells"] > 1e6:
-		if int(wildcards.k) < 50:
-			return "owners"
+		if int(wildcards.k) >= 50:
+			return "bigmem"	
 		else:
-			return "bigmem,owners"	
+			return "normal,owners"
 	else:
 		return "normal,owners"
 
@@ -1056,45 +1055,17 @@ rule batch_topic_correlation:
 		--barcode.names {input.barcode_names} \
 		--recompute F ' "
 
-
-
-# rule get_ABC_enhancer_fasta:
-# 	input:
-# 		fasta = config["fasta_file"],
-# 		coord = config["ABC_enhancers"]
-# 	output:
-# 		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa")
-# 	params:
-# 		time = "3:00:00",
-# 		mem_gb = "16"
-# 	shell:
-# 		"bash -c ' source ~/.bashrc; \
-# 		conda activate cnmf_env; \
-# 		bash workflow/scripts/fimo_motif_match.sh {input.coord} {input.fasta} {output.fasta} ' "
-
-
-# rule FIMO_ABC_enhancers:
-# 	input:
-# 		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa"),
-# 		motif_meme = os.path.join(config["motif_meme"])
-# 	output:
-# 		fimo_result = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.tsv"),
-# 		fimo_formatted = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
-# 	params:
-# 		time = "12:00:00",
-# 		mem_gb = "128",
-# 		fimo_outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out")
-# 	shell: ## need FIMO wrapper
-# 		"bash -c ' source ~/.bashrc; \
-# 		conda activate cnmf_env; \
-# 		fimo -oc {params.fimo_outdir} --verbosity 1 --thresh 1.0E-4 {input.motif_meme} {input.fasta}; \
-# 		echo {output.fimo_result} | tr \"|\" \"\\t\" > {output.fimo_formatted} ' "
+def get_fimo_results(wildcards):
+	if os.path.isfile(config["fimo_formatted"]):
+		return(config["fimo_formatted"])
+	else:
+		return(os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.txt"))
 
 
 rule motif_enrichment_analysis:
 	input:
 		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
-		fimo_formatted = config["fimo_formatted"] # os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
+		fimo_formatted = get_fimo_results # os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.formatted.tsv")
 	output: 
 		# motif_enrichment = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMFAnalysis.factorMotifEnrichment.k_{k}.dt_{threshold}.RData")
 		# motif_table_qval = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{ep_type}.topic.top.300.zscore.gene_motif.count.ttest.enrichment_motif.thr.qval0.1_k_{k}.dt_{threshold}.txt")
@@ -1279,6 +1250,33 @@ rule clusterProfiler_GSEA_plot:
 # 		--sampleName {sample} \
 # 		--density.thr 0.2 \
 # 		--cluster.topic.expression T "
+
+
+## Topic Summary Table ##here
+rule TopicSummary:
+	input:
+		batch_correlation_mtx_RDS = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/batch.correlation.RDS"),
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
+		clusterProfiler_median_spectra_zscore_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingTypemedian_spectra_zscore_EnrichmentTypeGOEnrichment.txt"),
+		clusterProfiler_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingTypezscore_EnrichmentTypeGOEnrichment.txt")
+	output:
+		ProgramSummary = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_ProgramSummary_k_{k}.dt_{threshold}.txt")
+	params:
+		time = "1:00:00",
+		mem_gb = "16",
+		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"), # K{k}/threshold_{threshold}
+		threshold = get_cNMF_filter_threshold_double,
+		perturbSeq = config["Perturb-seq"],
+		partition = "owners,normal"
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+			conda activate cnmf_analysis_R; \
+			Rscript workflow/scripts/create_program_summary_table.R \
+			--sampleName {wildcards.sample} \
+			--outdir {params.analysisdir} \
+			--K.val {wildcards.k} \
+			--density.thr {params.threshold} \
+			--perturbSeq {params.perturbSeq} '"
 
 
 

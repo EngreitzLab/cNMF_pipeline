@@ -21,6 +21,9 @@ include: "rules/program_prioritization.smk"
 if config["Perturb-seq"] == "True":
 	include: "rules/cNMF_Perturb-seq_analysis.smk"
 
+if not os.path.isfile(config["fimo_formatted"]):
+	include: "rules/match_motifs.smk"
+
 
 def get_output_files(wildcards):
 	output_files = []
@@ -30,13 +33,17 @@ def get_output_files(wildcards):
 	# seurat_object_withUMAP = expand(os.path.join(config["analysisDir"], "data/{sample}.withUMAP_SeuratObject.RDS"), sample=config["sampleName"]),
 	usages = expand(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.usages.k_{k}.dt_{threshold}.consensus.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 	findK_plot_cNMF = expand(os.path.join(config["figDir"],"{folder}/{sample}/acrossK/{sample}.k_selection.png"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
-	
+
 	aggregated_output = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
 		
 	## variance explained
 	Var_k_txt = expand(os.path.join(config["analysisDir"],"{folder}/{sample}/K{k}/threshold_{threshold}/metrics.varianceExplained.df.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 	Var_k_summary_txt = expand(os.path.join(config["analysisDir"],"{folder}/{sample}/K{k}/threshold_{threshold}/summary.varianceExplained.df.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 
+	## motif enrichment preparation
+	fimo_result = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
+
+	## main results
 	cNMF_Results = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 	topic_zscore_top50 = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top50GeneInTopics.zscore.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 	topic_zscore_correlation = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_topic.Pearson.correlation.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
@@ -52,6 +59,9 @@ def get_output_files(wildcards):
 	# GO_raw_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/acrossK/GO.enrichment.on.raw.score.ranking.threshold0.1.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
 	gsea_clusterProfiler_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top10EnrichedPathways_GeneRankingType{ranking_type}_EnrichmentType{GSEA_type}.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], ranking_type = ["zscore", "raw", "median_spectra", "median_spectra_zscore"], GSEA_type = ["GOEnrichment", "PosGenesGOEnrichment", "ByWeightGSEA", "GSEA"]),
 
+	## Program Summary Table
+	ProgramSummary = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_ProgramSummary_k_{k}.dt_{threshold}.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+
 	## PoPS
 	all_features_RDS = os.path.join(config["analysisDir"], "pops/features/processed_features/full_external_features.RDS"),
 	all_features_with_cNMF_RDS=expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/pops/full_features_{magma_prefix}_cNMF{k}.RDS"), folder=config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], magma_prefix=config["magma_prefix"]),
@@ -65,8 +75,8 @@ def get_output_files(wildcards):
 	TFMotifEnrichment_plots = expand(os.path.join(config["figDir"], "{folder}/{sample}/acrossK/All_TFMotifEnrichment.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
 
 	## Program Prioritization for Perturb-seq
-	program_prioritization_statistical_test_result = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/program_prioritization/{GWAS_trait}/{GWAS_trait}.program_prioritization.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], GWAS_trait = config["GWAS_traits"]),
-	program_prioritization_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/program_prioritization/{GWAS_trait}/{sample}_K{k}_dt_{threshold}_{GWAS_trait}_ProgramGene_EnrichmentBarPlot.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], GWAS_trait = config["GWAS_traits"]),
+	program_prioritization_statistical_test_result = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/program_prioritization_{regulator_analysis_type}/{GWAS_trait}/{GWAS_trait}.program_prioritization.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], GWAS_trait = config["GWAS_traits"], regulator_analysis_type = ["GWASWide", "GenomeWide"]),
+	program_prioritization_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/program_prioritization_{regulator_analysis_type}/{GWAS_trait}/{sample}_K{k}_dt_{threshold}_{GWAS_trait}_ProgramGene_EnrichmentBarPlot.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], GWAS_trait = config["GWAS_traits"], regulator_analysis_type = ["GWASWide", "GenomeWide"]),
 	# program_prioritization_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/program_prioritization/{GWAS_trait}/{sample}_K{k}_dt_{threshold}_{GWAS_trait}_{test_category}_EnrichmentBarPlot.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], GWAS_trait = config["GWAS_traits"], test_category = ["ProgramGene"]),
 
 
@@ -88,16 +98,20 @@ def get_output_files(wildcards):
 	output_files.extend(list(clusterProfiler_result)) ## rule: clusterProfiler_GSEA, across K plots
 	output_files.extend(list(GSEA_plots))
 	output_files.extend(list(TFMotifEnrichment_plots))
+	output_files.extend(list(ProgramSummary))
 	# output_files.extend(list(clusterProfiler_top300Gene_GO_result))
 	# output_files.extend(list(clusterProfiler_allGeneWeight_gsea_result))
 	# output_files.extend(list(clusterProfiler_top300Gene_gsea_result))
 	# output_files.extend(list(fgsea_result))
 
-	# ## PoPS
-	# output_files.extend(list(feature_x_gene_importance_score_RDS)) ## add this for analyze_PoPS_results rule
-	# output_files.extend(list(feature_x_gene_component_importance_score_coefs_plot))
-	output_files.extend(list(program_prioritization_statistical_test_result))
-	output_files.extend(list(program_prioritization_plot))
+	# # ## PoPS
+	# # output_files.extend(list(feature_x_gene_importance_score_RDS)) ## add this for analyze_PoPS_results rule
+	# # output_files.extend(list(feature_x_gene_component_importance_score_coefs_plot))
+	# output_files.extend(list(program_prioritization_statistical_test_result))
+	# output_files.extend(list(program_prioritization_plot))
+
+	if not os.path.isfile(config["fimo_formatted"]):
+		output_files.extend(list(fimo_result))
 
 
 	if config["Perturb-seq"] == "True":

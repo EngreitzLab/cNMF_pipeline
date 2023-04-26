@@ -99,12 +99,32 @@ SUBSCRIPT.SHORT=paste0("k_", k, ".dt_", DENSITY.THRESHOLD)
 fdr.thr <- opt$adj.p.value.thr
 p.value.thr <- opt$adj.p.value.thr
 
+db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
+library(!!db) ## load the appropriate database
 
 # create dir if not already
 check.dir <- c(OUTDIR, FIGDIR, paste0(FIGDIR,SAMPLE,"/"), paste0(FIGDIR,SAMPLE,"/K",k,"/"), paste0(OUTDIR,SAMPLE,"/"), OUTDIRSAMPLE, FIGDIRSAMPLE)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
 
 palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
+
+
+## helper function to map between ENSGID and SYMBOL
+map.ENSGID.SYMBOL <- function(df) {
+    ## need column `Gene` to be present in df
+    ## detect gene data type (e.g. ENSGID, Entrez Symbol)
+    gene.type <- ifelse(nrow(df) == sum(as.numeric(grepl("^ENS", df$Gene))),
+                        "ENSGID",
+                        "Gene")
+    if(gene.type == "ENSGID") {
+        mapped.genes <- mapIds(get(db), keys=df$Gene, keytype = "ENSEMBL", column = "SYMBOL")
+        df <- df %>% mutate(ENSGID = Gene, Gene = mapped.genes)
+    } else {
+        mapped.genes <- mapIds(get(db), keys=df$Gene, keytype = "SYMBOL", column = "ENSEMBL")
+        df <- df %>% mutate(ENSGID = mapped.genes)
+    }
+    return(df)
+}
 
 
 
@@ -133,7 +153,7 @@ for(i in 1:ncol(theta.zscore)) {
 theta.rank.df <- do.call(rbind, theta.rank.list) %>%  ## combine list to df
     `colnames<-`(c("topic.zscore", "Gene", "zscore.specificity.rank", "ProgramID")) %>%
     mutate(ProgramID = gsub("topic_", paste0("K", k, "_"), ProgramID)) %>%
-    as.data.frame
+    as.data.frame %>% map.ENSGID.SYMBOL
 
 ## get list of topic genes by raw weight
 theta.raw.rank.list <- vector("list", ncol(theta.raw))## initialize storage list
@@ -151,7 +171,7 @@ for(i in 1:ncol(theta.raw)) {
 theta.raw.rank.df <- do.call(rbind, theta.raw.rank.list) %>%  ## combine list to df
     `colnames<-`(c("topic.raw", "Gene", "raw.score.rank", "ProgramID")) %>%
     mutate(ProgramID = gsub("topic_", paste0("K", k, "_"), ProgramID)) %>%
-    as.data.frame
+    as.data.frame %>% map.ENSGID.SYMBOL
 
 
 ## get list of topic genes by median spectra weight
@@ -170,8 +190,8 @@ for(i in 1:ncol(median.spectra)) {
 median.spectra.rank.df <- do.call(rbind, median.spectra.rank.list) %>%  ## combine list to df
     `colnames<-`(c("median.spectra", "Gene", "median.spectra.rank", "ProgramID")) %>%
     mutate(ProgramID = gsub("topic_", paste0("K", k, "_"), ProgramID)) %>%
-    as.data.frame
-median.spectra.zscore.df <- median.spectra.zscore.df %>% mutate(Gene = ENSGID) ## quick fix, need to add "Gene" column to this dataframe in analysis script
+    as.data.frame %>% map.ENSGID.SYMBOL
+## median.spectra.zscore.df <- median.spectra.zscore.df %>% mutate(Gene = ENSGID) ## quick fix, need to add "Gene" column to this dataframe in analysis script
 
 ######################################################################
 ## run cluster profiler GSEA on top 300 genes

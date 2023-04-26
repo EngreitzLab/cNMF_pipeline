@@ -544,7 +544,83 @@ if(file.exists(cNMF.result.file)) {
     }
 
 
-    ## store median spectra z-score
+
+    ## helper function to map between ENSGID and SYMBOL
+    map.ENSGID.SYMBOL <- function(df) {
+        ## need column `Gene` to be present in df
+        ## detect gene data type (e.g. ENSGID, Entrez Symbol)
+        gene.type <- ifelse(nrow(df) == sum(as.numeric(grepl("^ENS", df$Gene))),
+                            "ENSGID",
+                            "Gene")
+        if(gene.type == "ENSGID") {
+            mapped.genes <- mapIds(get(db), keys=df$Gene, keytype = "ENSEMBL", column = "SYMBOL")
+            df <- df %>% mutate(ENSGID = Gene, Gene = mapped.genes)
+        } else {
+            mapped.genes <- mapIds(get(db), keys=df$Gene, keytype = "SYMBOL", column = "ENSEMBL")
+            df <- df %>% mutate(ENSGID = mapped.genes)
+        }
+        return(df)
+    }
+
+
+    ## get list of topic defining genes
+    theta.rank.list <- vector("list", ncol(theta.zscore))## initialize storage list
+    for(i in 1:ncol(theta.zscore)) {
+        topic <- paste0("topic_", colnames(theta.zscore)[i])
+        theta.rank.list[[i]] <- theta.zscore %>%
+            as.data.frame %>%
+            select(all_of(i)) %>%
+            `colnames<-`("topic.zscore") %>%
+            mutate(Gene = rownames(.)) %>%
+            arrange(desc(topic.zscore), .before="topic.zscore") %>%
+            mutate(zscore.specificity.rank = 1:n()) %>% ## add rank column
+            mutate(Topic = topic) ## add topic column
+    }
+    theta.rank.df <- do.call(rbind, theta.rank.list) %>%  ## combine list to df
+        `colnames<-`(c("topic.zscore", "Gene", "zscore.specificity.rank", "ProgramID")) %>%
+        mutate(ProgramID = gsub("topic_", paste0("K", k, "_"), ProgramID)) %>%
+        as.data.frame %>% map.ENSGID.SYMBOL
+
+    ## get list of topic genes by raw weight
+    theta.raw.rank.list <- vector("list", ncol(theta.raw))## initialize storage list
+    for(i in 1:ncol(theta.raw)) {
+        topic <- paste0("topic_", colnames(theta.raw)[i])
+        theta.raw.rank.list[[i]] <- theta.raw %>%
+            as.data.frame %>%
+            select(all_of(i)) %>%
+            `colnames<-`("topic.raw") %>%
+            mutate(Gene = rownames(.)) %>%
+            arrange(desc(topic.raw), .before="topic.raw") %>%
+            mutate(raw.score.rank = 1:n()) %>% ## add rank column
+            mutate(Topic = topic) ## add topic column
+    }
+    theta.raw.rank.df <- do.call(rbind, theta.raw.rank.list) %>%  ## combine list to df
+        `colnames<-`(c("topic.raw", "Gene", "raw.score.rank", "ProgramID")) %>%
+        mutate(ProgramID = gsub("topic_", paste0("K", k, "_"), ProgramID)) %>%
+        as.data.frame %>% map.ENSGID.SYMBOL
+
+
+    ## get list of topic genes by median spectra weight
+    median.spectra.rank.list <- vector("list", ncol(median.spectra))## initialize storage list
+    for(i in 1:ncol(median.spectra)) {
+        topic <- paste0("topic_", colnames(median.spectra)[i])
+        median.spectra.rank.list[[i]] <- median.spectra %>%
+            as.data.frame %>%
+            select(all_of(i)) %>%
+            `colnames<-`("median.spectra") %>%
+            mutate(Gene = rownames(.)) %>%
+            arrange(desc(median.spectra), .before="median.spectra") %>%
+            mutate(median.spectra.rank = 1:n()) %>% ## add rank column
+            mutate(Topic = topic) ## add topic column
+    }
+    median.spectra.rank.df <- do.call(rbind, median.spectra.rank.list) %>%  ## combine list to df
+        `colnames<-`(c("median.spectra", "Gene", "median.spectra.rank", "ProgramID")) %>%
+        mutate(ProgramID = gsub("topic_", paste0("K", k, "_"), ProgramID)) %>%
+        as.data.frame %>% map.ENSGID.SYMBOL
+    ## median.spectra.zscore.df <- median.spectra.zscore.df %>% mutate(Gene = ENSGID) ## quick fix, need to add "Gene" column to this dataframe in analysis script
+
+
+
     
 
     write.table(theta.zscore, file=paste0(OUTDIRSAMPLE, "/topic.zscore_",SUBSCRIPT.SHORT, ".txt"), row.names=T, quote=F, sep="\t")
@@ -556,7 +632,7 @@ if(file.exists(cNMF.result.file)) {
     write.table(median.spectra.zscore.df, file=paste0(OUTDIRSAMPLE, "/median.spectra.zscore.df_", SUBSCRIPT.SHORT, ".txt"), sep="\t", quote=F, row.names=F)
     write.table(median.spectra.zscore.formatted.scaled, file=paste0(OUTDIRSAMPLE, "/median.spectra.zscore.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), sep="\t", quote=F, row.names=F)
 
-    save(theta, theta.raw, theta.zscore, median.spectra.zscore.df, median.spectra, omega, 
+    save(theta, theta.raw, theta.raw.rank.df, theta.zscore, median.spectra.zscore.df, median.spectra, median.spectra.rank.df, omega, 
          theta.path, omega.path, median.spectra.path, barcode.names,
          file=cNMF.result.file)
 

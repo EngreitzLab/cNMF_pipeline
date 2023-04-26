@@ -1,0 +1,13 @@
+test.name	genes.to.test	topics.to.test	background.subset.command
+AllGenesIncNMFInput_geneSet.TopCandidateInCellTypeSpecificLocus_top300.topic.defining.genes.only	TopCandidateInCellTypeSpecificLocus	ProgramsInWhichGeneIsInTop300ZScoreSpecificGenes	narrow.df.TPM %>% filter(AllGenesIncNMFInput)
+on2kGLib_geneSet.TopCandidateInCellTypeSpecificLocus_universe.perturbedAndInGWASLoci	perturbed_gene & TopCandidateInCellTypeSpecificLocus	ProgramsRegulatedByThisGene	narrow.df.TPM %>% filter(GeneInGWASTable & perturbed_gene == 1)
+AllGenesIncNMFInput_geneSet.TopCandidateInCellTypeSpecificLocus_top300.topic.defining.genes.only	TopCandidateInCellTypeSpecificLocus	ProgramsInWhichGeneIsInTop300ZScoreSpecificGenes	narrow.df.TPM %>% filter(AllGenesIncNMFInput)
+on2kGLib_geneSet.TopCandidateInCellTypeSpecificLocus_universe.on2kGLibAndInCADGWASLoci	perturbed_gene & TopCandidateInCellTypeSpecificLocus	ProgramsRegulatedByThisGene	narrow.df.TPM %>% filter(perturbed_gene == 1)
+AllGenesIncNMFInput_geneSet.twoClosestGenesInAllCADLoci_top300.topic.defining.genes.only	rank_SNP_to_TSS <= 2 & rank_SNP_to_TSS != 0	ProgramsInWhichGeneIsInTop300ZScoreSpecificGenes	narrow.df.TPM %>% filter(AllGenesIncNMFInput)
+on2kGLib_geneSet.twoClosestGenesInAllCADLoci_universe.on2kGLibAndInCADGWASLoci	rank_SNP_to_TSS <= 2 & rank_SNP_to_TSS != 0	ProgramsRegulatedByThisGene	PP.GWAS.df %>% filter(perturbed_gene == 1)
+AllGenesIncNMFInput_geneSet.TopCandidateInAllCADLoci_top300.topic.defining.genes.only	TopCandidate	ProgramsInWhichGeneIsInTop300ZScoreSpecificGenes	narrow.df.TPM %>% filter(AllGenesIncNMFInput)
+on2kGLib_geneSet.TopCandidateInAllCADLoci_universe.on2kGLibAndInCADGWASLoci	perturbed_gene & TopCandidate	ProgramsRegulatedByThisGene	GWAS.df %>% filter(perturbed_gene == 1)
+AllGenesIncNMFInput_geneSet.TopCandidateInLipidLoci_top300.topic.defining.genes.only	TopCandidate & LipidLevelsAssociated	ProgramsInWhichGeneIsInTop300ZScoreSpecificGenes	narrow.df.TPM %>% filter(AllGenesIncNMFInput)
+on2kGLib_geneSet.TopCandidateInLipidLoci_universe.on2kGLibAndInCADGWASLoci	TopCandidate & LipidLevelsAssociated	ProgramsRegulatedByThisGene	GWAS.df %>% filter(perturbed_gene == 1)
+AllGenesIncNMFInput_geneSet.twoClosestGenesInCellTypeSpecificLocus_top300.topic.defining.genes.only	rank_SNP_to_TSS <= 2 & rank_SNP_to_TSS != 0 & InPlausibleCellTypeSpecificLocus	ProgramsInWhichGeneIsInTop300ZScoreSpecificGenes	narrow.df.TPM %>% filter(AllGenesIncNMFInput)
+on2kGLib_geneSet.twoClosestGenesInCellTypeSpecificLocus_universe.on2kGLibAndInCADGWASLoci	rank_SNP_to_TSS <= 2 & rank_SNP_to_TSS != 0 & InPlausibleCellTypeSpecificLocus	ProgramsRegulatedByThisGene	GWAS.df %>% filter(perturbed_gene == 1)

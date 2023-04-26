@@ -78,7 +78,7 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$sampleName <- "WeissmanK562gwps"
 ## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/figures/top2000VariableGenes/"
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/"
-## opt$K.val <- 5
+## opt$K.val <- 90
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/data/K562_gwps_raw_singlecell_01_metadata.txt"
 
 
@@ -113,9 +113,8 @@ palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
 ##################################################
 ## load data
 cNMF.result.file <- paste0(OUTDIRSAMPLE,"/cNMF_results.",SUBSCRIPT.SHORT, ".RData")
-print(cNMF.result.file)
 if(file.exists(cNMF.result.file)) {
-    print("loading cNMF result file")
+    message(paste0("loading cNMF result file: \n", cNMF.result.file))
     load(cNMF.result.file)
 } else {
 	print(paste0(cNMF.result.file, " does not exist"))
@@ -149,8 +148,8 @@ sample.batch.correlation.mtx <- m[1:k, (k+1):(dim(m)[2])]
 ## calculate percent of topics with correlation past a threshold (0.1, 0.2, 0.4, 0.6)
 correlation.threshold.list <- c(0.1, 0.2, 0.4, 0.6)
 batch.passed.threshold.df <- do.call(rbind, lapply(correlation.threshold.list, function(threshold) {
-    df <- sample.batch.correlation.mtx %>% apply(1, function(x) (x > threshold) %>% as.numeric %>% sum) %>% as.data.frame %>% `colnames<-`("num.batch.correlated") %>% mutate(batch.thr = threshold)
-})) %>% mutate(Topic = rownames(.), K = k)
+    df <- sample.batch.correlation.mtx %>% apply(1, function(x) (x > threshold) %>% as.numeric %>% sum) %>% as.data.frame %>% `colnames<-`("num.batch.correlated") %>% mutate(batch.thr = threshold) %>% mutate(ProgramID = rownames(.), K = k)
+}))
 batch.percent.df <- batch.passed.threshold.df %>% group_by(batch.thr) %>% summarize(percent.correlated = ((num.batch.correlated > 0) %>% as.numeric %>% sum) / k) %>% mutate(K = k)
 
 ## max batch correlation per topic
@@ -160,7 +159,7 @@ max.batch.correlation.df <- sample.batch.correlation.mtx %>%
     }) %>%
     as.data.frame %>%
     `colnames<-`("maxPearsonCorrelation") %>%
-    mutate(topic = row.names(.)) %>%
+    mutate(ProgramID = row.names(.)) %>%
     as.data.frame
 
 

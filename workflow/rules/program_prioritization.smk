@@ -47,13 +47,13 @@ rule compute_enrichment:
 		coding_variant_table = os.path.join(config["GWAS_gene_priorization_table_path"], "{GWAS_trait}/{GWAS_trait}variant.list.1.coordinate.txt"),
 		batch_topic_list = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/batch.topics.txt")
 	output:
-		program_prioritization_statistical_test_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/program_prioritization/{GWAS_trait}/{GWAS_trait}.program_prioritization.txt"),
-		program_prioritization_plot = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/program_prioritization/{GWAS_trait}/{sample}_K{k}_dt_{threshold}_{GWAS_trait}_ProgramGene_EnrichmentBarPlot.pdf")
+		program_prioritization_statistical_test_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/program_prioritization_{regulator_analysis_type}/{GWAS_trait}/{GWAS_trait}.program_prioritization.txt"),
+		program_prioritization_plot = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/program_prioritization_{regulator_analysis_type}/{GWAS_trait}/{sample}_K{k}_dt_{threshold}_{GWAS_trait}_ProgramGene_EnrichmentBarPlot.pdf")
 	params:
 		time = "6:00:00",
 		mem_gb = "64",
-		figdir = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/program_prioritization/{GWAS_trait}/"), # need to distinguish k and dt
-		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/program_prioritization/{GWAS_trait}/"),
+		figdir = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/program_prioritization_{regulator_analysis_type}/{GWAS_trait}/"), # need to distinguish k and dt
+		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/program_prioritization_{regulator_analysis_type}/{GWAS_trait}/"),
 		outdirsample = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
 		celltype = config["celltype"],
 		threshold = get_cNMF_filter_threshold_double,
@@ -74,6 +74,7 @@ rule compute_enrichment:
 		--trait.name {wildcards.GWAS_trait} \
 		--density.thr {params.threshold} \
 		--cNMF.table {input.input_table_for_compute_enrichment} \
+		--regulator.analysis.type {wildcards.regulator_analysis_type} \
 		--perturbSeq {params.perturbseq}' "
 
 
