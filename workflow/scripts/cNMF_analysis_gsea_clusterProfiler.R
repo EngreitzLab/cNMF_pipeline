@@ -73,8 +73,11 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## ## ENCODE mouse heart
 ## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/figures/top2000VariableGenes/"
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/analysis/top2000VariableGenes"
-## opt$K.val <- 15
+## opt$K.val <- 10
 ## opt$sampleName <- "mouse_ENCODE_heart"
+## opt$GSEA.type <- "ByWeightGSEA"
+## opt$ranking.type <- "zscore"
+
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
@@ -302,6 +305,7 @@ out <- do.call(rbind, lapply(c(1:k) %>% rev, function(t) {
     gene.weights <- data.here$gene.weights
     if(sum(as.numeric(is.na(names(gene.weights)))) > 0) gene.weights <- gene.weights[-which(is.na(names(gene.weights)))]
     gene.weights <- gene.weights[-which(gene.weights==0)] ## can't have zero weights?
+    gene.weights <- gene.weights[-which(is.na(gene.weights))] ## can't have NA
     ## print(head(gene.weights))
     
     message(paste0("Ranking type: ", ranking.type.here, ", Program ", t, ", out of ", k, ", function ", GSEA.type, ", top gene class: ", class(top.genes),

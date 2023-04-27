@@ -17,7 +17,7 @@ conda create -f conda_env/cnmf_analysis_R.yml
 cnmf_env contains snakemake. If you do not have snakemake installed already, you can activate the environment via `conda activate cnmf_env`, then run the pipeline.
 
 
-### Step 2: Gather all input data
+### Step 3: Gather all input data
 #### Necessary inputs:
 Config file slots:
 | field         | meaning                   |

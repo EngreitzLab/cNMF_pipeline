@@ -81,6 +81,13 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$K.val <- 90
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/data/K562_gwps_raw_singlecell_01_metadata.txt"
 
+## ## ENCODE Mouse Heart data
+## opt$sampleName <- "mouse_ENCODE_heart"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/analysis/top2000VariableGenes"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/figures/top2000VariableGenes"
+## opt$K.val <- 55
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/collab_data/IGVF/mouse_ENCODE_heart/auxiliary_data/snrna/heart_Parse_10x_integrated_metadata.csv"
+
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
@@ -125,7 +132,7 @@ if(file.exists(cNMF.result.file)) {
 if(grepl("2kG.library", SAMPLE)) {
     ann.omega <- cbind(omega, barcode.names)  ## %>%
 } else {
-    barcode.names <- read.delim(opt$barcode.names, stringsAsFactors=F)
+    if(grepl("[.]csv", opt$barcode.names)) barcode.names <- read.delim(opt$barcode.names, stringsAsFactors=F, sep=",") else barcode.names <- read.delim(opt$barcode.names, stringsAsFactors=F)
     ann.omega <- merge(omega, barcode.names %>% select(CBC, sample), by.x=0, by.y="CBC", all.x=T)
 }
 
