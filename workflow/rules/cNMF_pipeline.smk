@@ -1266,7 +1266,7 @@ rule TopicSummary:
 		mem_gb = "16",
 		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"), # K{k}/threshold_{threshold}
 		threshold = get_cNMF_filter_threshold_double,
-		perturbSeq = config["Perturb-seq"],
+		perturbseq = "T" if config["Perturb-seq"] == "True" else "F",
 		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \

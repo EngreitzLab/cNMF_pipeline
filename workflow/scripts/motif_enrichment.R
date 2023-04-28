@@ -103,6 +103,17 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$motif.enhancer.background <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/WeissmanK562gwps/fimo/fimo_out/fimo.formatted.tsv"
 ## opt$motif.promoter.background <- "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv"
 
+## ## ENCODE mouse heart
+## opt$sampleName <- "mouse_ENCODE_heart"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/figures/top2000VariableGenes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/analysis/top2000VariableGenes"
+## opt$K.val <- 5
+## opt$ep.type <- "enhancer"
+## opt$motif.match.thr.str <- "pval1e-4"
+## opt$motif.enhancer.background <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/analysis/top2000VariableGenes/mouse_ENCODE_heart/fimo/fimo_out/fimo.txt"
+## opt$motif.promoter.background <- "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv"
+
+
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
 
@@ -246,7 +257,9 @@ topic.defining.gene.df <- theta.rank.df %>%
 gene.type <- ifelse(nrow(topic.defining.gene.df) == sum(as.numeric(grepl("^ENS", topic.defining.gene.df$Gene))), "ENSGID", "Gene")
 if(gene.type=="ENSGID") topic.defining.gene.df <- topic.defining.gene.df %>% mutate(ENSGID = Gene) %>% mutate(Gene = mapIds(get(db), keys=.$ENSGID, keytype="ENSEMBL", column="SYMBOL"))
 
-topic.motif.match.df <- merge(topic.defining.gene.df, motif.background %>%
+## topic.defining.gene.df <- topic.defining.gene.df %>% mutate(Gene = toupper(Gene))
+
+topic.motif.match.df <- merge(topic.defining.gene.df, motif.background %>% 
                                                       select(motif_id, motif.short, sequence_name, score, p.value, q.value, motif.matched.strand), by.x="Gene", by.y="sequence_name", all.y=T) ## filtered motif.background to genes expressed in this data set, so keep all
 
 

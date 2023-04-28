@@ -132,7 +132,7 @@ load(opt$aggregated.data) ## all.fdr.df, all.test.df, enhancer.fisher.df, count.
 ## labels and parameters for the for loops
 ranking.types <- c("zscore", "raw")
 GSEA.types <- c("GOEnrichment", "ByWeightGSEA", "GSEA")
-GSEA.type.labels <- c("GO Pathway Enrichment\n(Top 300 Program Gene by Hypergeometric Test)", "Gene Set Enrichment\n(All Genes)", "Gene Set Enrichment\n(Top 300 Program Gene by Hypergeomteric Test)")
+GSEA.type.labels <- c("GO Term Enrichment\n(Top 300 Program Gene by Hypergeometric Test)", "Gene Set Enrichment\n(All Genes)", "Gene Set Enrichment\n(Top 300 Program Gene by Hypergeomteric Test)")
 ##################################################
 ## function to output plot in the same format
 plotGSEA <- function(toplot, nPathwayMetric, nPathwayMetricLabel) {
