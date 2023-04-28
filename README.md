@@ -4,6 +4,10 @@
 
 A pipeline to connect GWAS variants to genes to disease-associate gene programs. This pipeline uses snakemake and cNMF from Kotliar et al. The V2G2P approach could be applied to any GWAS studies with the right cell type(s). 
 
+
+## Citation
+
+
 ## Usage
 ### Step 1: Clone this github repository
 
@@ -26,10 +30,10 @@ Config file slots:
 | seed | A number to set seed for reproducibility |
 | num_runs | Number of NMF run (recommend 100 for the actual data analysis, and 10 for testing the pipeline) |
 | run_per_worker | Number of run assign to each process/worker to run in series (make sure that num_runs = total_workers * run_per_worker)|
-| k | number of components to factorize |
+| k | Number of components to factorize |
 | thresholds | Threshold for filtering outlier components, 2 for no filtering, recommend 0.2 |
-| analysisDir | Directory for outputting results |
-| figDir | Directory for outputting figures |
+| analysisDir | Directory for numeric result outputs |
+| figDir | Directory for figure outputs |
 | dataDir | If using 10X scRNA-seq matrix as input, the directory with 10X files (file names must be features.tsv.gz, barcodes.tsv.gz, matrix.mtx.gz). This can be left blank if supplying the input matrix as an h5ad file. |
 | input_h5ad_mtxDir | Path to input matrix in h5ad format, can leave this blank if supplying the input matrix in other formats |
 | scratchDir | Directory for cNMF pipeline to store temporary files |
@@ -56,30 +60,31 @@ Config file slots:
 | num_cells | Expected number of cells in the input dataset. It doesn't have to be exact. This is for optimizing memory requests and job scheduling. |
 
 
+### Step 4: Run the pipeline
+```sh
+conda activate cnmf_env
+snakemake -n --config /path/to/config.json --quiet ## always recommend doing a dry run
+```
+
+Execute the workflow locally via
+```sh
+snakemake --config /path/to/config.json
+```
+Please see the log.sh file in this github page for more examples.
+
+For more snakemake usage and configuration, please visit snakemake documentation page.
+
+
 ## Outputs
 The output files can be found in the folders specified in analysisDir and figDir fields in the config file.
 
 ### Analysis files (in analysisDir)
-\*\_ProgramSummary\_k\_\*\_dt\_\*.xlsx
-```
-primerid	Pr(>Chisq)	coef	ci.hi	ci.lo	fdr	perturbation	zlm.model.name	fdr.across.ptb
-topic_1		0.931958981499932	-0.00308004078521135	0.0570387818054911		-0.0631988633759138	0.997587143723284 A1BG batch.correction 0.980597200884276
-topic_10	0.997587143723284	0.00216003169008006	0.0715983146968009		-0.0672782513166408	0.997587143723284 A1BG batch.correction	0.999373860636769
-topic_11	0.996904491792907	-6.48785292078902e-06	0.0407059273499904		-0.040718903055832	0.997587143723284 A1BG batch.correction	0.99916248171282
-topic_12	0.938744741036869	0.00810003101565848	0.0544634189392725		-0.0382633569079555	0.997587143723284 A1BG batch.correction	0.982593736237456  
+#### Summary output for choosing the number of components
+Output can be found in config['analysisDir']/{cNMF\_gene\_selection}/{sampleName}/acrossK/
 
-Column description:
-primerid    program name
-Pr(>Chisq)  p-value
-coef    natural log fold change
-ci.hi   confidence interval upper bound
-ci.lo   confidence interval lower bound
-fdr	perturbation    FDR across K programs per perturbation
-zlm.model.name  Model name (default is ~ProgramExpression + SampleIndex)
-fdr.across.ptb  FDR across K programs x all perturbations
-
-```
-
+#### Outputs for each model (each choice of # components)
+Output can be found in config['analysisDir']/{cNMF\_gene\_selection}/{sampleName}/K\*/threshold\_\*/
+##### Program z-score coefficient
 topic.zscore\_k\_\*.dt\_\*.txt
 ```
 1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	20	21	22	23	24	25	26	27	28	29	30	31	32	33	34	35	36	37	38	39	40	41	42	43	44	45	46	47	48	49	50	51	52	53	54	55	56	57	58	59	60	61	62	63	64	65	66	67	68	69	70	71	72	73	74	75	76	77	78	79	80	81	82	83	84	85	86	87	88	89	90
@@ -91,7 +96,8 @@ Column description:
 Each column is a program. Each row is a gene.
 ```
 
-\*\_ProgramSummary\_k\_\*.dt\_\*.txt
+##### Summary of Gene Programs
+\*\_ProgramSummary\_k\_\*.dt\_\*.xlsx
 ```
 ProgramID	MaxBatchCorrelation	nSigPerturbationsProgramUp	nSigPerturbationsProgramDown	nSigMotifsPromoter	nSigMotifsEnhancer	ProgramGenesZScoreCoefficientTop10	ProgramGenesTPMCoefficientTop10	ProgramGenesMedianSpectraTop10	ProgramGenesMedianSpectraZScoreTop10	ProgramGenesMotifsPromoter	ProgramGenesMotifsEnhancer	ProgramGenesZScoreCoefficientGOTermsTop10	ProgramGenesMedianSpectraZScoreGOTermsTop10
 K90_1	0.009690118	43	105	5		HMMR,DLGAP5,HMGB2,CDC20,MIR17HG,ENSG00000260708,CKS2,CCNB2,CCNB1	COX3,COX2,ATP6,CYTB,ND3,EEF1A1,COX1,RPLP1,ND4	ENSG00000260708,ZNF280B,MIR17HG,SOX4,TOB2,ENSG00000261526,DLGAP5,HMGB2,TMF1	TOB2,ZNF280B,MIR17HG,C21orf91,PIK3R1,SOX4,REST,RAB22A,NXF1	CEBPZ,NFYB,FOXI1,NFYC,NFYA		BP:GO:0051301:cell division,CC:GO:0000779:condensed chromosome, centromeric region,CC:GO:0000793:condensed chromosome,BP:GO:0000070:mitotic sister chromatid segregation,BP:GO:0000819:sister chromatid segregation,BP:GO:0098813:nuclear chromosome segregation,BP:GO:0140014:mitotic nuclear division,CC:GO:0005819:spindle,CC:GO:0000776:kinetochore,CC:GO:0000775:chromosome, centromeric region	MF:GO:0140110:transcription regulator activity,BP:GO:0006366:transcription by RNA polymerase II,CC:GO:0000779:condensed chromosome, centromeric region,CC:GO:0000777:condensed chromosome kinetochore,CC:GO:0044451:nucleoplasm part,BP:GO:0051301:cell division,BP:GO:0006357:regulation of transcription by RNA polymerase II,CC:GO:0000775:chromosome, centromeric region,CC:GO:1990234:transferase complex,CC:GO:0000776:kinetochore
@@ -115,7 +121,27 @@ ProgramGenesZScoreCoefficientGOTermsTop10: Top 10 gene ontology terms enriched f
 ProgramGenesMedianSpectraZScoreGOTermsTop10: Top 10 gene ontology terms enriched for top 300 genes ranked by raw weight (or called median spectra from cNMF)
 ```
 
-Perturb-seq outputs:
+##### Raw weight for genes in each program
+median.spectra.zscore.df\_k\_\*.dt\_\*/.txt
+
+##### Promoter/Enhancer motif enrichment
+{enhancer, promoter}.topic.top.300.zscore.gene\_motif.count.ttest.enrichment\_motif.thr.{pval1e-4, pval1e-6, qval0.1}\_k\_\*.dt\_*.txt
+
+##### Gene ontology term and gene set enrichment analysis
+clusterProfiler\_GeneRankingType{zscore, raw, median\_spectra, median\_spectra\_zscore}\_EnrichmentType{ByWeightGSEA, GOEnrichment, GSEA, PosGenesGOEnrichment}.txt
+
+##### Program and sample Pearson correlation
+sample.batch.correction.mtx.txt
+
+##### Summary of variance explained by programs
+summary.varianceExplained.df.txt
+
+##### Variance explained by each program
+metrics.varianceExplained.df.txt
+
+
+#### Perturb-seq outputs (The pipeline will generate these files only if "Perturb-seq" in config file is set to True:
+##### Program Expression Changes by MAST Package:
 *\_MAST\_DEtopics.txt
 ```
 primerid	Pr(>Chisq)	coef	ci.hi	ci.lo	fdr	perturbation	zlm.model.name	fdr.across.ptb
@@ -136,14 +162,23 @@ fdr: FDR across k programs for each gene
 perturbation: Perturbed gene name
 zlm.model.name: Name of the model fit to the data before statistical test. Supplied from workflow/scripts/MAST_model_formulas.txt (Default: ~condition + lane)
 fdr.across.ptb: FDR across k programs and all genes
-
 ```
+
+#### V2G2P program prioritization outputs
+Outputs will be in config['analysisDir']/{cNMF\_gene\_selection}/{sampleName}/K\*/threshold\_\*/program\_prioritization\_{GenomeWide, GWASWide}/{GWASTrait}/
+
+##### Program prioritization summary table
+*.program\_prioritization.txt
+
+##### V2G2P gene list
+Note that if "Perturb-seq" in the config file is set to "False", there will only be "ProgramGene" output. Regulator information requires perturbation
+significant{LinkedGenes, ProgramGene, Regulator}.formatted.df.txt
+
 
 
 ### Figures (in figDir)
 
-### Perturb-seq data outputs
 
 
-### Running the pipeline:
+
 
