@@ -35,7 +35,7 @@ Config file slots:
 | analysisDir | Directory for numeric result outputs |
 | figDir | Directory for figure outputs |
 | dataDir | If using 10X scRNA-seq matrix as input, the directory with 10X files (file names must be features.tsv.gz, barcodes.tsv.gz, matrix.mtx.gz). This can be left blank if supplying the input matrix as an h5ad file. |
-| input_h5ad_mtxDir | Path to input matrix in h5ad format. The file name must be the same as config["sampleName"]. Leave this blank if supplying the input matrix in other formats. |
+| input_h5ad_mtxDir | Path to input matrix in h5ad format. Please put the h5ad file in config["analysisDir"]/data/ folder. The snakemake pipeline will look for the input h5ad file from there. The file name must be the same as config["sampleName"] (e.g. config["analysisDir"]/data/{sample}.h5ad).  Leave this blank if supplying the input matrix in other formats. |
 | scratchDir | Directory for cNMF pipeline to store temporary files |
 | barcodeDir | (Necessary for Perturb-seq, optional for scRNA-seq without perturbation) Path to cell barcode / identifier tsv file, the sequence of appearance should be the same as in the input cell x gene matrix, and it must contain columns named "Gene" and "Guide" if doing Perturb-seq |
 | motif_meme | MEME file for matching sequence to motifs |
