@@ -109,48 +109,48 @@ def get_rule_prepare_cNMF_partition(wildcards):
 # 	return all_output
 
 
-## todo: rethink the structure of UMAP part: what are the possible input file types?
-rule create_Seurat_Object:
-	input:
-		mtx = os.path.join(config["dataDir"], "matrix.mtx.gz"),
-		features = os.path.join(config["dataDir"], "features.tsv.gz"),
-		barcodes = os.path.join(config["dataDir"], "barcodes.tsv.gz")
-	output:
-		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
-	params:
-		time = "2:00:00",
-		mem_gb = "200",
-		datadir = config["dataDir"],
-		outdir = os.path.join(config["analysisDir"], "data"),
-		partition = "owners,normal"
-	shell:
-		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_analysis_R; \
-		Rscript workflow/scripts/create_seurat_object.R \
-		--outdir {params.outdir}/ \
-		--datadir {params.datadir} \
-		--sampleName {wildcards.sample} \
-		' "
+# ## todo: rethink the structure of UMAP part: what are the possible input file types?
+# rule create_Seurat_Object:
+# 	input:
+# 		mtx = os.path.join(config["dataDir"], "matrix.mtx.gz"),
+# 		features = os.path.join(config["dataDir"], "features.tsv.gz"),
+# 		barcodes = os.path.join(config["dataDir"], "barcodes.tsv.gz")
+# 	output:
+# 		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
+# 	params:
+# 		time = "2:00:00",
+# 		mem_gb = "200",
+# 		datadir = config["dataDir"],
+# 		outdir = os.path.join(config["analysisDir"], "data"),
+# 		partition = "owners,normal"
+# 	shell:
+# 		"bash -c ' source $HOME/.bashrc; \
+# 		conda activate cnmf_analysis_R; \
+# 		Rscript workflow/scripts/create_seurat_object.R \
+# 		--outdir {params.outdir}/ \
+# 		--datadir {params.datadir} \
+# 		--sampleName {wildcards.sample} \
+# 		' "
 
 
-## convert Seurat Object to h5ad file
-rule Seurat_Object_to_h5ad:
-	input:
-		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
-	output:
-		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
-		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
-	params:
-		time = "2:00:00",
-		mem_gb = "64",
-		partition = "owners,normal"
-	shell:
-		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_analysis_R; \
-		Rscript workflow/scripts/seurat_to_h5ad.R \
-		--inputSeuratObject {input.seurat_object} \
-		--output_h5ad {output.h5ad_mtx} \
-		--output_gene_name_txt {output.gene_name_txt} ' "
+# ## convert Seurat Object to h5ad file
+# rule Seurat_Object_to_h5ad:
+# 	input:
+# 		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
+# 	output:
+# 		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
+# 		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
+# 	params:
+# 		time = "2:00:00",
+# 		mem_gb = "64",
+# 		partition = "owners,normal"
+# 	shell:
+# 		"bash -c ' source $HOME/.bashrc; \
+# 		conda activate cnmf_analysis_R; \
+# 		Rscript workflow/scripts/seurat_to_h5ad.R \
+# 		--inputSeuratObject {input.seurat_object} \
+# 		--output_h5ad {output.h5ad_mtx} \
+# 		--output_gene_name_txt {output.gene_name_txt} ' "
 
 
 # rule raw_h5ad_to_filtered_h5ad:
@@ -1641,6 +1641,48 @@ rule PoPS_plots:
 ######################################################################################### END OF PoPS
 
 
+## IGVF formatting:
+rule IGVF_formatting_model_programGenes:
+	input: cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
+	output: model_yaml = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/{sample}.k_{k}.dt_{threshold}.modelYAML.yaml")
+	params:
+		time = "1:00:00",
+		mem_gb = "8",
+		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
+		partition = "owners,normal",
+		threshold = get_cNMF_filter_threshold_double
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_analysis_R; \
+		Rscript workflow/scripts/output_IGVF_format.R \
+			--sampleName {wildcards.sample} \
+			--outdir {params.analysisdir}/ \
+			--K.val {wildcards.k} \
+			--density.thr {params.threshold} \
+		' "
+
+rule IGVF_formatting_model_cellxgene:
+	input: cNMF_usage_output = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}/{sample}.usages.k_{k}.dt_{threshold}.consensus.txt")
+	output: cellxgene_h5ad = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/{sample}.k_{k}.dt_{threshold}.cellxgene.h5ad")
+	params:
+		time = "1:00:00",
+		mem_gb = "8",
+		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/"), # K{k}/threshold_{threshold}
+		cNMF_outdir = os.path.join(config["analysisDir"], "{folder}_acrossK"),
+		partition = "owners,normal",
+		threshold = get_cNMF_filter_threshold_double,
+		barcode_dir = config["barcodeDir"]
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		python workflow/scripts/create_cellxgene_h5ad_IGVF_format.py \
+			--path_to_topics {params.cNMF_outdir} \
+			--topic_sampleName {wildcards.sample} \
+			--outdir {params.analysisdir} \
+			--k {wildcards.k} \
+			--density_threshold {params.threshold} \
+			--barcode_dir {params.barcode_dir} \
+		' "
 
 
 # rule concatenate_findK:
