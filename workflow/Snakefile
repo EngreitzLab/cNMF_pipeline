@@ -77,12 +77,16 @@ def get_output_files(wildcards):
 	## Program Prioritization for Perturb-seq
 	program_prioritization_statistical_test_result = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/program_prioritization_{regulator_analysis_type}/{GWAS_trait}/{GWAS_trait}.program_prioritization.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], GWAS_trait = config["GWAS_traits"], regulator_analysis_type = ["GWASWide", "GenomeWide"]),
 	program_prioritization_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/program_prioritization_{regulator_analysis_type}/{GWAS_trait}/{sample}_K{k}_dt_{threshold}_{GWAS_trait}_ProgramGene_EnrichmentBarPlot.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], GWAS_trait = config["GWAS_traits"], regulator_analysis_type = ["GWASWide", "GenomeWide"]),
-	# program_prioritization_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/program_prioritization/{GWAS_trait}/{sample}_K{k}_dt_{threshold}_{GWAS_trait}_{test_category}_EnrichmentBarPlot.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], GWAS_trait = config["GWAS_traits"], test_category = ["ProgramGene"]),
 
+	## IGVF file format outputs
+	model_yaml = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/{sample}.k_{k}.dt_{threshold}.modelYAML.yaml"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+	# model_yaml = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}.yaml"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+	cellxgene_h5ad = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/{sample}.k_{k}.dt_{threshold}.cellxgene.h5ad"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+	# cellxgene_h5ad = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/{sample}.cellxgene.h5ad"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 
 	## outputs
 	output_files.extend(list(h5ad_mtx))
-	output_files.extend(list(gene_name_txt))
+	# output_files.extend(list(gene_name_txt))
 
 	# output_files.extend(list(usages))
 	output_files.extend(list(findK_plot_cNMF))
@@ -98,6 +102,8 @@ def get_output_files(wildcards):
 	output_files.extend(list(clusterProfiler_result)) ## rule: clusterProfiler_GSEA, across K plots
 	output_files.extend(list(GSEA_plots))
 	output_files.extend(list(TFMotifEnrichment_plots))
+	# output_files.extend(list(model_yaml))
+	# output_files.extend(list(cellxgene_h5ad))
 	# output_files.extend(list(ProgramSummary))
 	# output_files.extend(list(clusterProfiler_top300Gene_GO_result))
 	# output_files.extend(list(clusterProfiler_allGeneWeight_gsea_result))
