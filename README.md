@@ -63,12 +63,12 @@ Config file slots:
 ### Step 4: Run the pipeline
 ```sh
 conda activate cnmf_env
-snakemake -n --config /path/to/config.json --quiet ## always recommend doing a dry run
+snakemake -n --configfile /path/to/config.json --quiet ## always recommend doing a dry run
 ```
 
 Execute the workflow locally via
 ```sh
-snakemake --config /path/to/config.json
+snakemake --configfile /path/to/config.json
 ```
 Please see the log.sh file in this github page for more examples.
 
