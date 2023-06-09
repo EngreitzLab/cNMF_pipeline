@@ -224,7 +224,7 @@ getData <- function(t) {
     programID.here <- paste0("K", k, "_", t)
     ranking.type.varname.here <- ranking.type.varname.ary[i]
     if(grepl("median.spectra", ranking.type.varname.here)) {
-       ranking.score.colname.here <- score.colname.ary[i] 
+        ranking.score.colname.here <- score.colname.ary[i] 
     } else {
         ranking.score.colname.here <- paste0("topic.", ranking.type.ary[i])
     }

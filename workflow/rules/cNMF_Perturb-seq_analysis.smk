@@ -905,7 +905,7 @@ def get_MAST_partition(wildcards):
 
 def get_MAST_num_runs():
 	barcode_names = pd.read_csv(config["barcodeDir"], sep="\t")
-	return (np.floor(len(barcode_names["Gene"].unique()) / config["num_Genes_per_MAST_runGroup"]) + 1).astype(int)
+	return (np.floor(len(barcode_names['Gene'].unique()) / config["num_Genes_per_MAST_runGroup"]) + 1).astype(int)
 
 num_MAST_runs = get_MAST_num_runs()
 

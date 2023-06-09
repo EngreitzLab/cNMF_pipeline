@@ -46,7 +46,8 @@ option.list <- list(
     make_option("--trait.name", type="character", default="MAP", help="name of the trait"),
     make_option("--coding.variant.df", type="character", default="/oak/stanford/groups/engreitz/Users/rosaxma/2111_pipeline_output/UKB/SBP/SBPvariant.list.1.coordinate.txt", help="Data frame with coding variant information for GWAS trait"),
     make_option("--regulator.analysis.type", type="character", default="GWASWide", help="path to statistical test recipe"),
-    make_option("--perturbSeq", type="logical", default=FALSE, help="Whether this is a Perturb-seq experiment")
+    make_option("--perturbSeq", type="logical", default=FALSE, help="Whether this is a Perturb-seq experiment"),
+    make_option("--TPM.table", type="character", default="", help="Path to TPM table for the correct cell type")
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
@@ -79,6 +80,7 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$outdirsample <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/WeissmanK562gwps/K90/threshold_0_2/"
 ## opt$perturbSeq <- TRUE
 ## opt$regulator.analysis.type <- "GenomeWide"
+## opt$TPM.table <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/230512_TPM/outputs/K562.TPM.df.txt"
 
 
 ## ## sdev for K562 gwps 2k overdispersed genes K=90 Plt
@@ -94,6 +96,8 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$outdirsample <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/WeissmanK562gwps/K90/threshold_0_2/"
 ## opt$perturbSeq <- TRUE
 ## opt$regulator.analysis.type <- "GenomeWide"
+## opt$TPM.table <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/230512_TPM/outputs/K562.TPM.df.txt"
+
 
 ## ## sdev for EC Perturb-seq K=60
 ## opt$input.GWAS.table <- "/oak/stanford/groups/engreitz/Users/kangh/ECPerturbSeq2021-Analysis/GWAS_tables/CAD_GWAS_gene_incl_ubq_genes_aragam_all_harst.txt"
@@ -263,12 +267,20 @@ if(!grepl("2kG.library", SAMPLE)) {
         mutate(CredibleSet = ifelse(CredibleSet %in% c("Aragam2021-rs768453105", "Harst2017-rs138120077"), "Aragam2021-rs768453105_Harst2017-rs138120077", CredibleSet))
 }
 
+## include TPM table
+if(!("TPM" %in% colnames(GWAS.df))) {
+    TPM.df <- read.delim(opt$TPM.table, stringsAsFactors=F)
+    GWAS.tmp.df <- merge(GWAS.df, TPM.df, by.x="gene", by.y="Gene", all.x=T) 
+    GWAS.df <- GWAS.tmp.df
+}
+
+
 
 ########################################################################################
 ## Define key variables for analysis
 GWAS.df <- GWAS.df %>%
     mutate(
-        ## Expressed = (TPM >= 1),
+        Expressed = (TPM >= 1),
         InPlausibleCellTypeSpecificLocus = ( !LipidLevelsAssociated & (!is.na(get(paste0("RankOfDistanceTo", celltype, "PeakWithVariant"))) | !is.na(get(paste0("MaxABC.Rank.", celltype, "Only"))) | !is.na(CodingVariantGene)) ), ## Also require that locus is not associated with lipid levels
         InPlausibleCellTypeSpecificLocus_includeLipid = (!is.na(get(paste0("RankOfDistanceTo", celltype, "PeakWithVariant"))) | !is.na(get(paste0("MaxABC.Rank.", celltype, "Only"))) | !is.na(CodingVariantGene)),
         InPlausibleLocus = ( !LipidLevelsAssociated & (!is.na(rank_SNP_to_TSS) | !is.na(MaxABC.Rank) | !is.na(CodingVariantGene)) ),
@@ -539,12 +551,16 @@ for(i in 1:nrow(regulator.programGene.test.pairs)) {
     regulator.programGene.combined.pval.nonbatch.list[[i]] <- merge(regulator.results.nonbatch,
                                                                     programGene.results.nonbatch,
                                                                     by="ProgramID") %>%
-        mutate(LinkedGenes_fisher.p.value = Regulator_fisher.p.value * ProgramGene_fisher.p.value,
+        mutate(LinkedGenes_ChiSquareTestStatistic = -2 * (log(Regulator_fisher.p.value) + log(ProgramGene_fisher.p.value)),
+               LinkedGenes_ChiSquare.p.value = pchisq(LinkedGenes_ChiSquareTestStatistic, df = 4, lower.tail=F),
+               LinkedGenes_fisher.p.value = Regulator_fisher.p.value * ProgramGene_fisher.p.value,
                LinkedGenes_binomial.p.value = Regulator_binomial.p.value * ProgramGene_binomial.p.value,
                LinkedGenes_fisher.p.adjust = p.adjust(LinkedGenes_fisher.p.value, method="fdr"),
                LinkedGenes_binomial.p.adjust = p.adjust(LinkedGenes_binomial.p.value, method="fdr"),
+               LinkedGenes_ChiSquare.p.adjust = p.adjust(LinkedGenes_ChiSquare.p.value, method="fdr"),
                LinkedGenes_fisherNegLog10FDR = -log10(LinkedGenes_fisher.p.adjust),
                LinkedGenes_binomialNegLog10FDR = -log10(LinkedGenes_binomial.p.adjust),
+               LinkedGenes_ChiSquareNegLog10FDR = -log10(LinkedGenes_ChiSquare.p.adjust),
                ## LinkedGenes_LinkedToTopic_CandidateGene = Regulator_LinkedToTopic_CandidateGene + ProgramGene_LinkedToTopic_CandidateGene, 
                .after = "ProgramID") %>%
         ## adapted from 211115_compute_enrichment.R
@@ -572,7 +588,7 @@ for(i in 1:nrow(regulator.programGene.test.pairs)) {
 }
 
 regulator.programGene.combined.pval.nonbatch <- do.call(rbind, regulator.programGene.combined.pval.nonbatch.list) %>%
-    arrange(LinkedGenes_fisher.p.adjust, desc(LinkedGenes_LinkedToTopic_CandidateGene))
+    arrange(LinkedGenes_ChiSquare.p.adjust, desc(LinkedGenes_LinkedToTopic_CandidateGene))
 
 write.table(regulator.programGene.combined.pval.nonbatch, file=paste0(OUTDIR, "/", opt$trait.name, ".program_prioritization.txt"), sep="\t", quote=F, row.names=F)
 
@@ -617,9 +633,9 @@ fdr.thr <- 0.05
 for(category in category_ary) {
     expectedNumEnrichedGenes <- regulator.programGene.combined.pval.nonbatch %>% pull(get(paste0(category, "_Expected"))) %>% unique
     toplot <- regulator.programGene.combined.pval.nonbatch %>%
-        mutate(significant = ifelse(get(paste0(category, "_fisher.p.adjust")) < fdr.thr,
-                             ifelse(get(paste0(category, "_fisher.p.adjust")) < (fdr.thr / 10),
-                             ifelse(get(paste0(category, "_fisher.p.adjust")) < (fdr.thr / 100), "***", "**"),
+        mutate(significant = ifelse(get(paste0(category, "_", ifelse(category == "LinkedGenes", "fisher", "fisher"), ".p.adjust")) < fdr.thr,
+                             ifelse(get(paste0(category, "_", ifelse(category == "LinkedGenes", "fisher", "fisher"), ".p.adjust")) < (fdr.thr / 10),
+                             ifelse(get(paste0(category, "_", ifelse(category == "LinkedGenes", "fisher", "fisher"), ".p.adjust")) < (fdr.thr / 100), "***", "**"), ## change to "ChiSquare" in the true slot if you want to combine regulator and program genes by Fisher's method
                              "*"),
                              "")) %>%
         ## add.df.Program.name %>% ## todo (generalize)
@@ -702,7 +718,7 @@ for(category in category_ary) {
 
 ## output V2G2P genes
 fdr.thr <- 0.05
-for ( key in c("ProgramGene", "Regulator", "LinkedGenes")) {
+for(key in category_ary) {
     significantGenes.df <- regulator.programGene.combined.pval.nonbatch %>%
         subset(get(paste0(key, "_fisher.p.adjust")) < fdr.thr) %>%
         select(ProgramID, paste0(key, "_Gene_LinkedToTopic_CandidateGene")) %>%
@@ -719,12 +735,35 @@ for ( key in c("ProgramGene", "Regulator", "LinkedGenes")) {
 
     significantGenes.formatted.df <- significantGenes.df %>%
         separate_rows(paste0(key, "_Gene_LinkedToTopic_CandidateGene")) %>%
+        mutate(t = gsub(paste0("K", k, "_"), "", ProgramID)) %>%
+        arrange(t) %>%
         group_by(get(paste0(key, "_Gene_LinkedToTopic_CandidateGene"))) %>%
         summarize(ProgramID = paste0(ProgramID, collapse=",")) %>%
         `colnames<-`(c(paste0(key,"_Gene_LinkedToTopic_CandidateGene"), "ProgramID")) %>%
         as.data.frame
     write.table(significantGenes.formatted.df, paste0(OUTDIR, "/significant", key, ".formatted.df.txt"), sep="\t", quote=F, row.names=F)
 }
+
+## add program gene and regulator membership to linked genes table
+if(opt$perturbSeq) {
+    linkedSignificantGenes.formatted.df <- read.delim(paste0(OUTDIR, "/significantLinkedGenes.formatted.df.txt"), stringsAsFactors=F) %>% `colnames<-`(c("Gene", "LinkedPrograms"))
+    for(key in c("ProgramGene", "Regulator")) {
+        assign(paste0(key, "SignificantGenes.formatted.df"), regulator.programGene.combined.pval.nonbatch %>%
+                                                             subset(get(paste0("LinkedGenes_fisher.p.adjust")) < fdr.thr) %>%
+                                                             select(ProgramID, paste0(key, "_Gene_LinkedToTopic_CandidateGene")) %>%
+                                                             separate_rows(paste0(key, "_Gene_LinkedToTopic_CandidateGene")) %>%
+                                                             mutate(t = gsub(paste0("K", k, "_"), "", ProgramID)) %>%
+                                                             arrange(t) %>%
+                                                             group_by(get(paste0(key, "_Gene_LinkedToTopic_CandidateGene"))) %>%
+                                                             summarize(ProgramID = paste0(ProgramID, collapse=",")) %>%
+                                                             `colnames<-`(c("Gene", key)) %>%
+                                                             as.data.frame)
+    }
+    significantGenes.formatted.df <- merge(linkedSignificantGenes.formatted.df, ProgramGeneSignificantGenes.formatted.df, by="Gene", all.x=T) %>% merge(RegulatorSignificantGenes.formatted.df, by="Gene", all.x=T) %>% `colnames<-`(c("Gene", "LinkedProgram", "PartOfProgram", "RegulatorOfProgram"))
+    write.table(significantGenes.formatted.df, paste0(OUTDIR, "/significantLinkedGenes.formatted.df.txt"), sep="\t", quote=F, row.names=F)
+}
+
+
 
 ## scratch 230316
 ## to find genes that are not regulator or program genes in the final narrow.df.TPM table, then check if they are missed
