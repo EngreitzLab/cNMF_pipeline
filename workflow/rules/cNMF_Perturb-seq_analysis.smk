@@ -9,7 +9,7 @@ threshold_txt = [ s.replace(".", "_") for s in config["thresholds"] ]
 run_index_list = [n for n in range(config["run_per_worker"])]
 
 def get_cNMF_filter_threshold_double(wildcards):
-        return wildcards.threshold.replace("_",".")
+	return wildcards.threshold.replace("_",".")
 
 
 # ## todo: rethink the structure of UMAP part: what are the possible input file types?
@@ -123,7 +123,7 @@ def get_cNMF_filter_threshold_double(wildcards):
 # 	params:
 # 		time = "3:00:00",
 # 		mem_gb = "128",
-#         seed = config["seed"],
+#	 seed = config["seed"],
 # 		run_per_worker = config["run_per_worker"],
 # 		total_workers = config["total_workers"],
 # 		outdir = os.path.join(config["scratchDir"], "{gene_selection_method}_genes/K{k}/worker{workerIndex}/")
@@ -655,18 +655,21 @@ rule perturbation_analysis:
 		spectra_tpm = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_tpm.k_{k}.dt_{threshold}.txt"),
 		spectra_zscore = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_score.k_{k}.dt_{threshold}.txt"),
 		spectra_consensus = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.spectra.k_{k}.dt_{threshold}.consensus.txt"),
-                cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
 	output:
 		#todo: add output files
 		# cNMF_Analysis = os.path.join(config["analysisDir"], "{sample}/{folder}/K{k}/threshold_{threshold}/cNMFAnalysis.k_{k}.dt_{threshold}.RData"),
 		wilcoxon_results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/all.test.k_{k}.dt_{threshold}.minGuidePerPtb_{min_guide_per_ptb}.minCellPerGuide_{min_cell_per_guide}.txt")
+	resources:
+		mem_mb = 64000
 	params:
 		time = "3:00:00",
 		mem_gb = "64",
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
 		# barcode = os.path.join(config["barcodeDir"], "{sample}.barcodes.tsv"),
-		threshold = get_cNMF_filter_threshold_double
+		threshold = get_cNMF_filter_threshold_double,
+		partition = "owners,normal"
 		# subsample_type = config["subsample_type"]
 	# resources:
 	# 	mem_mb=get_topicModelAnalysis_memory_slurm,
@@ -681,37 +684,13 @@ rule perturbation_analysis:
 		--outdir {params.analysisdir}/ \
 		--K.val {wildcards.k} \
 		--density.thr {params.threshold} \
-                --cell.count.thr {wildcards.min_cell_per_guide} \
-                --guide.count.thr {wildcards.min_guide_per_ptb} \
+		--cell.count.thr {wildcards.min_cell_per_guide} \
+		--guide.count.thr {wildcards.min_guide_per_ptb} \
 		--recompute F \
 		--motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
 		--motif.promoter.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv \
 		' "
 
-
-rule batch_topic_correlation:
-	input:
-		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")		
-	output:
-		batch_correlation_mtx_RDS = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/batch.correlation.RDS"),
-		batch_correlation_pdf = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_batch.correlation.heatmap.pdf"),
-		batch_topic_list = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/batch.topics.txt")
-	params:
-		time = "3:00:00",
-		mem_gb = "64",
-		figdir = os.path.join(config["figDir"], "{folder}"), 
-		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
-		threshold = get_cNMF_filter_threshold_double
-	shell:
-		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_analysis_R; \
-		Rscript workflow/scripts/batch.topic.correlation.R \
-		--figdir {params.figdir} \
-		--outdir {params.analysisdir} \
-		--sampleName {wildcards.sample} \
-		--K.val {wildcards.k} \
-		--density.thr {params.threshold} \
-		--recompute F ' "
 
 
 
@@ -877,37 +856,180 @@ rule batch_topic_correlation:
 # 		--cluster.topic.expression T "
 
 
-rule MAST:
-        input:
-                cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
-        output:
-                MAST_output = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_MAST_DEtopics.txt")
-        params:
-                time = "12:00:00",
-                mem_gb = "160", ## 128 is good up to K=80
-                outdirsample = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
-                threshold = get_cNMF_filter_threshold_double,
-                perturbAnalysis_scriptdir = os.path.join(config["pipelineDir"], "Perturb-seq/workflow/scripts"),
-                barcode_names = config["barcodeDir"]
-        # script:
-        #         "workflow/scripts/perturbationAnalysis.R"
-        shell:
-                "bash -c ' source $HOME/.bashrc; \
-                conda activate cnmf_analysis_R; \
-                Rscript workflow/scripts/MAST_DE_Topics.R \
-                --barcode.names {params.barcode_names} \
-                --outdirsample {params.outdirsample} \
-                --sampleName {wildcards.sample} \
-                --K.val {wildcards.k} \
-                --density.thr {params.threshold} \
-                --scriptdir {params.perturbAnalysis_scriptdir} ' "
+def get_MAST_time(wildcards):
+	if config["num_cells"] > 1e6:
+		return "6:00:00"
+	else:
+		return "3:00:00"
+
+def get_MAST_mem(wildcards):
+	if config["num_cells"] > 1e6:
+		return "160"
+	else:
+		return "160"
+
+def get_MAST_partition(wildcards):
+        if config["num_cells"] > 1e6:
+                return "normal,owners"
+        else:
+                return "normal,owners"
+
+
+# rule MAST:
+# 	input:
+# 		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+# 	output:
+# 		MAST_output = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_MAST_DEtopics.txt")
+# 	params:
+# 		time = get_MAST_time,
+# 		mem_gb = get_MAST_mem, ## 128 is good up to K=80
+# 		outdirsample = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
+# 		threshold = get_cNMF_filter_threshold_double,
+# 		perturbAnalysis_scriptdir = os.path.join(config["pipelineDir"], "Perturb-seq/workflow/scripts"),
+# 		barcode_names = config["barcodeDir"],
+# 		partition = get_MAST_partition
+# 	shell:
+# 		"bash -c ' source $HOME/.bashrc; \
+# 		conda activate cnmf_analysis_R; \
+# 		Rscript workflow/scripts/MAST_DE_Topics.R \
+# 		--barcode.names {params.barcode_names} \
+# 		--outdirsample {params.outdirsample} \
+# 		--sampleName {wildcards.sample} \
+# 		--K.val {wildcards.k} \
+# 		--density.thr {params.threshold} \
+# 		--scriptdir {params.perturbAnalysis_scriptdir} ' "
+
+# from snakemake.remote.GS import RemoteProvider as GSRemoteProvider
+# GS = GSRemoteProvider()
+# GS_PREFIX = "engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData"
+
+def get_MAST_num_runs():
+	barcode_names = pd.read_csv(config["barcodeDir"], sep="\t")
+	return (np.floor(len(barcode_names['Gene'].unique()) / config["num_Genes_per_MAST_runGroup"]) + 1).astype(int)
+
+num_MAST_runs = get_MAST_num_runs()
+
+
+rule MAST_scatter:
+	input:
+		barcode_names = os.path.join(config["barcodeDir"])
+		# cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+	output:
+		MAST_preparation = expand(os.path.join(config["scratchDir"], "{{folder}}/{{sample}}/MAST/GeneNames_Group{MAST_run_index}.txt"), MAST_run_index = [i+1 for i in range(num_MAST_runs)])
+		# MAST_output = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_MAST_DEtopics.txt")
+	params:
+		time = "1:00:00",
+		mem_gb = "8", ## 128 is good up to K=80
+		# outdirsample = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
+		num_genes_per_MAST_runGroup = config["num_Genes_per_MAST_runGroup"],
+		scatteroutput = os.path.join(config["scratchDir"], "{folder}/{sample}/MAST/"),
+		# threshold = get_cNMF_filter_threshold_double,
+		# perturbAnalysis_scriptdir = os.path.join(config["pipelineDir"], "Perturb-seq/workflow/scripts"),
+		barcode_names = config["barcodeDir"],
+		partition = "owners,normal"
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_analysis_R; \
+		Rscript workflow/scripts/MAST_DE_Topics_scatter.R \
+		--barcode.names {params.barcode_names} \
+		--sampleName {wildcards.sample} \
+		--num.genes.per.MAST.runGroup {params.num_genes_per_MAST_runGroup} \
+		--scatteroutput {params.scatteroutput} ' "
+
+
+rule MAST_individualK_prep:
+	input:
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData")
+	output:
+		MAST_log2TPM = os.path.join(config["scratchDir"], "{folder}/{sample}/MAST/K{k}/threshold_{threshold}/{sample}_MAST_log2TPM_barcodes.RDS")
+	params:
+		time = "1:00:00",
+		mem_gb = "64", ## 128 is good up to K=80
+		outdirsample = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
+		scatteroutput = os.path.join(config["scratchDir"], "{folder}/{sample}/MAST/K{k}/threshold_{threshold}/"),
+		threshold = get_cNMF_filter_threshold_double,
+		perturbAnalysis_scriptdir = os.path.join(config["pipelineDir"], "Perturb-seq/workflow/scripts"),
+		barcode_names = config["barcodeDir"],
+		partition = "owners,normal",
+		numCtrl = config["numCtrls_for_MAST"]
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_analysis_R; \
+		Rscript workflow/scripts/MAST_DE_Topics_preparation.R \
+		--barcode.names {params.barcode_names} \
+		--outdirsample {params.outdirsample} \
+		--scatteroutput {params.scatteroutput} \
+		--numCtrl {params.numCtrl} \
+		--sampleName {wildcards.sample} \
+		--K.val {wildcards.k} \
+		--density.thr {params.threshold}  ' "
+
+
+rule MAST_runGroups:
+	input:
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
+		MAST_gene_groups = os.path.join(config["scratchDir"], "{folder}/{sample}/MAST/GeneNames_Group{MAST_run_index}.txt"),
+		MAST_log2TPM = os.path.join(config["scratchDir"], "{folder}/{sample}/MAST/K{k}/threshold_{threshold}/{sample}_MAST_log2TPM_barcodes.RDS")
+	output:
+		MAST_output_perGroup = os.path.join(config["scratchDir"], "{folder}/{sample}/MAST/K{k}/threshold_{threshold}/{sample}_MAST_DEtopics_Group{MAST_run_index}.txt")
+	params:
+		time = get_MAST_time,
+		mem_gb = get_MAST_mem, ## 128 is good up to K=80
+		outdirsample = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
+		scatteroutput = os.path.join(config["scratchDir"], "{folder}/{sample}/MAST/K{k}/threshold_{threshold}/"),
+		threshold = get_cNMF_filter_threshold_double,
+		perturbAnalysis_scriptdir = os.path.join(config["pipelineDir"], "Perturb-seq/workflow/scripts"),
+		barcode_names = config["barcodeDir"],
+		partition = get_MAST_partition
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_analysis_R; \
+		Rscript workflow/scripts/MAST_DE_Topics_runGroups.R \
+		--barcode.names {params.barcode_names} \
+		--outdirsample {params.outdirsample} \
+		--scatteroutput {params.scatteroutput} \
+		--gene.group.list {input.MAST_gene_groups} \
+		--scatter.gene.group {wildcards.MAST_run_index} \
+		--sampleName {wildcards.sample} \
+		--K.val {wildcards.k} \
+		--density.thr {params.threshold} \
+		--scriptdir {params.perturbAnalysis_scriptdir} ' "
+
+
+rule MAST_gatherGroups:
+	input:
+		MAST_output_perGroup = expand(os.path.join(config["scratchDir"], "{{folder}}/{{sample}}/MAST/K{{k}}/threshold_{{threshold}}/{{sample}}_MAST_DEtopics_Group{MAST_run_index}.txt"), MAST_run_index = [i+1 for i in range(num_MAST_runs)])
+	output:
+		MAST_output = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_MAST_DEtopics.txt")
+	params:
+		time = "3:00:00",
+		mem_gb = "64", ## 128 is good up to K=80
+		outdirsample = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
+		scatteroutput = os.path.join(config["scratchDir"], "{folder}/{sample}/MAST/K{k}/threshold_{threshold}/"),
+		MAST_num_runs = num_MAST_runs,
+		threshold = get_cNMF_filter_threshold_double,
+		perturbAnalysis_scriptdir = os.path.join(config["pipelineDir"], "Perturb-seq/workflow/scripts"),
+		barcode_names = config["barcodeDir"],
+		partition = "owners,normal"
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_analysis_R; \
+		Rscript workflow/scripts/MAST_DE_Topics_gatherGroups.R \
+		--barcode.names {params.barcode_names} \
+		--outdirsample {params.outdirsample} \
+		--scatteroutput {params.scatteroutput} \
+		--total.scatter.gene.group {params.MAST_num_runs} \
+		--sampleName {wildcards.sample} \
+		--K.val {wildcards.k} \
+		--density.thr {params.threshold} \
+		--scriptdir {params.perturbAnalysis_scriptdir} ' "
 
 
 rule aggregate_over_K_perturb_seq: ## add MAST result
 	input:
 		# aggregated_output = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.RData"),
 		batch_correlation_mtx_RDS = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/batch.correlation.RDS"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]]),
-                MAST_output = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/{{sample}}_MAST_DEtopics.txt"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]])
+		MAST_output = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{k}/threshold_{threshold}/{{sample}}_MAST_DEtopics.txt"), k=[str(k) for k in config["k"]], threshold=[n.replace(".","_") for n in config["thresholds"]])
 		# cNMF_Analysis = expand(os.path.join(config["analysisDir"], "{{sample}}/{{folder}}/K{k}/threshold_0_2/cNMFAnalysis.k_{k}.dt_0_2.RData"), k=config["k"])
 	output:
 		aggregated_output = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/aggregated.outputs.findK.perturb-seq.RData")
@@ -918,7 +1040,8 @@ rule aggregate_over_K_perturb_seq: ## add MAST result
 		analysisdir = os.path.join(config["analysisDir"], "{folder}/"),
 		datadir = config["dataDir"],
 		klist_comma = ",".join(str(k) for k in config["k"]),
-                K_spectra_threshold_table = config["K_spectra_threshold_table"]
+		K_spectra_threshold_table = config["K_spectra_threshold_table"],
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -942,7 +1065,8 @@ rule findK_plot_perturb_seq:
 		mem_gb = "64",
 		figdir = os.path.join(config["figDir"], "{folder}/{sample}/acrossK/"),
 		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/acrossK/"),
-		GO_threshold = 0.1
+		GO_threshold = 0.1,
+		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
@@ -979,10 +1103,10 @@ rule findK_plot_perturb_seq:
 # 		cp -r {params.external_features}/* {params.raw_features_dir}/; \
 # 		cd {params.munged_features_dir}; \
 # 		python {params.pipelineDir}/workflow/scripts/pops/munge_feature_directory.py \
-#        		--gene_annot_path {params.gene_annot_path} \
-#        		--feature_dir {params.raw_features_dir} \
-#        		--save_prefix {wildcards.magma_prefix} \
-#        		--nan_policy zero  ' "
+#			--gene_annot_path {params.gene_annot_path} \
+#			--feature_dir {params.raw_features_dir} \
+#			--save_prefix {wildcards.magma_prefix} \
+#			--nan_policy zero  ' "
 
 
 # checkpoint munge_features_with_cNMF: ## need to test pops in cnmf_env 
@@ -1009,10 +1133,10 @@ rule findK_plot_perturb_seq:
 # 		cp {input.cNMF_ENSG_topic_zscore_scaled} {params.raw_features_dir}/; \
 # 		cd {params.munged_features_dir}; \
 # 		python {params.pipelineDir}/workflow/scripts/pops/munge_feature_directory.py \
-#        		--gene_annot_path {params.gene_annot_path} \
-#        		--feature_dir {params.raw_features_dir} \
-#        		--save_prefix {wildcards.magma_prefix}_cNMF{wildcards.k} \
-#        		--nan_policy zero  ' "
+#			--gene_annot_path {params.gene_annot_path} \
+#			--feature_dir {params.raw_features_dir} \
+#			--save_prefix {wildcards.magma_prefix}_cNMF{wildcards.k} \
+#			--nan_policy zero  ' "
 
 
 

@@ -93,6 +93,27 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210806_curate_ctrl_mtx/outputs/2kG.library.no.DE.gene.with.FDR.less.than.0.1.perturbation.barcodes.tsv"
 ## opt$K.val <- 60
 
+## ## K562 gwps sdev
+## opt$sampleName <- "WeissmanK562gwps"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/figures/top2000VariableGenes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/"
+## opt$K.val <- 100
+## opt$ep.type <- "enhancer"
+## opt$motif.match.thr.str <- "qval0.1"
+## opt$motif.enhancer.background <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/WeissmanK562gwps/fimo/fimo_out/fimo.formatted.tsv"
+## opt$motif.promoter.background <- "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv"
+
+## ## ENCODE mouse heart
+## opt$sampleName <- "mouse_ENCODE_heart"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/figures/top2000VariableGenes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/analysis/top2000VariableGenes"
+## opt$K.val <- 5
+## opt$ep.type <- "enhancer"
+## opt$motif.match.thr.str <- "pval1e-4"
+## opt$motif.enhancer.background <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/analysis/top2000VariableGenes/mouse_ENCODE_heart/fimo/fimo_out/fimo.txt"
+## opt$motif.promoter.background <- "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv"
+
+
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
 
@@ -167,16 +188,54 @@ if (ep.type == "promoter") {
 } else {
     ## load enhancer motif matches
     print(opt$motif.enhancer.background)
-    motif.background <- read.delim(file=paste0(ifelse(opt$motif.enhancer.background!="", opt$motif.enhancer.background, "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv")), header=F, stringsAsFactors=F) %>%
-        `colnames<-`(c("motif_id", "motif_alt_id", "enhancer_region", "enhancer_type", "gene_region","sequence_name","start","stop","motif.matched.strand","score","p.value","q.value","matched_sequence")) %>% filter(!grepl("#|motif_id", motif_id))  # more than 30 seconds, minutes?
+    motif.background <- read.delim(file=paste0(ifelse(opt$motif.enhancer.background!="", opt$motif.enhancer.background, "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv")), header=F, stringsAsFactors=F)
+        if(ncol(motif.background) > 9) {
+        motif.background <- motif.background %>%
+            `colnames<-`(c("motif_id", "motif_alt_id", "enhancer_region", "enhancer_type", "gene_region","sequence_name","start","stop","motif.matched.strand","score","p.value","q.value","matched_sequence")) %>% filter(!grepl("#|motif_id", motif_id))  # more than 30 seconds, minutes?
+        motif.background <- motif.background %>% filter(!grepl("promoter", enhancer_type))
+        
+    } else {
+        motif.background <- motif.background %>%
+            `colnames<-`(c("motif_id", "sequence_name", "start", "stop", "motif.matched.strand", "score", "p.value", "q.value", "matched_sequence")) 
+    }
+}
+
+## subset to q.value < 0.1 
+if (grepl("qval", motif.match.thr.str)) {
+    motif.background <- motif.background %>%
+        subset(q.value < 0.1)
+} else {
+    print(paste0("subset to ", motif.match.thr.str))
+    threshold <- gsub("pval", "", motif.match.thr.str) %>% as.numeric
+    motif.background <- motif.background %>%
+        subset(p.value < threshold)
+}
+
+
+if(ep.type == "enhancer") {
+    if(ncol(motif.background) == 9) {
+        motif.background <- motif.background %>%
+            filter(!grepl("promoter", sequence_name) & !grepl("start", start)) %>%
+            separate(col="sequence_name", into=c("enhancer_region", "enhancer_type", "gene_region", "gene_name_sequence_region"), sep="[|]") %>%
+            separate(col="gene_name_sequence_region", into=c("sequence_name", "to_remove"), sep="::") %>%
+            select(-to_remove)
+    }
     colnames(motif.background)[colnames(motif.background) == "strand"] <- "motif.matched.strand"
-    motif.background <- motif.background %>% filter(!grepl("promoter", enhancer_type))
     motif.background <- motif.background %>%
         mutate(motif.short = strsplit(motif_id, split="_") %>% sapply("[[", 1) %>% as.character)
 }
+
+
 expressed.genes <- rownames(theta.zscore)
+## todo: convert expressed genes to symbol if they are not in symbol
+db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
+gene.type <- ifelse(length(expressed.genes) == sum(as.numeric(grepl("^ENS", expressed.genes))), "ENSGID", "Gene")
+if(gene.type == "ENSGID") expressed.genes = mapIds(get(db), keys=expressed.genes, keytype="ENSEMBL", column="SYMBOL")
 motif.background <- motif.background %>%
     subset(sequence_name %in% expressed.genes)
+
+
+
 
 
 ####################################################################################################
@@ -195,25 +254,17 @@ for(i in 1:ncol(theta.zscore)) {
 theta.rank.df <- do.call(rbind, theta.rank.list) ## combine list to df
 topic.defining.gene.df <- theta.rank.df %>%
     subset(zscore.specificity.rank <= num.top.genes) ## select top 300 genes for each topic
+gene.type <- ifelse(nrow(topic.defining.gene.df) == sum(as.numeric(grepl("^ENS", topic.defining.gene.df$Gene))), "ENSGID", "Gene")
+if(gene.type=="ENSGID") topic.defining.gene.df <- topic.defining.gene.df %>% mutate(ENSGID = Gene) %>% mutate(Gene = mapIds(get(db), keys=.$ENSGID, keytype="ENSEMBL", column="SYMBOL"))
 
+## topic.defining.gene.df <- topic.defining.gene.df %>% mutate(Gene = toupper(Gene))
 
-topic.motif.match.df <- merge(topic.defining.gene.df, motif.background %>%
+topic.motif.match.df <- merge(topic.defining.gene.df, motif.background %>% 
                                                       select(motif_id, motif.short, sequence_name, score, p.value, q.value, motif.matched.strand), by.x="Gene", by.y="sequence_name", all.y=T) ## filtered motif.background to genes expressed in this data set, so keep all
-
-## subset to q.value < 0.1 
-if (grepl("qval", motif.match.thr.str)) {
-    topic.motif.match.df.filtered <- topic.motif.match.df %>%
-        subset(q.value < 0.1)
-} else {
-    print(paste0("subset to ", motif.match.thr.str))
-    threshold <- gsub("pval", "", motif.match.thr.str) %>% as.numeric
-    topic.motif.match.df.filtered <- topic.motif.match.df %>%
-    subset(p.value < threshold)
-}
 
 
 motif.id.type <- "motif.short" ## or "motif_id"
-topic.motif.match.df.long <- topic.motif.match.df.filtered %>%
+topic.motif.match.df.long <- topic.motif.match.df %>%
     group_by(Gene, get(motif.id.type), Topic) %>%
     summarize(count = n()) %>%
     `colnames<-`(c("gene", motif.id.type, "Topic", "count")) %>%
@@ -225,7 +276,7 @@ wide <- topic.motif.match.df.long %>%
     spread(key=Topic, value=topic.value, fill=0) ## %>% select(-topic_NA) ## get presence/absense of promoter in topic ## 5 seconds
 
 
-print(paste0(ep.type, "motif (", motif.match.thr.str, ") count t-test"))
+print(paste0(ep.type, " motif (", motif.match.thr.str, ") count t-test"))
 ttest.df <- ttest.on.motifs(wide)
 
 

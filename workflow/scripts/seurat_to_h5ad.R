@@ -33,6 +33,9 @@ suppressPackageStartupMessages(library(tidyr))
 # source("/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModelAnalysis.functions.R")
 
 
+## ## sdev for mouse ENCODE adrenal data
+## opt$inputSeuratObject <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230117_snakemake_mouse_ENCODE_adrenal/analysis/data/mouse_ENCODE_adrenal.SeuratObject.RDS"
+
 #######################################################################
 ## Constants
 # PROJECT=opt$project
@@ -54,21 +57,43 @@ anndata <- import("anndata", convert = FALSE) ## load AnnData module
 ## load Seruat Object
 s <- readRDS(opt$inputSeuratObject)
 
+print("finished loading Seurat Object")
+
 ## filter genes and cells again, for the cases when input file is Seurat Object and create_seurat_object step is skipped
 ## remove non-protein coding genes and genes detected in fewer than 10 cells
-tokeep <- which(!(grepl("^LINC|^[A-Za-z][A-Za-z][0-9][0-9][0-9][0-9][0-9][0-9]\\.", s %>% rownames)))
+tokeep <- which(!(grepl("^LINC|^[A-Za-z][A-Za-z][0-9][0-9][0-9][0-9][0-9][0-9]\\.|^Gm[0-9]|[0-9]Rik$|-ps", s %>% rownames)))
 s.subset <- s[tokeep,]
+print('finished subsetting to remove non-coding genes')
 s.subset <- subset(s.subset, subset= nCount_RNA > 200 & nFeature_RNA > 200) # remove cells with less than 200 UMIs and less than 200 genes
+print('removed cells with less than 200 UMIs and less than 200 genes')
 ## tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, sum) > 10) # keep genes detected in more than 10 UMIs
-tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, function(x) ((x > 0) %>% as.numeric %>% sum > 10)))
-s.subset <- s.subset[tokeep,]
 
+## tokeep <- tryCatch(
+##     {
+##         which(s.subset@assays$RNA@counts %>% apply(1, function(x) ((x > 0) %>% as.numeric %>% sum > 10)))
+##     },
+##     error = function(cond) {
+##         message("cannot genes expressed in less than 10 cells")
+##         return(seq(1, s.subset %>% nrow(), by=1))
+##     },
+##     finally = {
+##         message('removed genes expressed in less than 10 cells')
+##     }
+## )
+## s <- s.subset[tokeep,]
+s <- s.subset
 
 adata <- anndata$AnnData(
     X = t(GetAssayData(object = s) %>% as.matrix),
     obs = data.frame(s@meta.data),
     var = s %>% rownames %>% as.data.frame %>% `rownames<-`(s %>% rownames) %>% `colnames<-`("Gene")
 )
+
+## adata <- anndata$AnnData(
+##     X = t(GetAssayData(object = s) %>% as.matrix),
+##     obs = data.frame(s@meta.data),
+##     var = s %>% rownames %>% as.data.frame %>% `rownames<-`(s %>% rownames) %>% `colnames<-`("Gene")
+## )
 
 anndata$AnnData$write(adata, opt$output_h5ad)
 

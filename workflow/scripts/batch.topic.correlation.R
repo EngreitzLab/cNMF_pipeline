@@ -45,6 +45,7 @@ option.list <- list(
   make_option("--ABCdir",type="character", default="/oak/stanford/groups/engreitz/Projects/ABC/200220_CAD/ABC_out/TeloHAEC_Ctrl/Neighborhoods/", help="Path to ABC enhancer directory"),
   make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
   make_option("--reference.table", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/data/210702_2kglib_adding_more_brief_ca0713.xlsx"),
+  make_option("--barcode.names", type="character", default="", help="metadata CBC and sample information data table"),
   
   
   #summary plot parameters
@@ -66,6 +67,26 @@ opt <- parse_args(OptionParser(option_list=option.list))
 # opt$topic.model.result.dir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ctrl_only_snakemake/all_genes_acrossK/2kG.library.ctrl.only/"
 # opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ctrl_only_snakemake/analysis/all_genes/"
 # opt$K.val <- 60
+
+## ## overdispersed gene directories (for sdev)
+## opt$sampleName <- "2kG.library_overdispersedGenes"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/figures/top2000VariableGenes"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220716_snakemake_overdispersedGenes/analysis/top2000VariableGenes"
+## opt$K.val <- 120
+
+## ## K562 gwps sdev
+## opt$sampleName <- "WeissmanK562gwps"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/figures/top2000VariableGenes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/"
+## opt$K.val <- 90
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/data/K562_gwps_raw_singlecell_01_metadata.txt"
+
+## ## ENCODE Mouse Heart data
+## opt$sampleName <- "mouse_ENCODE_heart"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/analysis/top2000VariableGenes"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/figures/top2000VariableGenes"
+## opt$K.val <- 55
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/collab_data/IGVF/mouse_ENCODE_heart/auxiliary_data/snrna/heart_Parse_10x_integrated_metadata.csv"
 
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
@@ -99,9 +120,8 @@ palette = colorRampPalette(c("#38b4f7", "white", "red"))(n = 100)
 ##################################################
 ## load data
 cNMF.result.file <- paste0(OUTDIRSAMPLE,"/cNMF_results.",SUBSCRIPT.SHORT, ".RData")
-print(cNMF.result.file)
 if(file.exists(cNMF.result.file)) {
-    print("loading cNMF result file")
+    message(paste0("loading cNMF result file: \n", cNMF.result.file))
     load(cNMF.result.file)
 } else {
 	print(paste0(cNMF.result.file, " does not exist"))
@@ -109,30 +129,25 @@ if(file.exists(cNMF.result.file)) {
 
 
 ## annotate omega to get Gene, Guide, Sample, and CBC
-## if(SAMPLE == "2kG.library") {
-##     barcodePath <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210623_aggregate_samples/outputs/2kG.library.barcodes.tsv"
-##     barcode.names <- read.table(barcodePath, header=F, stringsAsFactors=F) %>% `colnames<-`("long.CBC")
-##     rownames(omega) <- barcode.names %>% pull(long.CBC) %>% gsub("CSNK2B-and-CSNK2B", "CSNK2B",.)
-## }
-## ann.omega <- omega %>%
-##     as.data.frame %>%
-##     mutate(long.CBC = rownames(.)) %>%
-##     separate(col=long.CBC, into=c("Gene", "Guide", "CBC-sample"), sep=":", remove=F) %>%
-##     separate(col=`CBC-sample`, into=c("CBC", "sample"), sep="-")
-ann.omega <- cbind(omega, barcode.names) %>%
-    mutate(CBC = gsub("RHOA-and-", "", CBC)) %>%
-    separate(col=`CBC`, into=c("CBC", "sample"), sep="-")
+if(grepl("2kG.library", SAMPLE)) {
+    ann.omega <- cbind(omega, barcode.names)  ## %>%
+} else {
+    if(grepl("[.]csv", opt$barcode.names)) barcode.names <- read.delim(opt$barcode.names, stringsAsFactors=F, sep=",") else barcode.names <- read.delim(opt$barcode.names, stringsAsFactors=F)
+    ann.omega <- merge(omega, barcode.names %>% select(CBC, sample), by.x=0, by.y="CBC", all.x=T)
+}
 
 
 ## Batch Effect QC: correlate batch binary labels with topic expression
 ## Batch binary label
-ann.omega.batch <- ann.omega %>% mutate(sample.short = gsub("scRNAseq_2kG_", "", sample) %>% gsub("_.*$","", .))
-ann.omega.batch.binary <- ann.omega.batch %>% mutate(tmp.value = 1) %>% spread(key="sample.short", fill=0, value="tmp.value")
-ann.omega.sample.batch.binary <- ann.omega.batch %>% mutate(tmp.value = 1) %>% spread(key="sample", fill=0, value="tmp.value")
-ann.omega.batch.binary.mtx <- ann.omega.batch.binary %>% select(-long.CBC,-Gene.full.name,-Guide,-CBC,-sample,-Gene) %>% as.matrix()
-ann.omega.sample.batch.binary.mtx <- ann.omega.sample.batch.binary %>% select(-long.CBC,-Gene.full.name,-Guide,-CBC,-sample.short,-Gene) %>% as.matrix()
-m <- cor(ann.omega.batch.binary.mtx, method="pearson") %>% as.matrix()
-batch.correlation.mtx <- m[1:k,(k+1):(dim(m)[2])]
+if(grepl("2kG.library", SAMPLE)) {
+    ann.omega.batch <- ann.omega %>% mutate(sample.short = gsub("scRNAseq_2kG_", "", sample) %>% gsub("_.*$","", .))
+    ann.omega.batch.binary <- ann.omega.batch %>% mutate(tmp.value = 1) %>% spread(key="sample.short", fill=0, value="tmp.value")
+    ann.omega.batch.binary.mtx <- ann.omega.batch.binary %>% select(-long.CBC,-Gene.full.name,-Guide,-CBC,-sample,-Gene) %>% as.matrix()
+    m <- cor(ann.omega.batch.binary.mtx, method="pearson") %>% as.matrix()
+    batch.correlation.mtx <- m[1:k,(k+1):(dim(m)[2])]
+} 
+ann.omega.sample.batch.binary <- ann.omega %>% mutate(tmp.value = 1) %>% spread(key="sample", fill=0, value="tmp.value")
+ann.omega.sample.batch.binary.mtx <- ann.omega.sample.batch.binary %>% select(-Row.names) %>% as.matrix()
 m <- cor(ann.omega.sample.batch.binary.mtx, method="pearson") %>% as.matrix()
 sample.batch.correlation.mtx <- m[1:k, (k+1):(dim(m)[2])]
 
@@ -140,8 +155,8 @@ sample.batch.correlation.mtx <- m[1:k, (k+1):(dim(m)[2])]
 ## calculate percent of topics with correlation past a threshold (0.1, 0.2, 0.4, 0.6)
 correlation.threshold.list <- c(0.1, 0.2, 0.4, 0.6)
 batch.passed.threshold.df <- do.call(rbind, lapply(correlation.threshold.list, function(threshold) {
-df <- sample.batch.correlation.mtx %>% apply(1, function(x) (x > threshold) %>% as.numeric %>% sum) %>% as.data.frame %>% `colnames<-`("num.batch.correlated") %>% mutate(batch.thr = threshold)
-})) %>% mutate(Topic = rownames(.), K = k)
+    df <- sample.batch.correlation.mtx %>% apply(1, function(x) (x > threshold) %>% as.numeric %>% sum) %>% as.data.frame %>% `colnames<-`("num.batch.correlated") %>% mutate(batch.thr = threshold) %>% mutate(ProgramID = rownames(.), K = k)
+}))
 batch.percent.df <- batch.passed.threshold.df %>% group_by(batch.thr) %>% summarize(percent.correlated = ((num.batch.correlated > 0) %>% as.numeric %>% sum) / k) %>% mutate(K = k)
 
 ## max batch correlation per topic
@@ -150,19 +165,24 @@ max.batch.correlation.df <- sample.batch.correlation.mtx %>%
         out <- max(abs(x))
     }) %>%
     as.data.frame %>%
-    `colnames<-`("maxPearsonCorrlation") %>%
-    mutate(topic = row.names(.)) %>%
+    `colnames<-`("maxPearsonCorrelation") %>%
+    mutate(ProgramID = row.names(.)) %>%
     as.data.frame
 
 
 ## store batch and sample correlation matrix
-write.table(batch.correlation.mtx, file=paste0(OUTDIRSAMPLE, "/batch.correction.mtx.txt"), sep="\t", quote=F)
+if(grepl("2kG.library", SAMPLE)) write.table(batch.correlation.mtx, file=paste0(OUTDIRSAMPLE, "/batch.correction.mtx.txt"), sep="\t", quote=F)
 write.table(sample.batch.correlation.mtx, file=paste0(OUTDIRSAMPLE, "/sample.batch.correction.mtx.txt"), sep="\t", quote=F)
 write.table(batch.passed.threshold.df, file=paste0(OUTDIRSAMPLE, "/batch.passed.thr.df.txt"), sep="\t", quote=F, row.names=F)
 write.table(batch.percent.df, file=paste0(OUTDIRSAMPLE, "/batch.percent.df.txt"), sep="\t", quote=F, row.names=F)
 write.table(max.batch.correlation.df, file=paste0(OUTDIRSAMPLE, "/max.batch.correlation.df.txt"), sep="\t", quote=F, row.names=F)
-save(batch.correlation.mtx, sample.batch.correlation.mtx, batch.passed.threshold.df, batch.percent.df, max.batch.correlation.df,
+if(grepl("2kG.library", SAMPLE)) {
+    save(batch.correlation.mtx, sample.batch.correlation.mtx, batch.passed.threshold.df, batch.percent.df, max.batch.correlation.df,
      file=paste0(OUTDIRSAMPLE, "/batch.correlation.RDS"))
+} else {
+    save(sample.batch.correlation.mtx, batch.passed.threshold.df, batch.percent.df, max.batch.correlation.df,
+         file=paste0(OUTDIRSAMPLE, "/batch.correlation.RDS"))
+}
 
 
 ## Batch correlation heatmap
@@ -175,15 +195,16 @@ plotHeatmap <- function(mtx, title){
         key=T,
         col=palette,
         labCol=colnames(mtx),
-        margins=c(15,5), 
+        ## margins=c(15,5), 
         cex.main=0.1, 
-        cexCol=1.2/(nrow(mtx)^(1/6)), cexRow=1.2/(ncol(mtx)^(1/3)),
+        cexCol=1/(nrow(mtx)^(1/7)), cexRow=1/(ncol(mtx)^(1/7)),
         main=title
     )
 }
 
-pdf(paste0(FIGDIRTOP, "batch.correlation.heatmap.pdf"),width=6, height=12)
-plotHeatmap(batch.correlation.mtx, title=paste0(SAMPLE, ", K=", k, ", topic batch correlation"))
+
+pdf(paste0(FIGDIRTOP, "batch.correlation.heatmap.pdf"),width=0.15*ncol(sample.batch.correlation.mtx)+5, height=0.1*nrow(sample.batch.correlation.mtx)+5)
+if(grepl("2kG.library", SAMPLE)) plotHeatmap(batch.correlation.mtx, title=paste0(SAMPLE, ", K=", k, ", topic batch correlation"))
 plotHeatmap(sample.batch.correlation.mtx, title=paste0(SAMPLE, ", K=", k, ", topic sample correlation"))
 dev.off()
 
