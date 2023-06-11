@@ -67,7 +67,8 @@ option.list <- list(
   #summary plot parameters
   make_option("--test.type", type="character", default="per.guide.wilcoxon", help="Significance test to threshold perturbation results"),
   make_option("--adj.p.value.thr", type="numeric", default=0.1, help="adjusted p-value threshold"),
-  make_option("--recompute", type="logical", default=F, help="T for recomputing statistical tests and F for not recompute")
+  make_option("--recompute", type="logical", default=F, help="T for recomputing statistical tests and F for not recompute"),
+  make_option("--perturb.seq", type="character", default="False", help="True for perturb-seq. The pipeline will perform statistical test if True.")
   
 )
 opt <- parse_args(OptionParser(option_list=option.list))
@@ -92,6 +93,15 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210810_snakemake_ctrls/analysis/2kG.library.no.DE.gene.with.FDR.less.than.0.1.perturbation/all_genes/"
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210806_curate_ctrl_mtx/outputs/2kG.library.no.DE.gene.with.FDR.less.than.0.1.perturbation.barcodes.tsv"
 ## opt$K.val <- 60
+
+## ## ctrl 2nd round
+## opt$sampleName <- "2kG.library.ctrl.only"
+## opt$topic.model.result.dir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ctrl_only_snakemake/analysis/all_genes_acrossK/2kG.library.ctrl.only/"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ctrl_only_snakemake/figures/all_genes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ctrl_only_snakemake/analysis/all_genes/"
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210806_curate_ctrl_mtx/211206_ctrl_mtx_for_cNMF_pipeline/outputs/ctrl_mtx/barcodes.tsv"
+## opt$subsample.type <- "ctrl"
+## opt$K.val <- 8
 
 ## ## debug scRNAseq_2kG_11AMDox_1
 ## opt$sampleName <- "scRNAseq_2kG_11AMDox_1"
@@ -334,7 +344,7 @@ adjust.multiTargetGuide.rownames <- function(omega) {
 ######################################################################
 ## Process topic model results
 ## for ( n in 1:length(SAMPLE) ) {
-    
+   
     ## if (SEP) {
     ##     guideCounts <- loadGuides(n, sep=T) %>% mutate(Gene=Gene.marked)
     ##     tmp.labels <- guideCounts$Gene %>% unique() %>% strsplit("-") %>% sapply("[[",2) %>% unique()
@@ -345,6 +355,7 @@ adjust.multiTargetGuide.rownames <- function(omega) {
     
 db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
 library(!!db) ## load the appropriate database
+
 cNMF.result.file <- paste0(OUTDIRSAMPLE,"/cNMF_results.",SUBSCRIPT.SHORT, ".RData")
 print(cNMF.result.file)
 if(file.exists(cNMF.result.file)) {
@@ -657,7 +668,6 @@ print("finished analysis script")
 ##   }
 ##   if( (opt$subsample.type != "ctrl" | opt$perturb.seq != "True") & ( !("fc.ann.omega" %in% ls()) | opt$recompute) ) { # if the variable fc.ann.omega is present, then it means the below calculations are done previously
 
-      
     
 ##     # get topic colnames
 ##     topic.names <- colnames(omega)[which(grepl("topic",colnames(omega)))]
@@ -988,18 +998,18 @@ print("finished analysis script")
 
 
 
-# if(opt$subsample.type!="ctrl") {
+if(opt$subsample.type!="ctrl") {
 
-# ##########################################################################
-# ## aggregate all statistical test results
-# all.test <- rbind(gene.test %>% select(Gene, Topic, adjusted.wilcox.p, wilcox.p) %>% `colnames<-`(c("Gene","Topic","adjusted.p.value","p.value")) %>% mutate(test.type="per.cell.wilcoxon"),
-#                   INT.gene.test %>% select(Gene, Topic, adjusted.ttest.p, ttest.p) %>% `colnames<-`(c("Gene","Topic","adjusted.p.value","p.value")) %>% mutate(test.type="per.cell.INT.ttest"),
-#                   perguide.gene.test %>% select(Gene, Topic, adjusted.wilcox.p, wilcox.p) %>% `colnames<-`(c("Gene","Topic","adjusted.p.value","p.value")) %>% mutate(test.type="per.guide.wilcoxon"),
-#                   INT.avg.guide.test %>% select(Gene, Topic, adjusted.ttest.p, ttest.p) %>% `colnames<-`(c("Gene","Topic","adjusted.p.value","p.value")) %>% mutate(test.type="per.guide.INT.ttest")) %>%
-#   mutate(gene.type=ifelse(grepl(paste0(c(non.expressed.genes, "targeting$|control$"), collapse="|"), Gene), "non-expressed", "expressed")) %>%
-#   mutate(gene.type=ifelse(grepl("targeting$|control$", Gene), "control", gene.type))
-# write.table(all.test, file=paste0(OUTDIRSAMPLE, "/all.test.", SUBSCRIPT, ".txt"),
-#             sep="\t", row.names=F, col.names=T, quote=F)
+##########################################################################
+## aggregate all statistical test results
+all.test <- rbind(gene.test %>% select(Gene, Topic, adjusted.wilcox.p, wilcox.p) %>% `colnames<-`(c("Gene","Topic","adjusted.p.value","p.value")) %>% mutate(test.type="per.cell.wilcoxon"),
+                  INT.gene.test %>% select(Gene, Topic, adjusted.ttest.p, ttest.p) %>% `colnames<-`(c("Gene","Topic","adjusted.p.value","p.value")) %>% mutate(test.type="per.cell.INT.ttest"),
+                  perguide.gene.test %>% select(Gene, Topic, adjusted.wilcox.p, wilcox.p) %>% `colnames<-`(c("Gene","Topic","adjusted.p.value","p.value")) %>% mutate(test.type="per.guide.wilcoxon"),
+                  INT.avg.guide.test %>% select(Gene, Topic, adjusted.ttest.p, ttest.p) %>% `colnames<-`(c("Gene","Topic","adjusted.p.value","p.value")) %>% mutate(test.type="per.guide.INT.ttest")) %>%
+  mutate(gene.type=ifelse(grepl(paste0(c(non.expressed.genes, "targeting$|control$"), collapse="|"), Gene), "non-expressed", "expressed")) %>%
+  mutate(gene.type=ifelse(grepl("targeting$|control$", Gene), "control", gene.type))
+write.table(all.test, file=paste0(OUTDIRSAMPLE, "/all.test.", SUBSCRIPT, ".txt"),
+            sep="\t", row.names=F, col.names=T, quote=F)
 
 
 
@@ -1060,7 +1070,7 @@ print("finished analysis script")
 # write.table(count.by.GWAS,file=paste0(OUTDIRSAMPLE,"/count.by.GWAS.classes_p.adj.",p.value.thr %>% as.character,"_",SUBSCRIPT,".txt"), sep="\t", col.names=T, row.names=F, quote=F)
 # write.table(count.by.GWAS.withTopic,file=paste0(OUTDIRSAMPLE,"/count.by.GWAS.classes.withTopic_p.adj.",p.value.thr %>% as.character,"_",SUBSCRIPT,".txt"), sep="\t", col.names=T, row.names=F, quote=F)
 
-# } ## if this sample does not contain only the controls
+} ## if this sample does not contain only the controls
 
 
 # ##########################################################################

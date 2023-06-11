@@ -165,7 +165,7 @@ rule raw_h5ad_to_filtered_h5ad:
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
-		python workflow/scripts/raw_h5ad_to_h5ad.py \
+		python workflow/scripts/filter_to_h5ad.py \
 		--input_h5ad {input.seurat_object} \
 		--output_h5ad {output.h5ad_mtx} \
 		--output_gene_name_txt {output.gene_name_txt} ' "

@@ -1,5 +1,5 @@
 {
-		"total_workers": 100,
+		"total_workers": 10,
 		"seed": 14,
 		"num_runs": 100,
 		"run_per_worker": 1,
