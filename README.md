@@ -59,6 +59,8 @@ Config file slots:
 | numCtrls_for_MAST | (Optional, required for Perturb-seq datasets) Number of (randomly selected) controls to use in statstical test. Recommend 5000 or less for speed. |
 | num_cells | Expected number of cells in the input dataset. It doesn't have to be exact. This is for optimizing memory requests and job scheduling. |
 
+Note: please keep all optional items in the config file, even if it points to a non-existing path. The snakemake pipeline might return an error if they are not there. 
+
 
 ### Step 4: Run the pipeline
 ```sh
@@ -177,6 +179,7 @@ significant{LinkedGenes, ProgramGene, Regulator}.formatted.df.txt
 
 
 ### Figures (in figDir)
+
 
 
 
