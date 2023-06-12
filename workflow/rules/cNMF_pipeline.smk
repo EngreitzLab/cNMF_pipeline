@@ -1089,9 +1089,11 @@ rule motif_enrichment_analysis:
 		--recompute F \
 		--ep.type {wildcards.ep_type} \
 		--motif.match.thr.str {wildcards.motif_match_thr} \
-		--motif.enhancer.background {input.enhancer_fimo_formatted} \
-		--motif.promoter.background {input.promoter_fimo_formatted} \
-		' "
+		--motif.enhancer.background {input.fimo_formatted} \
+		--motif.promoter.background {input.fimo_formatted} '" ## to do
+		# --motif.enhancer.background {input.enhancer_fimo_formatted} \
+		# --motif.promoter.background {input.promoter_fimo_formatted} \
+		# ' "
 		# --motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
 		
 
