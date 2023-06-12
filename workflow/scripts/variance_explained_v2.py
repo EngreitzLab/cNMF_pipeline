@@ -2,6 +2,7 @@
 ## compute variance explained for cNMF components
 
 import numpy as np
+import scipy
 import pandas as pd
 # import scipy.sparse as sp
 import scanpy as sc
@@ -31,7 +32,14 @@ parser.add_argument('--density_threshold', dest = 'density_threshold', type=floa
 # parser.add_argument('--k', dest = 'k', type=int, help = 'number of components', default='35')
 # parser.add_argument('--density_threshold', dest = 'density_threshold', type=float, help = 'component spectra clustering threshold, 2 for no filtering, recommend 0_2 (means 0.2)', default="0.2")
 
+
 args = parser.parse_args()
+
+# ## sdev debug for Disha's error
+# args.X_normalized = "/oak/stanford/groups/engreitz/Users/kangh/scratch_space/230612_debug_cNMF_pipeline_variance_explained/Merge_Pauletal_subset_SMC.norm_counts.h5ad"
+# args.outdir = "/oak/stanford/groups/engreitz/Users/kangh/scratch_space/230612_debug_cNMF_pipeline_variance_explained/"
+
+
 
 sample = args.topic_sampleName
 # output_sample = args.output_sampleName
@@ -57,7 +65,10 @@ X_norm = sc.read_h5ad(args.X_normalized)
 
 ## functions
 def compute_Var(X):
-    return np.sum(np.var(X, axis=0, ddof=1))
+    if scipy.sparse.issparse(X):
+        return np.sum(np.var(X.todense(), axis=0, ddof=1))
+    else:
+        return np.sum(np.var(X, axis=0, ddof=1))
 
 # ## first turn X into TPM
 # X_tpm_dense = X_original.X.todense()
