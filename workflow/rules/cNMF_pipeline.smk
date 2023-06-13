@@ -138,8 +138,7 @@ rule Seurat_Object_to_h5ad:
 	input:
 		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
 	output:
-		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
-		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/raw/{sample}.h5ad")
 	params:
 		time = "2:00:00",
 		mem_gb = "64",
@@ -153,11 +152,18 @@ rule Seurat_Object_to_h5ad:
 		--output_gene_name_txt {output.gene_name_txt} ' "
 
 
+def get_raw_h5ad_file(wildcards):
+	if os.path.isfile(config["input_h5ad_mtxDir"]):
+		return(config["input_h5ad_mtxDir"])
+	else:
+		return(os.path.join(config["analysisDir"], "data/raw/{wildcards.sample}.h5ad"))
+
+
 rule raw_h5ad_to_filtered_h5ad:
 	input:
-		raw_h5ad_file = os.path.join(config["analysisDir"], "data/raw.{sample}.h5ad")
+		get_raw_h5ad_file
 	output:	
-		h5ad_mtx = os.path.join(config["analysisDir"], "data/filtered.{sample}.h5ad"),
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
 		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
 	params:
 		time = "2:00:00",
@@ -171,17 +177,17 @@ rule raw_h5ad_to_filtered_h5ad:
 		--output_gene_name_txt {output.gene_name_txt} ' "
 
 
-rule raw_h5ad_to_filtered_h5ad_helper:
-	input:
-		h5ad_mtx = os.path.join(config["analysisDir"], "data/filtered.{sample}.h5ad")
-	output:
-		output_h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad")
-	params:
-		time = "1:00:00",
-		mem_gb = "6"
-	shell:
-		"bash -c ' source $HOME/.bashrc; \
-		cp {input.h5ad_mtx} {output.output_h5ad_mtx} ' "
+# rule raw_h5ad_to_filtered_h5ad_helper:
+# 	input:
+# 		h5ad_mtx = os.path.join(config["analysisDir"], "data/filtered.{sample}.h5ad")
+# 	output:
+# 		output_h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad")
+# 	params:
+# 		time = "1:00:00",
+# 		mem_gb = "6"
+# 	shell:
+# 		"bash -c ' source $HOME/.bashrc; \
+# 		cp {input.h5ad_mtx} {output.output_h5ad_mtx} ' "
 
 	
 
