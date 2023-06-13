@@ -155,7 +155,7 @@ rule Seurat_Object_to_h5ad:
 
 rule raw_h5ad_to_filtered_h5ad:
 	input:
-		raw_h5ad_file = os.path.join(config["analysisDir"], "data/{sample}.raw.h5ad")
+		raw_h5ad_file = os.path.join(config["analysisDir"], "data/raw.{sample}.h5ad")
 	output:	
 		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
 		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
