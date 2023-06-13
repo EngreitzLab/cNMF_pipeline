@@ -109,28 +109,28 @@ def get_rule_prepare_cNMF_partition(wildcards):
 # 	return all_output
 
 
-# ## todo: rethink the structure of UMAP part: what are the possible input file types?
-# rule create_Seurat_Object:
-# 	input:
-# 		mtx = os.path.join(config["dataDir"], "matrix.mtx.gz"),
-# 		features = os.path.join(config["dataDir"], "features.tsv.gz"),
-# 		barcodes = os.path.join(config["dataDir"], "barcodes.tsv.gz")
-# 	output:
-# 		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
-# 	params:
-# 		time = "2:00:00",
-# 		mem_gb = "200",
-# 		datadir = config["dataDir"],
-# 		outdir = os.path.join(config["analysisDir"], "data"),
-# 		partition = "owners,normal"
-# 	shell:
-# 		"bash -c ' source $HOME/.bashrc; \
-# 		conda activate cnmf_analysis_R; \
-# 		Rscript workflow/scripts/create_seurat_object.R \
-# 		--outdir {params.outdir}/ \
-# 		--datadir {params.datadir} \
-# 		--sampleName {wildcards.sample} \
-# 		' "
+## todo: rethink the structure of UMAP part: what are the possible input file types?
+rule create_Seurat_Object:
+	input:
+		mtx = os.path.join(config["dataDir"], "matrix.mtx.gz"),
+		features = os.path.join(config["dataDir"], "features.tsv.gz"),
+		barcodes = os.path.join(config["dataDir"], "barcodes.tsv.gz")
+	output:
+		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
+	params:
+		time = "2:00:00",
+		mem_gb = "200",
+		datadir = config["dataDir"],
+		outdir = os.path.join(config["analysisDir"], "data"),
+		partition = "owners,normal"
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_analysis_R; \
+		Rscript workflow/scripts/create_seurat_object.R \
+		--outdir {params.outdir}/ \
+		--datadir {params.datadir} \
+		--sampleName {wildcards.sample} \
+		' "
 
 
 ## convert Seurat Object to h5ad file
@@ -138,7 +138,8 @@ rule Seurat_Object_to_h5ad:
 	input:
 		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
 	output:
-		h5ad_mtx = os.path.join(config["analysisDir"], "data/raw/{sample}.h5ad")
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
+		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
 	params:
 		time = "2:00:00",
 		mem_gb = "64",
@@ -161,7 +162,7 @@ def get_raw_h5ad_file(wildcards):
 
 rule raw_h5ad_to_filtered_h5ad:
 	input:
-		get_raw_h5ad_file
+		raw_h5ad_mtx = get_raw_h5ad_file
 	output:	
 		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
 		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
@@ -172,7 +173,7 @@ rule raw_h5ad_to_filtered_h5ad:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
 		python workflow/scripts/filter_to_h5ad.py \
-		--input_h5ad {input.seurat_object} \
+		--input_h5ad {input.raw_h5ad_mtx} \
 		--output_h5ad {output.h5ad_mtx} \
 		--output_gene_name_txt {output.gene_name_txt} ' "
 

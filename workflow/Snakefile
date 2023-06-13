@@ -151,15 +151,11 @@ def get_output_files(wildcards):
 		for item in output_list:
 			all_output.extend([item])
 
-	# print(all_output)
-	# print(output_files)
 	return all_output
 
 
 rule all:
 	input: get_output_files
-	# params:
-	# 	mem_gb: "36"
 
 
 
