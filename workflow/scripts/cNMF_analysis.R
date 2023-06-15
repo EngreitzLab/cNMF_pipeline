@@ -1070,7 +1070,7 @@ print("finished analysis script")
 # write.table(count.by.GWAS,file=paste0(OUTDIRSAMPLE,"/count.by.GWAS.classes_p.adj.",p.value.thr %>% as.character,"_",SUBSCRIPT,".txt"), sep="\t", col.names=T, row.names=F, quote=F)
 # write.table(count.by.GWAS.withTopic,file=paste0(OUTDIRSAMPLE,"/count.by.GWAS.classes.withTopic_p.adj.",p.value.thr %>% as.character,"_",SUBSCRIPT,".txt"), sep="\t", col.names=T, row.names=F, quote=F)
 
-} ## if this sample does not contain only the controls
+# } ## if this sample does not contain only the controls
 
 
 # ##########################################################################

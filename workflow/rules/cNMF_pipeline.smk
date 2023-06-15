@@ -173,7 +173,7 @@ rule raw_h5ad_to_filtered_h5ad:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
 		python workflow/scripts/filter_to_h5ad.py \
-		--input_h5ad {input.raw_h5ad_mtx} \
+		--inputPath {input.raw_h5ad_mtx} \
 		--output_h5ad {output.h5ad_mtx} \
 		--output_gene_name_txt {output.gene_name_txt} ' "
 
@@ -1005,7 +1005,7 @@ rule analysis:
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
-		conda env info; \
+		conda info --env; \
 		Rscript workflow/scripts/cNMF_analysis.R \
 		--topic.model.result.dir {params.outdir}/ \
 		--sampleName {wildcards.sample} \
