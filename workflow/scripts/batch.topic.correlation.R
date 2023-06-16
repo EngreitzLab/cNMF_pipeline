@@ -88,9 +88,16 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$K.val <- 55
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/collab_data/IGVF/mouse_ENCODE_heart/auxiliary_data/snrna/heart_Parse_10x_integrated_metadata.csv"
 
+## ## teloHAEC no_IL1B 200 gene library
+## opt$sampleName <- "no_IL1B"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/tutorials/2306_V2G2P_prep/analysis/all_genes/"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/tutorials/2306_V2G2P_prep/figures/all_genes/"
+## opt$K.val <- 20
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/tutorials/2306_V2G2P_prep/data/no_IL1B.barcodes.txt"
 
+ 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
-DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
+## DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
 OUTDIR=opt$outdir
 k <- opt$K.val
 DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)

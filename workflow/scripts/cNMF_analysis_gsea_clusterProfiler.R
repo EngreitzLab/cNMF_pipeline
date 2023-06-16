@@ -78,6 +78,14 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$GSEA.type <- "ByWeightGSEA"
 ## opt$ranking.type <- "zscore"
 
+## ## teloHAEC no_IL1B 200 gene library
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/tutorials/2306_V2G2P_prep/figures/top2000VariableGenes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/tutorials/2306_V2G2P_prep/analysis/top2000VariableGenes/"
+## opt$K.val <- 20
+## opt$sampleName <- "no_IL1B"
+## opt$GSEA.type <- "ByWeightGSEA"
+## opt$ranking.type <- "median_spectra"
+
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
@@ -305,7 +313,7 @@ out <- do.call(rbind, lapply(c(1:k) %>% rev, function(t) {
     gene.weights <- data.here$gene.weights
     if(sum(as.numeric(is.na(names(gene.weights)))) > 0) gene.weights <- gene.weights[-which(is.na(names(gene.weights)))]
     gene.weights <- gene.weights[-which(gene.weights==0)] ## can't have zero weights?
-    gene.weights <- gene.weights[-which(is.na(gene.weights))] ## can't have NA
+    if (length(which(is.na(gene.weights))) > 0) gene.weights <- gene.weights[-which(is.na(gene.weights))] ## can't have NA
     ## print(head(gene.weights))
     
     message(paste0("Ranking type: ", ranking.type.here, ", Program ", t, ", out of ", k, ", function ", GSEA.type, ", top gene class: ", class(top.genes),
