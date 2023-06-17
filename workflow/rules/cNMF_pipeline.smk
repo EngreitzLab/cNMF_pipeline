@@ -1299,7 +1299,7 @@ rule TopicSummary:
 			--outdir {params.analysisdir} \
 			--K.val {wildcards.k} \
 			--density.thr {params.threshold} \
-			--perturbSeq {params.perturbSeq} '"
+			--perturbSeq {params.perturbseq} '"
 
 
 
