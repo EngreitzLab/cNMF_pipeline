@@ -6,7 +6,15 @@ A pipeline to connect GWAS variants to genes to disease-associate gene programs.
 
 ### Overview of the V2G2P pipeline
 The V2G2P approach has three components: V2G, G2P, and V2G2P enrichment test. Each each coded to work as a stand-alone pipeline. Together these three components are essential for V2G2P. Below is a overview of the relations among the three steps:
+
 ![V2G2P overview](./images/V2G2P_flowchart_V2G2P_overview.png) 
+
+The V2G pipeline is [here](https://github.com/EngreitzLab/V2G)
+
+### Details about G2P and V2G2P enrichment test
+Below is a figure showing the different modules and features within the G2P pipeline:
+
+![G2P and V2G2P enrichment](./images/V2G2P_flowchart_G2P_details.png)
 
 
 ## Citation
