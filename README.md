@@ -9,7 +9,7 @@ The V2G2P approach has three components: V2G, G2P, and V2G2P enrichment test. Ea
 
 ![V2G2P overview](./images/V2G2P_flowchart_V2G2P_overview.png) 
 
-The V2G pipeline is [here](https://github.com/EngreitzLab/V2G)
+The V2G pipeline is [here](https://github.com/EngreitzLab/V2G). Author: Rosa Ma.
 
 ### Details about G2P and V2G2P enrichment test
 Below is a figure showing the different modules and features within the G2P pipeline:
