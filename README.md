@@ -4,6 +4,10 @@
 
 A pipeline to connect GWAS variants to genes to disease-associate gene programs. This pipeline uses snakemake and cNMF from Kotliar et al. The V2G2P approach could be applied to any GWAS studies with the right cell type(s). 
 
+### Overview of the V2G2P pipeline
+The V2G2P approach has three components: V2G, G2P, and V2G2P enrichment test. Each each coded to work as a stand-alone pipeline. Together these three components are essential for V2G2P. Below is a overview of the relations among the three steps:
+![V2G2P overview](./images/V2G2P_flowchart_V2G2P_overview.png) 
+
 
 ## Citation
 
