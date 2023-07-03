@@ -90,7 +90,7 @@ For more snakemake usage and configuration, please visit snakemake documentation
 
 
 ## Outputs
-The output files can be found in the folders specified in analysisDir and figDir fields in the config file.
+The output files are in the folders specified in analysisDir and figDir fields in the config file.
 
 ### Analysis files (in analysisDir)
 #### Summary output for choosing the number of components

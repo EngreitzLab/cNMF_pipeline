@@ -51,8 +51,11 @@ option.list <- list(
 
   ## GSEA parameters
   make_option("--ranking.type", type="character", default="zscore", help="{zscore, raw} ranking for the top program genes"),
-  make_option("--GSEA.type", type="character", default="GOEnrichment", help="{GOEnrichment, ByWeightGSEA, GSEA}")
+  make_option("--GSEA.type", type="character", default="GOEnrichment", help="{GOEnrichment, ByWeightGSEA, GSEA}"),
   ## make_option("--", type="", default= , help="")
+
+  ## Organism flag
+  make_option("--organism", type="character", default="human", help="Organism type, accept org.Hs.eg.db. Only support human and mouse.")
   
 )
 opt <- parse_args(OptionParser(option_list=option.list))
@@ -224,7 +227,7 @@ ranking.type.ary <- c("zscore", "raw", "median_spectra_zscore", "median_spectra"
 score.colname.ary <- c("zscore", "raw", "median.spectra.zscore", "median.spectra")
 ranking.rank.colname.ary <- c("zscore.specificity.rank", "raw.score.rank", "median.spectra.zscore.rank", "median.spectra.rank")
 ranking.type.varname.ary <- c("theta.rank.df", "theta.raw.rank.df", "median.spectra.zscore.df", "median.spectra.rank.df")
-db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
+db <- ifelse(grepl("mouse|org.Mm.eg.db", opt$organism), "org.Mm.eg.db", "org.Hs.eg.db")
 library(!!db) ## load the appropriate database
 
 getData <- function(t) {
