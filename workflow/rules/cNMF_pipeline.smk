@@ -1097,6 +1097,7 @@ rule motif_enrichment_analysis:
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
 		threshold = get_cNMF_filter_threshold_double,
+		organism = config["organism"],
 		partition = "owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
@@ -1109,6 +1110,7 @@ rule motif_enrichment_analysis:
 		--density.thr {params.threshold} \
 		--recompute F \
 		--ep.type {wildcards.ep_type} \
+		--organism {params.organism} \
 		--motif.match.thr.str {wildcards.motif_match_thr} \
 		--motif.enhancer.background {input.fimo_formatted} \
 		--motif.promoter.background {input.fimo_formatted} '" ## to do
@@ -1213,6 +1215,7 @@ rule clusterProfiler_GSEA:
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
+		organism = config["organism"],
 		threshold = get_cNMF_filter_threshold_double,
 		partition = "owners,normal"
 	shell:
@@ -1227,6 +1230,7 @@ rule clusterProfiler_GSEA:
 		--density.thr {params.threshold} \
 		--ranking.type {wildcards.ranking_type} \
 		--GSEA.type {wildcards.GSEA_type} \
+		--organism {params.organism} \
 		--recompute F ' "
 
 

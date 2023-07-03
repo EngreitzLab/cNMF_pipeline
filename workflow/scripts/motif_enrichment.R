@@ -65,7 +65,11 @@ option.list <- list(
     make_option("--test.type", type="character", default="per.guide.wilcoxon", help="Significance test to threshold perturbation results"),
     make_option("--adj.p.value.thr", type="numeric", default=0.1, help="adjusted p-value threshold"),
     make_option("--recompute", type="logical", default=F, help="T for recomputing statistical tests and F for not recompute"),
-    make_option("--motif.match.thr.str", type="character", default="pval0.0001", help="threshold for subsetting motif matches")
+    make_option("--motif.match.thr.str", type="character", default="pval0.0001", help="threshold for subsetting motif matches"),
+
+    ## Organism flag
+    make_option("--organism", type="character", default="human", help="Organism type, accept org.Hs.eg.db. Only support human and mouse.")
+
     
 )
 opt <- parse_args(OptionParser(option_list=option.list))
@@ -228,7 +232,7 @@ if(ep.type == "enhancer") {
 
 expressed.genes <- rownames(theta.zscore)
 ## todo: convert expressed genes to symbol if they are not in symbol
-db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
+db <- ifelse(grepl("mouse|org.Mm.eg.db", opt$organism), "org.Mm.eg.db", "org.Hs.eg.db")
 gene.type <- ifelse(length(expressed.genes) == sum(as.numeric(grepl("^ENS", expressed.genes))), "ENSGID", "Gene")
 if(gene.type == "ENSGID") expressed.genes = mapIds(get(db), keys=expressed.genes, keytype="ENSEMBL", column="SYMBOL")
 motif.background <- motif.background %>%

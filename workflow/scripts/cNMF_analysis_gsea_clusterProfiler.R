@@ -113,7 +113,7 @@ SUBSCRIPT.SHORT=paste0("k_", k, ".dt_", DENSITY.THRESHOLD)
 fdr.thr <- opt$adj.p.value.thr
 p.value.thr <- opt$adj.p.value.thr
 
-db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
+db <- ifelse(grepl("mouse|org.Mm.eg.db", opt$organism), "org.Mm.eg.db", "org.Hs.eg.db")
 library(!!db) ## load the appropriate database
 
 # create dir if not already

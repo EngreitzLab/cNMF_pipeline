@@ -28,6 +28,7 @@
 		"GWAS_traits": ["HbA1c", "Hb", "MCH", "MCHC", "MCV", "Plt", "RBC", "PP", "MAP", "DBP", "SBP"],
 		"sampleName": "WeissmanK562gwps",
 		"celltype": "K562",
+		"organism": "human",
 		"cNMF_gene_selection": ["top2000VariableGenes"],
 		"Perturb-seq": "True",
 		"num_Genes_per_MAST_runGroup": 20,

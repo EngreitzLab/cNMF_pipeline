@@ -65,6 +65,7 @@ Config file slots:
 | K_spectra_threshold_table (Optional) | Table used for specifying spectra cut-off for each K tested in the pipeline. default: 0.2 for all K |
 | GWAS_traits | GWAS traits to conduct V2G2P |
 | sampleName | Name for this run |
+| organism | Organism of the sample (human or mouse only) |
 | cNMF_gene_selection | "all_genes" for using all expressed genes as input, "top3000VariableGenes" for using the top 3,000 most variable genes as an input, the number of top variable genes can be adjusted by the user, e.g. "top2000VariableGenes" for using the top 2,000 most variable genes. If using "all_genes", the user must specify the gene names in a .txt file in one column, stored at config["analysisDir"]/data/ with file name: {sample}.h5ad.all.genes.txt |
 | Perturb-seq | True for an Perturb-seq experiment. The pipeline will generate additional results based on comparison between perturbation and control. False for any scRNA-seq experiment. |
 | num_Genes_per_MAST_runGroup | (Optional, required for Perturb-seq datasets) Number of perturbations to be tested against control in one job submission. This is to speed up the code. Recommend 20. |
