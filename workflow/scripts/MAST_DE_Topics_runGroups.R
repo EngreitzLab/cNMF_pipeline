@@ -68,6 +68,18 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$scriptdir <- "/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/Perturb-seq/workflow/scripts"
 ## opt$K.val <- 80
 
+## ## no IL1B
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/tutorials/2306_V2G2P_prep/data/no_IL1B.barcodes.txt"
+## opt$outdirsample <- "/oak/stanford/groups/engreitz/Users/kangh/tutorials/2306_V2G2P_prep/analysis/top2000VariableGenes/no_IL1B/K15/threshold_0_2/"
+## opt$scatteroutput <- "/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/tutorials/2306_V2G2P_prep/top2000VariableGenes/no_IL1B/MAST/K15/threshold_0_2/"
+## opt$gene.group.list <- "/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/tutorials/2306_V2G2P_prep/top2000VariableGenes/no_IL1B/MAST/GeneNames_Group12.txt"
+## opt$scatter.gene.group <- 12
+## opt$sampleName <- "no_IL1B"
+## opt$K.val <- 15
+## opt$density.thr <- 0.2
+## opt$scriptdir <- "/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/Perturb-seq/workflow/scripts"
+
+
 
 k <- opt$K.val 
 SAMPLE <- opt$sampleName

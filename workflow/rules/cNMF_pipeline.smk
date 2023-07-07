@@ -1279,13 +1279,30 @@ rule clusterProfiler_GSEA_plot:
 # 		--cluster.topic.expression T "
 
 
-## Topic Summary Table ##here
+# ## topic summary input list
+# def get_TopicSummary_input(wildcards):
+# 	batch_correlation_mtx_RDS = os.path.join(config["analysisDir"], wildcards.folder, wildcards.sample, "K"+wildcards.k, "threshold_"+wildcards.threshold, "batch.correlation.RDS")
+# 	cNMF_Results = os.path.join(config["analysisDir"], wildcards.folder, wildcards.sample, "K"+wildcards.k, "threshold_"+wildcards.threshold, "cNMF_results.k_"+wildcards.k+".dt_"+wildcards.threshold+".RData")
+# 	clusterProfiler_median_spectra_zscore_result = os.path.join(config["analysisDir"], wildcards.folder, wildcards.sample, "K"+wildcards.k, "threshold_"+wildcards.threshold, "clusterProfiler_GeneRankingTypemedian_spectra_zscore_EnrichmentTypeGOEnrichment.txt")
+# 	clusterProfiler_result = os.path.join(config["analysisDir"], wildcards.folder, wildcards.sample, "K"+wildcards.k, "threshold_"+wildcards.threshold, "clusterProfiler_GeneRankingTypezscore_EnrichmentTypeGOEnrichment.txt")
+# 	input_list = []
+# 	input_list.extend(list(batch_correlation_mtx_RDS)).extend(list(cNMF_Results)).extend(list(clusterProfiler_median_spectra_zscore_result)).extend(list(clusterProfiler_result))
+# 	if (config["Perturb-seq"] == "True"):
+# 		MAST_output = os.path.join(config["analysisDir"], wildcards.folder, wildcards.sample, "K"+wildcards.k, "threshold_"+wildcards.threshold, wildcards.sample+"_MAST_DEtopics.txt")
+# 		input_list.extend(list(MAST_output))
+# 	return(input_list)
+# 	##here
+
+
+## Topic Summary Table
 rule TopicSummary:
 	input:
+		# get_TopicSummary_input
 		batch_correlation_mtx_RDS = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/batch.correlation.RDS"),
 		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
 		clusterProfiler_median_spectra_zscore_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingTypemedian_spectra_zscore_EnrichmentTypeGOEnrichment.txt"),
-		clusterProfiler_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingTypezscore_EnrichmentTypeGOEnrichment.txt")
+		clusterProfiler_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingTypezscore_EnrichmentTypeGOEnrichment.txt"),
+		motif_table = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{{k}}/threshold_{{threshold}}/{ep_type}.topic.top.300.zscore.gene_motif.count.ttest.enrichment_motif.thr.{motif_match_thr}_k_{{k}}.dt_{{threshold}}.txt"), ep_type=["promoter", "enhancer"], motif_match_thr = "pval1e-4")
 	output:
 		ProgramSummary = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_ProgramSummary_k_{k}.dt_{threshold}.txt")
 	params:
@@ -1305,6 +1322,35 @@ rule TopicSummary:
 			--density.thr {params.threshold} \
 			--perturbSeq {params.perturbseq} '"
 
+
+## Topic Annotation Template Table: ## to do: test run
+rule TopicAnnotationTemplateTable:
+	input:
+		batch_correlation_mtx_RDS = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/batch.correlation.RDS"),
+		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
+		clusterProfiler_median_spectra_zscore_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingTypemedian_spectra_zscore_EnrichmentTypeGOEnrichment.txt"),
+		clusterProfiler_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingTypezscore_EnrichmentTypeGOEnrichment.txt"),
+		motif_table = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{{k}}/threshold_{{threshold}}/{ep_type}.topic.top.300.zscore.gene_motif.count.ttest.enrichment_motif.thr.{motif_match_thr}_k_{{k}}.dt_{{threshold}}.txt"), ep_type=["promoter", "enhancer"], motif_match_thr = "pval1e-4")
+	output:
+		ProgramSummary = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_ProgramSummary_k_{k}.dt_{threshold}.txt")
+	params:
+		time = "1:00:00",
+		mem_gb = "16",
+		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"), # K{k}/threshold_{threshold}
+		scratch_outdir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/")
+		threshold = get_cNMF_filter_threshold_double,
+		perturbseq = "T" if config["Perturb-seq"] == "True" else "F",
+		partition = "owners,normal"
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+			conda activate cnmf_analysis_R; \
+			Rscript workflow/scripts/create_comprehensive_program_summary_table.R \
+			--sampleName {wildcards.sample} \
+			--outdir {params.analysisdir} \
+			--scratch.outdir {params.scratch_outdir} \
+			--K.val {wildcards.k} \
+			--density.thr {params.threshold} \
+			--perturbSeq {params.perturbseq} '"
 
 
 rule aggregate_over_K:

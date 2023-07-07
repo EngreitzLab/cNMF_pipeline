@@ -45,8 +45,6 @@ option.list <- list(
     make_option("--outdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/", help="Output directory"),
     make_option("--K.val", type="numeric", default=90, help="K value to analyze"),
     make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
-    ## make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
-    ## make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
     make_option("--perturbSeq", type="logical", default=TRUE, help="Whether this is a Perturb-seq experiment")
 )
 opt <- parse_args(OptionParser(option_list=option.list))
@@ -55,13 +53,8 @@ opt <- parse_args(OptionParser(option_list=option.list))
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 OUTDIR=opt$outdir
-## TMDIR=opt$topic.model.result.dir
-## SEP=opt$sep
 k <- opt$K.val
 DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
-## FIGDIR=opt$figdir
-## FIGDIRSAMPLE=paste0(FIGDIR, "/", SAMPLE, "/K",k,"/")
-## FIGDIRTOP=paste0(FIGDIRSAMPLE,"/",SAMPLE,"_K",k,"_dt_", DENSITY.THRESHOLD,"_")
 OUTDIRSAMPLE=paste0(OUTDIR, "/", SAMPLE, "/K",k,"/threshold_", DENSITY.THRESHOLD, "/")
 OUTDIRSAMPLEIGVF = paste0(OUTDIRSAMPLE, "IGVF_format/")
 
@@ -98,6 +91,9 @@ if(topic.gene.name.type == "ENSGID") {
     ENSGID.gene.names[is.na(ENSGID.gene.names)] <- SYMBOL.gene.names[is.na(ENSGID.gene.names)]
 }
 
+## load variance explained
+variance.explained.df <- read.delim(paste0(OUTDIRSAMPLE, "metrics.varianceExplained.df.txt"), stringsAsFactors=F)
+
 ## 1. Model YAML file: Capture all the information about the dataset that you used and which method and how you run it along with Topic_ID which points to Topic YAML files and Cell-Topic participation ID for pointing out the Cell-Topic participation h5ad file.
 out <- list("Assay" = NULL,
             "Cell-Topic participation ID" = NULL,
@@ -126,14 +122,24 @@ for( t in 1:k ) {
     duplicated.index <- duplicated(theta.zscore.long.here$Gene)
     theta.zscore.long.here$Gene[duplicated.index] <- paste0(theta.zscore.long.here$Gene[duplicated.index], "_", theta.zscore.long.here$ENSGID[duplicated.index])
 
+    variance.here <- variance.explained.df %>% subset(ProgramID == paste0("K", k, "_", t)) %>% pull(VarianceExplained)
     ## create output list
-    out <- list("gene_id" = theta.zscore.long.here %>%
-                    `rownames<-`(.$Gene) %>%
-                    select(gene_id) %>% t %>% as.data.frame,
+    ## out <- list("gene_id" = theta.zscore.long.here %>%
+    ##                 `rownames<-`(.$Gene) %>%
+    ##                 select(gene_id) %>% t %>% as.data.frame,
+    ##             "Gene weights" = theta.zscore.long.here %>%
+    ##                 `rownames<-`(.$Gene) %>%
+    ##                 select(`Gene weights`) %>% t %>% as.data.frame,
+    ##             "Topic ID" = paste0(SAMPLE, "_K", k, "_", t))
+
+    out <- list("Gene information" = list("gene_id" = theta.zscore.long.here %>%
+                                              `rownames<-`(.$Gene) %>%
+                                              select(gene_id) %>% t %>% as.data.frame),
                 "Gene weights" = theta.zscore.long.here %>%
                     `rownames<-`(.$Gene) %>%
                     select(`Gene weights`) %>% t %>% as.data.frame,
-                "Topic ID" = paste0(SAMPLE, "_K", k, "_", t))
-    
+                "Topic ID" = paste0(SAMPLE, "_K", k, "_", t),
+                "Topic Information" = list("variance" = variance.here))
+
     write_yaml(out, paste0(OUTDIRSAMPLEIGVF, SAMPLE, "_", SUBSCRIPT.SHORT, "_program", t, "_topicYAML.yaml"))
 }

@@ -102,8 +102,8 @@ def get_output_files(wildcards):
 	output_files.extend(list(clusterProfiler_result)) ## rule: clusterProfiler_GSEA, across K plots
 	output_files.extend(list(GSEA_plots))
 	output_files.extend(list(TFMotifEnrichment_plots))
-	# output_files.extend(list(model_yaml))
-	# output_files.extend(list(cellxgene_h5ad))
+	output_files.extend(list(model_yaml))
+	output_files.extend(list(cellxgene_h5ad))
 	output_files.extend(list(ProgramSummary))
 	# output_files.extend(list(clusterProfiler_top300Gene_GO_result))
 	# output_files.extend(list(clusterProfiler_allGeneWeight_gsea_result))

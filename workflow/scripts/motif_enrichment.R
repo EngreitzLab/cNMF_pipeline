@@ -117,6 +117,15 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$motif.enhancer.background <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/analysis/top2000VariableGenes/mouse_ENCODE_heart/fimo/fimo_out/fimo.txt"
 ## opt$motif.promoter.background <- "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv"
 
+## ## no_IL1B 200 gene library
+## opt$sampleName <- "no_IL1B"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/tutorials/2306_V2G2P_prep/figures/all_genes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/tutorials/2306_V2G2P_prep/analysis/all_genes"
+## opt$K.val <- 14
+## opt$ep.type <- "promoter"
+## opt$motif.match.thr.str <- "qval0.1"
+## opt$motif.enhancer.background <- "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.tsv"
+## opt$motif.promoter.background <- "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv"
 
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
@@ -184,10 +193,23 @@ if(file.exists(cNMF.result.file)) {
 ## load FIMO matched motifs ## ifelse on promoter vs enhancer
 if (ep.type == "promoter") {
     ## load promoter motif matches
-    motif.background <- read.delim(file=paste0(ifelse(opt$motif.promoter.background!="", opt$motif.promoter.background, "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv")), header=T, stringsAsFactors=F) %>% filter(!grepl("#", motif_id))  # 30 seconds
-    colnames(motif.background)[colnames(motif.background) == "strand"] <- "motif.matched.strand"
-    motif.background <- motif.background %>%
-        mutate(motif.short = strsplit(motif_id, split="_") %>% sapply("[[", 1) %>% as.character)
+    motif.background <- read.delim(file=paste0(ifelse(opt$motif.promoter.background!="", opt$motif.promoter.background, "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv")), header=F, stringsAsFactors=F) ## %>% filter(!grepl("#", motif_id))  # 30 seconds
+        if(ncol(motif.background) > 9) {
+        motif.background <- motif.background %>%
+            `colnames<-`(c("motif_id", "motif_alt_id", "enhancer_region", "enhancer_type", "gene_region","sequence_name","start","stop","motif.matched.strand","score","p.value","q.value","matched_sequence")) %>% filter(!grepl("#|motif_id", motif_id))  # more than 30 seconds, minutes?
+        motif.background <- motif.background %>% filter(grepl("promoter", enhancer_type))
+        
+    } else {
+        motif.background <- motif.background %>%
+            `colnames<-`(c("motif_id", "sequence_name", "start", "stop", "motif.matched.strand", "score", "p.value", "q.value", "matched_sequence")) 
+    }
+    ## old
+    ## motif.background <- read.delim(file=paste0(ifelse(opt$motif.promoter.background!="", opt$motif.promoter.background, "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv")), header=T, stringsAsFactors=F) ## %>% filter(!grepl("#", motif_id))  # 30 seconds
+    ## ## colnames(motif.background) <- c("motif_id", "motif_alt_id", "enhancer_region", "enhancer_type", "gene_region","sequence_name","start","stop","motif.matched.strand","score","p.value","q.value","matched_sequence")
+    ## colnames(motif.background)[colnames(motif.background) == "strand"] <- "motif.matched.strand"
+    ## motif.background <- motif.background %>%
+    ##     mutate(motif.short = strsplit(motif_id, split="_") %>% sapply("[[", 1) %>% as.character)
+    ## end of old
 
 } else {
     ## load enhancer motif matches
@@ -203,6 +225,9 @@ if (ep.type == "promoter") {
             `colnames<-`(c("motif_id", "sequence_name", "start", "stop", "motif.matched.strand", "score", "p.value", "q.value", "matched_sequence")) 
     }
 }
+motif.background <- motif.background %>% mutate(motif.short = strsplit(motif_id, split="_") %>% sapply("[[", 1) %>% as.character)
+message("finished loading motif input")
+
 
 ## subset to q.value < 0.1 
 if (grepl("qval", motif.match.thr.str)) {

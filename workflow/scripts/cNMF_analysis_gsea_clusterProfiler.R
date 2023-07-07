@@ -314,8 +314,8 @@ out <- do.call(rbind, lapply(c(1:k) %>% rev, function(t) {
     ## print(head(geneUniverse))
     
     gene.weights <- data.here$gene.weights
-    if(sum(as.numeric(is.na(names(gene.weights)))) > 0) gene.weights <- gene.weights[-which(is.na(names(gene.weights)))]
-    gene.weights <- gene.weights[-which(gene.weights==0)] ## can't have zero weights?
+    if (sum(as.numeric(is.na(names(gene.weights)))) > 0) gene.weights <- gene.weights[-which(is.na(names(gene.weights)))]
+    if (which(gene.weights==0) %>% length > 0) gene.weights <- gene.weights[-which(gene.weights==0)] ## can't have zero weights?
     if (length(which(is.na(gene.weights))) > 0) gene.weights <- gene.weights[-which(is.na(gene.weights))] ## can't have NA
     ## print(head(gene.weights))
     

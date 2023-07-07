@@ -37,24 +37,25 @@ suppressPackageStartupMessages({
 option.list <- list(
     make_option("--sampleName", type="character", default="2kG.library", help="Name of the sample"),
     make_option("--outdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211206_ctrl_only_snakemake/analysis/all_genes/2kG.library.ctrl.only/K25/threshold_0_2/", help="Output directory"),
+    make_option("--scratch.outdir", type="character", default="", help="Scratch space for temporary files"),
     make_option("--K.val", type="numeric", default=60, help="K value to analyze"),
     make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
-    make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
-    make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
+    ## make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
+    ## make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
     make_option("--perturbSeq", type="logical", default=TRUE, help="Whether this is a Perturb-seq experiment")
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
 
 
-## K562 gwps 2k overdispersed genes
-## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/figures/top2000VariableGenes/WeissmanK562gwps/K90/"
-opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/WeissmanK562gwps/K90/threshold_0_2/"
-opt$K.val <- 90
-opt$sampleName <- "WeissmanK562gwps"
-opt$perturbSeq <- TRUE
-opt$scratch.outdir <- "/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/230104_snakemake_WeissmanLabData/top2000VariableGenes/K90/analysis/comprehensive_program_summary/"
-opt$barcodeDir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/data/K562_gwps_raw_singlecell_01_metadata.txt"
+## ## K562 gwps 2k overdispersed genes
+## ## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/figures/top2000VariableGenes/WeissmanK562gwps/K90/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/WeissmanK562gwps/K90/threshold_0_2/"
+## opt$K.val <- 90
+## opt$sampleName <- "WeissmanK562gwps"
+## opt$perturbSeq <- TRUE
+## opt$scratch.outdir <- "/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/230104_snakemake_WeissmanLabData/top2000VariableGenes/K90/analysis/comprehensive_program_summary/"
+## opt$barcodeDir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/data/K562_gwps_raw_singlecell_01_metadata.txt"
 
 ## OUTDIR <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220316_regulator_topic_definition_table/outputs/"
 ## FIGDIR <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220316_regulator_topic_definition_table/figures/"
@@ -75,11 +76,11 @@ OUTDIRSAMPLE <- opt$outdir
 k <- opt$K.val 
 SAMPLE <- opt$sampleName
 DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
-SUBSCRIPT=paste0("k_", k,".dt_",DENSITY.THRESHOLD,".minGuidePerPtb_",opt$guide.count.thr,".minCellPerGuide_", opt$cell.count.thr)
+## SUBSCRIPT=paste0("k_", k,".dt_",DENSITY.THRESHOLD,".minGuidePerPtb_",opt$guide.count.thr,".minCellPerGuide_", opt$cell.count.thr)
 SUBSCRIPT.SHORT=paste0("k_", k, ".dt_", DENSITY.THRESHOLD)
 
-## load ref table (for Perturbation distance to GWAS loci annotation in Perturb_plus column)
-ref.table <- read.delim(file="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/data/ref.table.txt", header=T, check.names=F, stringsAsFactors=F)
+## ## load ref table (for Perturbation distance to GWAS loci annotation in Perturb_plus column)
+## ref.table <- read.delim(file="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/data/ref.table.txt", header=T, check.names=F, stringsAsFactors=F)
 
 ## ## load test results
 ## all.test.combined.df <- read.delim(paste0("/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220312_compare_statistical_test/outputs/all.test.combined.df.txt"), stringsAsFactors=F)
@@ -226,5 +227,5 @@ create_summary_table <- function(ann.omega, theta.zscore, all.test, meta_data) {
 }
 
 
-
+if(opt$perturbSeq == "F") MAST.df <- data.frame()
 df <- create_summary_table(ann.omega, theta.zscore, MAST.df, meta_data)
