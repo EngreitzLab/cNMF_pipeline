@@ -10,10 +10,12 @@ option.list <- list(
     # make_option("--outdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/heart_atlas/2106_FT007_Analysis/outputs/", help="Output directory"),
     # make_option("--datadir",type="character", default="/oak/stanford/groups/engreitz/Users/kangh/process_sequencing_data/210611_FT007_CM_CMO/gex_FT007_50k/outs/filtered_feature_bc_matrix/", help="Data directory"),
     # make_option("--project",type="character",default="/oak/stanford/groups/engreitz/Users/kangh/heart_atlas/2106_FT007_Analysis/",help="Project Directory"),
-    # make_option("--sampleName",type="character",default="gex_FT007_50k", help="Sample name"),
+    make_option("--sampleName",type="character",default="gex_FT007_50k", help="Sample name"),
     make_option("--inputSeuratObject", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/data/FT010_fresh_3min.SeuratObject.RDS", help="Path to the Seurat Object"),
     make_option("--output_h5ad", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/data/FT010_fresh_3min.h5ad"),
-    make_option("--output_gene_name_txt", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/data/FT010_fresh_3min.h5ad.all.genes.txt")
+    make_option("--output_gene_name_txt", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211011_Perturb-seq_Analysis_Pipeline_scratch/analysis/data/FT010_fresh_3min.h5ad.all.genes.txt"),
+    make_option("--minUMIsPerCell", type="numeric", default=200),
+    make_option("--minUniqueGenesPerCell", type="numeric", default=200)
     # make_option("--recompute", type="logical", default=F, help="T for recomputing UMAP from 10x count matrix")
 )
 opt <- parse_args(OptionParser(option_list=option.list))
@@ -25,6 +27,7 @@ suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(tidyr))
+suppressPackageStartupMessages(library(Matrix))
 # suppressPackageStartupMessages(library(readxl))
 # suppressPackageStartupMessages(library(ggrepel))
 
@@ -36,13 +39,21 @@ suppressPackageStartupMessages(library(tidyr))
 ## ## sdev for mouse ENCODE adrenal data
 ## opt$inputSeuratObject <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230117_snakemake_mouse_ENCODE_adrenal/analysis/data/mouse_ENCODE_adrenal.SeuratObject.RDS"
 
+
+## ## sdev for IGVF_b01_LeftCortex
+## opt$inputSeuratObject <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/data/IGVF_b01_LeftCortex.SeuratObject.RDS"
+## opt$output_h5ad <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/data/IGVF_b01_LeftCortex.h5ad"
+## opt$output_gene_name_txt <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/data/IGVF_b01_LeftCortex.h5ad.all.genes.txt"
+## opt$sampleName <- "IGVF_b01_LeftCortex"
+
+
 #######################################################################
 ## Constants
 # PROJECT=opt$project
 # DATADIR=opt$datadir
 # OUTDIR=opt$outdir
 # FIGDIR= paste0(PROJECT, "/figures/")
-# SAMPLE=opt$sampleName
+SAMPLE=opt$sampleName
 # OUTDIRSAMPLE=paste0(OUTDIR,"/",SAMPLE,"/")
 # FIGDIRSAMPLE=paste0(FIGDIR,SAMPLE,"/")
 # palette = colorRampPalette(c("#38b4f7", "white", "red"))(n=100)
@@ -59,12 +70,21 @@ s <- readRDS(opt$inputSeuratObject)
 
 print("finished loading Seurat Object")
 
+## set assay to RNA first to avoid error such as "SCT is not an assay present in the given object. Available assays are: RNA" (could happen when getting gene names).
+DefaultAssay(object = s) <- "RNA"
+## only keep RNA counts and metadata. Remove any other items (e.g. PCA, SCTransform, UMAP) to avoid errors.
+s.meta <- s[[]]
+s.count <- s@assays$RNA@counts
+s <- CreateSeuratObject(counts = s.count,
+                        project = SAMPLE,
+                        meta.data = s.meta)
+
 ## filter genes and cells again, for the cases when input file is Seurat Object and create_seurat_object step is skipped
 ## remove non-protein coding genes and genes detected in fewer than 10 cells
 tokeep <- which(!(grepl("^LINC|^[A-Za-z][A-Za-z][0-9][0-9][0-9][0-9][0-9][0-9]\\.|^Gm[0-9]|[0-9]Rik$|-ps", s %>% rownames)))
 s.subset <- s[tokeep,]
 print('finished subsetting to remove non-coding genes')
-s.subset <- subset(s.subset, subset= nCount_RNA > 200 & nFeature_RNA > 200) # remove cells with less than 200 UMIs and less than 200 genes
+s.subset <- subset(s.subset, subset= nCount_RNA > opt$minUMIsPerCell & nFeature_RNA > opt$minUniqueGenesPerCell) # remove cells with less than predefined number of UMIs (e.g. 200 UMIs) and less than a number of genes (e.g. 200 genes)
 print('removed cells with less than 200 UMIs and less than 200 genes')
 ## tokeep <- which(s.subset@assays$RNA@counts %>% apply(1, sum) > 10) # keep genes detected in more than 10 UMIs
 
@@ -84,7 +104,7 @@ print('removed cells with less than 200 UMIs and less than 200 genes')
 s <- s.subset
 
 adata <- anndata$AnnData(
-    X = t(GetAssayData(object = s) %>% as.matrix),
+    X = t(GetAssayData(object = s)),
     obs = data.frame(s@meta.data),
     var = s %>% rownames %>% as.data.frame %>% `rownames<-`(s %>% rownames) %>% `colnames<-`("Gene")
 )

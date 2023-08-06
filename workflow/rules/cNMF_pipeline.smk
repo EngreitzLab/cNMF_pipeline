@@ -109,73 +109,79 @@ def get_rule_prepare_cNMF_partition(wildcards):
 # 	return all_output
 
 
-## todo: rethink the structure of UMAP part: what are the possible input file types?
-rule create_Seurat_Object:
-	input:
-		mtx = os.path.join(config["dataDir"], "matrix.mtx.gz"),
-		features = os.path.join(config["dataDir"], "features.tsv.gz"),
-		barcodes = os.path.join(config["dataDir"], "barcodes.tsv.gz")
-	output:
-		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
-	params:
-		time = "2:00:00",
-		mem_gb = "200",
-		datadir = config["dataDir"],
-		outdir = os.path.join(config["analysisDir"], "data"),
-		partition = "owners,normal"
-	shell:
-		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_analysis_R; \
-		Rscript workflow/scripts/create_seurat_object.R \
-		--outdir {params.outdir}/ \
-		--datadir {params.datadir} \
-		--sampleName {wildcards.sample} \
-		' "
+# ## todo: rethink the structure of UMAP part: what are the possible input file types?
+# rule create_Seurat_Object:
+# 	input:
+# 		mtx = os.path.join(config["dataDir"], "matrix.mtx.gz"),
+# 		features = os.path.join(config["dataDir"], "features.tsv.gz"),
+# 		barcodes = os.path.join(config["dataDir"], "barcodes.tsv.gz")
+# 	output:
+# 		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
+# 	params:
+# 		time = "2:00:00",
+# 		mem_gb = "200",
+# 		datadir = config["dataDir"],
+# 		outdir = os.path.join(config["analysisDir"], "data"),
+# 		partition = "owners,normal"
+# 	shell:
+# 		"bash -c ' source $HOME/.bashrc; \
+# 		conda activate cnmf_analysis_R; \
+# 		Rscript workflow/scripts/create_seurat_object.R \
+# 		--outdir {params.outdir}/ \
+# 		--datadir {params.datadir} \
+# 		--sampleName {wildcards.sample} \
+# 		' "
 
 
 ## convert Seurat Object to h5ad file
 rule Seurat_Object_to_h5ad:
 	input:
-		seurat_object = os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS")
+		seurat_object = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".SeuratObject.RDS")
 	output:
-		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
-		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".h5ad"),
+		gene_name_txt = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".h5ad.all.genes.txt")
 	params:
 		time = "2:00:00",
 		mem_gb = "64",
-		partition = "owners,normal"
+		partition = "owners,normal",
+		sampleName = config["sampleName"],
+		min_UMIs_per_cell = config["min_UMIs_per_cell"],
+		min_unique_genes_per_cell = config["min_unique_genes_per_cell"]
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_analysis_R; \
 		Rscript workflow/scripts/seurat_to_h5ad.R \
+		--sampleName {params.sampleName} \
 		--inputSeuratObject {input.seurat_object} \
 		--output_h5ad {output.h5ad_mtx} \
-		--output_gene_name_txt {output.gene_name_txt} ' "
+		--output_gene_name_txt {output.gene_name_txt} \
+		--minUMIsPerCell {params.min_UMIs_per_cell} \
+		--minUniqueGenesPerCell {params.min_unique_genes_per_cell} ' "
 
 
-def get_raw_h5ad_file(wildcards):
-	if os.path.isfile(config["input_h5ad_mtxDir"]):
-		return(config["input_h5ad_mtxDir"])
-	else:
-		return(os.path.join(config["analysisDir"], "data/raw/{wildcards.sample}.h5ad"))
+# def get_raw_h5ad_file(wildcards):
+# 	if os.path.isfile(config["input_h5ad_mtxDir"]):
+# 		return(config["input_h5ad_mtxDir"])
+# 	else:
+# 		return(os.path.join(config["analysisDir"], "data/raw/" + config["sampleName"] + ".h5ad"))
 
 
-rule raw_h5ad_to_filtered_h5ad:
-	input:
-		raw_h5ad_mtx = get_raw_h5ad_file
-	output:	
-		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
-		gene_name_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
-	params:
-		time = "2:00:00",
-		mem_gb = "64"
-	shell:
-		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_env; \
-		python workflow/scripts/filter_to_h5ad.py \
-		--inputPath {input.raw_h5ad_mtx} \
-		--output_h5ad {output.h5ad_mtx} \
-		--output_gene_name_txt {output.gene_name_txt} ' "
+# rule raw_h5ad_to_filtered_h5ad:
+# 	input:
+# 		raw_h5ad_mtx = get_raw_h5ad_file
+# 	output:	
+# 		h5ad_mtx = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".h5ad"),
+# 		gene_name_txt = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".h5ad.all.genes.txt")
+# 	params:
+# 		time = "2:00:00",
+# 		mem_gb = "64"
+# 	shell:
+# 		"bash -c ' source $HOME/.bashrc; \
+# 		conda activate cnmf_env; \
+# 		python workflow/scripts/filter_to_h5ad.py \
+# 		--inputPath {input.raw_h5ad_mtx} \
+# 		--output_h5ad {output.h5ad_mtx} \
+# 		--output_gene_name_txt {output.gene_name_txt} ' "
 
 
 # rule raw_h5ad_to_filtered_h5ad_helper:
@@ -1332,12 +1338,12 @@ rule TopicAnnotationTemplateTable:
 		clusterProfiler_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingTypezscore_EnrichmentTypeGOEnrichment.txt"),
 		motif_table = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{{k}}/threshold_{{threshold}}/{ep_type}.topic.top.300.zscore.gene_motif.count.ttest.enrichment_motif.thr.{motif_match_thr}_k_{{k}}.dt_{{threshold}}.txt"), ep_type=["promoter", "enhancer"], motif_match_thr = "pval1e-4")
 	output:
-		ProgramSummary = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_ProgramSummary_k_{k}.dt_{threshold}.txt")
+		ComprehensiveProgramSummary = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_k_{k}.dt_{threshold}_ComprehensiveProgramSummary.xlsx")
 	params:
 		time = "1:00:00",
 		mem_gb = "16",
 		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"), # K{k}/threshold_{threshold}
-		scratch_outdir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/")
+		scratch_outdir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
 		threshold = get_cNMF_filter_threshold_double,
 		perturbseq = "T" if config["Perturb-seq"] == "True" else "F",
 		partition = "owners,normal"

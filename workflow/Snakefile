@@ -24,6 +24,12 @@ if config["Perturb-seq"] == "True":
 if not os.path.isfile(config["fimo_formatted"]):
 	include: "rules/match_motifs.smk"
 
+if os.path.isfile(config["input_h5ad_mtxDir"]):
+	include: "rules/h5ad_start.smk"
+
+if (os.path.isfile(os.path.join(config["dataDir"], "matrix.mtx")) & os.path.isfile(os.path.join(config["dataDir"], "features.tsv")) & os.path.isfile(os.path.join(config["dataDir"], "barcodes.tsv"))) | (os.path.isfile(os.path.join(config["dataDir"], "matrix.mtx.gz")) & os.path.isfile(os.path.join(config["dataDir"], "features.tsv.gz")) & os.path.isfile(os.path.join(config["dataDir"], "barcodes.tsv.gz"))):
+	include: "rules/SeuratObject_start.smk"
+
 
 def get_output_files(wildcards):
 	output_files = []
@@ -61,6 +67,7 @@ def get_output_files(wildcards):
 
 	## Program Summary Table
 	ProgramSummary = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_ProgramSummary_k_{k}.dt_{threshold}.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+	ComprehensiveProgramSummary = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_k_{k}.dt_{threshold}_ComprehensiveProgramSummary.xlsx"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 
 	## PoPS
 	all_features_RDS = os.path.join(config["analysisDir"], "pops/features/processed_features/full_external_features.RDS"),
@@ -105,6 +112,7 @@ def get_output_files(wildcards):
 	output_files.extend(list(model_yaml))
 	output_files.extend(list(cellxgene_h5ad))
 	output_files.extend(list(ProgramSummary))
+	output_files.extend(list(ComprehensiveProgramSummary))
 	# output_files.extend(list(clusterProfiler_top300Gene_GO_result))
 	# output_files.extend(list(clusterProfiler_allGeneWeight_gsea_result))
 	# output_files.extend(list(clusterProfiler_top300Gene_gsea_result))
