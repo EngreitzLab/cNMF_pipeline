@@ -23,6 +23,16 @@ parser.add_argument('--barcode_dir', dest = 'barcode_dir', type=str, default='/o
 
 args = parser.parse_args()
 
+
+# ## sdev for IGVF_b01_LeftCortex, all_genes, K=60
+# args.outdir = '/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes/IGVF_b01_LeftCortex/K60/threshold_0_2/IGVF_format/'
+# args.path_to_topics = '/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes_acrossK'
+# args.topic_sampleName = 'IGVF_b01_LeftCortex'
+# args.k = 60
+# args.density_threshold = 0.2
+# args.barcode_dir = '/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_igvf_b01_LeftCortex_data/IGVF_b01_LeftCortex.barcodes.txt'
+
+
 sample = args.topic_sampleName
 # output_sample = args.output_sampleName
 # tpm_counts_path = args.tpm_counts_path
@@ -32,6 +42,9 @@ density_threshold = args.density_threshold
 output_directory = args.path_to_topics
 run_name = args.topic_sampleName
 barcode_dir = args.barcode_dir
+
+
+
 
 cnmf_obj = cNMF(output_dir=output_directory, name=run_name)
 usage_norm, gep_scores, gep_tpm, topgenes = cnmf_obj.load_results(K=selected_K, density_threshold=density_threshold)
@@ -50,6 +63,7 @@ programNames_df = pd.DataFrame({"ProgramNames": programNames}, index=programName
 
 usage_norm.columns = programNames
 
+barcodes_df = barcodes_df.loc[usage_norm.index,:] ## sort the barcodes df to match with usage_norm
 ## create AnnData
 adata = ad.AnnData(
     X = usage_norm,
