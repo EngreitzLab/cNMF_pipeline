@@ -127,6 +127,17 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$motif.enhancer.background <- "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.tsv"
 ## opt$motif.promoter.background <- "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv"
 
+## ## IGVF b01_LeftCortex sdev
+## opt$sampleName <- "IGVF_b01_LeftCortex"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/figures/all_genes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes"
+## opt$K.val <- 20
+## opt$ep.type <- "enhancer"
+## opt$organism <- "mouse"
+## opt$motif.match.thr.str <- "pval1e-6"
+## opt$motif.enhancer.background <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes/IGVF_b01_LeftCortex/fimo/fimo_out/fimo.txt"
+## opt$motif.promoter.background <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes/IGVF_b01_LeftCortex/fimo/fimo_out/fimo.txt"
+
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
 
@@ -242,7 +253,7 @@ if (grepl("qval", motif.match.thr.str)) {
 
 
 if(ep.type == "enhancer") {
-    if(ncol(motif.background) == 9) {
+    if(ncol(motif.background) == 9 | sum(as.numeric(grepl("|", motif.background$sequence_name))) == nrow(motif.background)) {
         motif.background <- motif.background %>%
             filter(!grepl("promoter", sequence_name) & !grepl("start", start)) %>%
             separate(col="sequence_name", into=c("enhancer_region", "enhancer_type", "gene_region", "gene_name_sequence_region"), sep="[|]") %>%

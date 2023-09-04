@@ -1073,6 +1073,7 @@ rule analysis:
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
 		# barcode = os.path.join(config["barcodeDir"], "{sample}.barcodes.tsv"),
+		organism = config["organism"],
 		threshold = get_cNMF_filter_threshold_double,
 		barcode_names = config["barcodeDir"],
 		partition = "owners,normal"
@@ -1094,6 +1095,7 @@ rule analysis:
 		--K.val {wildcards.k} \
 		--density.thr {params.threshold} \
 		--recompute F \
+		--organism {params.organism} \
 		--motif.enhancer.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/cNMF/2104_all_genes/data/fimo_out_ABC_TeloHAEC_Ctrl_thresh1.0E-4/fimo.formatted.tsv \
 		--motif.promoter.background /oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv \
 		' "
@@ -1786,7 +1788,7 @@ rule PoPS_plots:
 		--all.features {input.all_features_with_cNMF_RDS} \
 		--external.features.metadata {params.external_features_metadata} \
 		--combined.preds {input.combined_preds} \
-		--coefs.defining.top.topic.RDS {input.coefs_defining_top_topic_RDS} \
+		--coefs.defining.top.topic.RDS {input.coe.afs_defining_top_topic_RDS} \
 		--preds.importance.score.key.columns {input.preds_importance_score_key_columns} ' "
 
 
@@ -1803,6 +1805,8 @@ rule IGVF_formatting_model_programGenes:
 		time = "1:00:00",
 		mem_gb = "8",
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
+		level = config["sample_type"],
+		cell_type = config["celltype"],
 		partition = "owners,normal",
 		threshold = get_cNMF_filter_threshold_double
 	shell:
@@ -1813,6 +1817,8 @@ rule IGVF_formatting_model_programGenes:
 			--outdir {params.analysisdir}/ \
 			--K.val {wildcards.k} \
 			--density.thr {params.threshold} \
+			--level {params.level} \
+			--cell.type {params.cell_type} \
 		' "
 
 rule IGVF_formatting_model_cellxgene:

@@ -45,10 +45,20 @@ option.list <- list(
     make_option("--outdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/", help="Output directory"),
     make_option("--K.val", type="numeric", default=90, help="K value to analyze"),
     make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
-    make_option("--perturbSeq", type="logical", default=TRUE, help="Whether this is a Perturb-seq experiment")
+    make_option("--perturbSeq", type="logical", default=TRUE, help="Whether this is a Perturb-seq experiment"),
+    make_option("--level", type="character", default="cell line", help="Sample type (e.g. tissue, cell line, primary cells"),
+    make_option("--cell.type", type="character", default="teloHAEC", help="Cell type description (e.g. brain, teloHAEC, K562)")
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
+
+## ## sdev IGVF b01_LeftCortex
+## opt$sampleName <- "IGVF_b01_LeftCortex"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes/"
+## opt$K.val <- 15
+## opt$perturbSeq <- FALSE
+## opt$level <- "tissue"
+## opt$cell.type <- "brain"
 
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
@@ -103,8 +113,8 @@ out <- list("Assay" = NULL,
             "Technology" = "10x",
             "cNMF spectra threshold" = opt$density.thr,
             "Topic IDs" = paste0(SAMPLE, "_K", k, "_", 1:k),
-            "level" = "cell line",
-            "cell type" = "K562")
+            "level" = opt$level,
+            "cell type" = opt$cell.type)
 write_yaml(out, paste0(OUTDIRSAMPLEIGVF, SAMPLE, ".", SUBSCRIPT.SHORT, ".modelYAML.yaml"))
 
 ## 2. Topics YAML files: Capture all the information about Topics including Topic_ID, gene_weight, gene_id and gene_name and any other information that suits your data

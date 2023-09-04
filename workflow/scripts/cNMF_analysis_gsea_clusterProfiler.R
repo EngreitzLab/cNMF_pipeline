@@ -89,6 +89,25 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$GSEA.type <- "ByWeightGSEA"
 ## opt$ranking.type <- "median_spectra"
 
+## ## IGVF b01_LeftCortex
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/figures/all_genes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes/"
+## opt$K.val <- 20
+## opt$sampleName <- "IGVF_b01_LeftCortex"
+## opt$GSEA.type <- "GSEA"
+## opt$ranking.type <- "median_spectra"
+## opt$organism <- "mouse"
+
+## ## RCA Pt4
+## opt$topic.model.result.dir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220124_snakemake_RCA/analysis/all_genes_acrossK/RCA"
+## opt$sampleName <- "RCA"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220124_snakemake_RCA/figures/all_genes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220124_snakemake_RCA/analysis/all_genes"
+## opt$K.val <- 60
+## opt$ranking.type <- "median_spectra_zscore"
+## opt$GSEA.type <- "GOEnrichment"
+## opt$organism <- "human"
+
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
@@ -227,8 +246,6 @@ ranking.type.ary <- c("zscore", "raw", "median_spectra_zscore", "median_spectra"
 score.colname.ary <- c("zscore", "raw", "median.spectra.zscore", "median.spectra")
 ranking.rank.colname.ary <- c("zscore.specificity.rank", "raw.score.rank", "median.spectra.zscore.rank", "median.spectra.rank")
 ranking.type.varname.ary <- c("theta.rank.df", "theta.raw.rank.df", "median.spectra.zscore.df", "median.spectra.rank.df")
-db <- ifelse(grepl("mouse|org.Mm.eg.db", opt$organism), "org.Mm.eg.db", "org.Hs.eg.db")
-library(!!db) ## load the appropriate database
 
 getData <- function(t) {
     i <- which(ranking.type.ary == opt$ranking.type)
@@ -278,7 +295,7 @@ getData <- function(t) {
     return(list(top.genes = top.genes, pos.genes = pos.genes, geneUniverse = geneUniverse, gene.weights = gene.weights))
 }
 
-m_df <- msigdbr(species = ifelse(grepl("mouse", SAMPLE), "Mus musculus", "Homo sapiens"))
+m_df <- msigdbr(species = ifelse(grepl("mouse", opt$organism), "Mus musculus", "Homo sapiens"))
 
 ## save this as a txt file and read in ## for future if needed
 functionsToRun <- list(GOEnrichment = "out <- enrichGO(gene = top.genes, ont = 'ALL', OrgDb = db, universe = geneUniverse, readable=T, pvalueCutoff=1, pAdjustMethod = 'fdr') %>% as.data.frame %>% mutate(fdr.across.ont = p.adjust, ProgramID = paste0('K', k, '_', t))",

@@ -57,6 +57,15 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$ranking.type <- "zscore"
 ## opt$GSEA.type <- "GSEA"
 
+## IGVF b01_LeftCortex sdev
+opt$sampleName <- "IGVF_b01_LeftCortex"
+opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/figures/all_genes/"
+opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes"
+opt$K.val <- 10
+opt$ranking.type <- "median_spectra"
+opt$GSEA.type <- "GSEA"
+
+
 
 OUTDIR <- opt$outdir
 FIGDIR <- opt$figdir
@@ -96,16 +105,20 @@ mytheme <- theme_classic() + theme(axis.text = element_text(size = 7),
 
 file.name <- paste0(OUTDIRSAMPLE, "/clusterProfiler_GeneRankingType", ranking.type.here, "_EnrichmentType", GSEA.type,".txt")
 gsea.df <- read.delim(file.name, stringsAsFactors=F)
-toplot <- gsea.df %>%
-    subset(p.adjust < fdr.thr) %>%
-    group_by(ProgramID) %>%
-    arrange(p.adjust) %>%
-    unique %>%
-    slice(1:10) %>%
-    mutate(TruncatedDescription = str_trunc(paste0(ID, "; ", Description), width=50, side="right"),
-           t = gsub("K60_", "", ProgramID) %>% as.numeric) %>%
-    arrange(t, p.adjust) %>%
-    as.data.frame
+if(nrow(gsea.df) == 0) {
+    toplot <- data.frame()
+} else {
+    toplot <- gsea.df %>%
+        subset(p.adjust < fdr.thr) %>%
+        group_by(ProgramID) %>%
+        arrange(p.adjust) %>%
+        unique %>%
+        slice(1:10) %>%
+        mutate(TruncatedDescription = str_trunc(paste0(ID, "; ", Description), width=50, side="right"),
+               t = gsub("K60_", "", ProgramID) %>% as.numeric) %>%
+        arrange(t, p.adjust) %>%
+        as.data.frame
+}
 
 plot.title <- paste0(ifelse(grepl("GO", GSEA.type), "GO Term Enrichment", "MSigDB Pathway Enrichment"),
                      "\non ",

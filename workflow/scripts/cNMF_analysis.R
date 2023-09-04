@@ -68,8 +68,11 @@ option.list <- list(
   make_option("--test.type", type="character", default="per.guide.wilcoxon", help="Significance test to threshold perturbation results"),
   make_option("--adj.p.value.thr", type="numeric", default=0.1, help="adjusted p-value threshold"),
   make_option("--recompute", type="logical", default=F, help="T for recomputing statistical tests and F for not recompute"),
-  make_option("--perturb.seq", type="character", default="False", help="True for perturb-seq. The pipeline will perform statistical test if True.")
-  
+  make_option("--perturb.seq", type="character", default="False", help="True for perturb-seq. The pipeline will perform statistical test if True."),
+
+  ## Organism flag
+  make_option("--organism", type="character", default="human", help="Organism type, accept org.Hs.eg.db. Only support human and mouse.")
+
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
@@ -125,6 +128,16 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$K.val <- 45
 ## opt$sampleName <- "mouse_ENCODE_heart"
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/collab_data/IGVF/mouse_ENCODE_adrenal/auxiliary_data/snrna/adrenal_Parse_10x_integrated_metadata.csv" ## sdev for mouse ENCODE
+
+
+## ## debug IGVF b01_LeftCortex sdev
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/figures/all_genes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes/"
+## opt$topic.model.result.dir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes_acrossK/IGVF_b01_LeftCortex/"
+## opt$K.val <- 15
+## opt$sampleName <- "IGVF_b01_LeftCortex"
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_igvf_b01_LeftCortex_data/IGVF_b01_LeftCortex.barcodes.txt"
+## opt$organism <- "mouse"
 
 
 
@@ -353,7 +366,7 @@ adjust.multiTargetGuide.rownames <- function(omega) {
     ##     rep2.label <- paste0("-",tmp.labels[2])
     ## } else guideCounts <- loadGuides(n) %>% mutate(Gene=Gene.marked)
     
-db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
+db <- ifelse(grepl("mouse|org.Mm.eg.db", opt$organism), "org.Mm.eg.db", "org.Hs.eg.db")
 library(!!db) ## load the appropriate database
 
 cNMF.result.file <- paste0(OUTDIRSAMPLE,"/cNMF_results.",SUBSCRIPT.SHORT, ".RData")
