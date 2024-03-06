@@ -79,6 +79,16 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$density.thr <- 0.2
 ## opt$scriptdir <- "/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/Perturb-seq/workflow/scripts"
 
+## ## ish SCHEMA RNA-seq data
+## opt$barcode.namse <- "/stanley/sheng-lab/helenkang/SCHEMA_bulkRNAseq_analysis/240223_initial_analysis/outputs/SCHEMA_integration_metadata.txt"
+## opt$outdirsample <- "/stanley/sheng-lab/helenkang/SCHEMA_bulkRNAseq_analysis/240301_snakemake/analysis/top2000VariableGenes/SCHEMA_integration/K3/threshold_0_2/"
+## opt$scatteroutput <- "/broad/hptmp/Helen/240301_snakemake_240303Updated/top2000VariableGenes/SCHEMA_integration/MAST/K3/threshold_0_2/"
+## opt$gene.group.list <- "/broad/hptmp/Helen/240301_snakemake_240303Updated/top2000VariableGenes/SCHEMA_integration/MAST/GeneNames_Group8.txt"
+## opt$scatter.gene.group <- 8
+## opt$sampleName <- "SCHEMA_integration"
+## opt$K.val <- 3
+## opt$density.thr <- 0.2
+## opt$scriptdir <- "/seq/lincRNA/Helen/cNMF_pipeline/Perturb-seq/workflow/scripts"
 
 
 k <- opt$K.val 
@@ -91,9 +101,9 @@ OUTDIRSAMPLE <- opt$outdirsample
 SCATTEROUTDIR <- opt$scatteroutput
 SCATTERINDEX <- opt$scatter.gene.group
 
-INPUTDIR <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220217_MAST/inputs/"
+## INPUTDIR <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220217_MAST/inputs/"
 OUTDIR <- OUTDIRSAMPLE
-check.dir <- c(INPUTDIR, OUTDIR)
+check.dir <- c(OUTDIR)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
 
 ## mytheme <- theme_classic() + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 16), plot.title = element_text(hjust = 0.5, face = "bold"))
@@ -187,7 +197,9 @@ if( grepl("2kG.library|Perturb_2kG_dup4", SAMPLE) ) {
 
 
 ## load model fitting fomulas
-test.cmd.df <- read.delim(paste0(INPUTDIR, "MAST_model_formulas.txt"), stringsAsFactors=F)
+## test.cmd.df <- read.delim(paste0(INPUTDIR, "MAST_model_formulas.txt"), stringsAsFactors=F)
+test.cmd.df <- data.frame(zlm.model.command = "~condition + lane",
+                          zlm.model.name = "batch.correction")
 
 ## ## 220222 scratch
 ## if ( !( "ann.omega" %in% ls()) ) {

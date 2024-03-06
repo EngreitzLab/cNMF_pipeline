@@ -57,13 +57,13 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$ranking.type <- "zscore"
 ## opt$GSEA.type <- "GSEA"
 
-## IGVF b01_LeftCortex sdev
-opt$sampleName <- "IGVF_b01_LeftCortex"
-opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/figures/all_genes/"
-opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes"
-opt$K.val <- 10
-opt$ranking.type <- "median_spectra"
-opt$GSEA.type <- "GSEA"
+## ## IGVF b01_LeftCortex sdev
+## opt$sampleName <- "IGVF_b01_LeftCortex"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/figures/all_genes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes"
+## opt$K.val <- 10
+## opt$ranking.type <- "median_spectra"
+## opt$GSEA.type <- "GSEA"
 
 
 

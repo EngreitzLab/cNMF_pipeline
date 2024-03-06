@@ -81,6 +81,7 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$K.val <- 90
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/data/K562_gwps_raw_singlecell_01_metadata.txt"
 
+
 ## ## ENCODE Mouse Heart data
 ## opt$sampleName <- "mouse_ENCODE_heart"
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230116_snakemake_mouse_ENCODE_heart/analysis/top2000VariableGenes"
@@ -134,6 +135,7 @@ if(file.exists(cNMF.result.file)) {
 	print(paste0(cNMF.result.file, " does not exist"))
 }
 
+barcode.names <- read.delim(opt$barcode.names, stringsAsFactors=F, check.names=F)
 
 ## annotate omega to get Gene, Guide, Sample, and CBC
 if(grepl("2kG.library", SAMPLE)) {
