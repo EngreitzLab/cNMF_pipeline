@@ -49,7 +49,7 @@ Config file slots:
 | dataDir | If using 10X scRNA-seq matrix as input, the directory with 10X files (file names must be features.tsv.gz, barcodes.tsv.gz, matrix.mtx.gz). This can be left blank if supplying the input matrix as an h5ad file. |
 | input_h5ad_mtxDir | Path to input matrix in h5ad format. Please put the h5ad file in config["analysisDir"]/data/ folder. The snakemake pipeline will look for the input h5ad file from there. The file name must be the same as config["sampleName"] (e.g. config["analysisDir"]/data/{sample}.raw.h5ad, if you want to filter the data (remove noncoding genes, very lowly expressed genes, and cells with little genes detected) using this pipeline, please name the input file to '{sample}.raw.h5ad'. If not, use '{sample}.h5ad' to skip filtering).  Leave this blank if supplying the input matrix in other formats. |
 | scratchDir | Directory for cNMF pipeline to store temporary files |
-| barcodeDir | (Necessary for Perturb-seq, optional for scRNA-seq without perturbation) Path to cell barcode / identifier tsv file, the sequence of appearance should be the same as in the input cell x gene matrix, and it must contain columns named "Gene" and "Guide" if doing Perturb-seq |
+| barcodeDir | Path to cell barcode / identifier tsv file, the sequence of appearance should be the same as in the input cell x gene matrix. The table should include "CBC" and "sample" columns. If analyzing Perturb-seq data, the table should contain "Gene" and "Guide" columns. |
 | motif_meme | MEME file for matching sequence to motifs |
 | fasta_file | Fasta file to find sequences based on coordinates |
 | promoter_fimo_formatted | (Optional) Path to promoter motif matches from FIMO output |

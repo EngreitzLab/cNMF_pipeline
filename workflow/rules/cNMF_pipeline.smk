@@ -136,10 +136,10 @@ def get_rule_prepare_cNMF_partition(wildcards):
 ## convert Seurat Object to h5ad file
 rule Seurat_Object_to_h5ad:
 	input:
-		seurat_object = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".SeuratObject.RDS")
+		seurat_object = expand(os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS"), sample = config["sampleName"])
 	output:
-		h5ad_mtx = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".h5ad"),
-		gene_name_txt = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".h5ad.all.genes.txt")
+		h5ad_mtx = expand(os.path.join(config["analysisDir"], "data/{sample}.h5ad"), sample = config["sampleName"]),
+		gene_name_txt = expand(os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt"), sample = config["sampleName"])
 	params:
 		time = "2:00:00",
 		mem_gb = "64",
@@ -1132,8 +1132,8 @@ rule topic_plot:
 
 rule batch_topic_correlation:
 	input:
-		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
-		barcode_names = os.path.join(config["barcodeDir"])		
+		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{sample}/K{{k}}/threshold_{{threshold}}/cNMF_results.k_{{k}}.dt_{{threshold}}.RData"), sample = config["sampleName"]),
+		barcode_names = expand(os.path.join(config["barcodeDir"], "{sample}.barcodes.txt"), sample = config["sampleName"])		
 	output:
 		batch_correlation_mtx_RDS = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/batch.correlation.RDS"),
 		batch_correlation_pdf = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_batch.correlation.heatmap.pdf"),
