@@ -2,7 +2,7 @@
 ## Batch and topic correlation (Perturb-seq only)
 ## 211216
 
-library(conflicted)
+suppressPackageStartupMessages(library(conflicted))
 conflict_prefer("combine", "dplyr")
 conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
 conflict_prefer("melt", "reshape2") 
@@ -19,7 +19,10 @@ packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", 
               "org.Hs.eg.db","limma","fgsea", "conflicted",
               "cluster","textshape","readxl", 
               "ggdist", "gghalves", "Seurat", "writexl", "purrr") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
-xfun::pkg_attach(packages)
+loadPackages <- function(package) suppressPackageStartupMessages(require(package, character.only=T))
+loadedPackages.boolean <- lapply(packages, loadPackages)
+if(loadedPackages.boolean %>% as.numeric %>% sum != length(loadedPackages.boolean)) warning(paste0(packages[!(loadedPackages.boolean %>% unlist())] %>% paste0(collapse = ", "), " are not loaded"))
+
 conflict_prefer("combine", "dplyr")
 conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
 conflict_prefer("melt", "reshape2") 
@@ -95,6 +98,14 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/tutorials/2306_V2G2P_prep/figures/all_genes/"
 ## opt$K.val <- 20
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/tutorials/2306_V2G2P_prep/data/no_IL1B.barcodes.txt"
+
+## ## heart_brain_EC_analysis
+## opt$outdir <- "/medpop/rgupta/helenk/heart_brain_EC_analysis/240418_snakemake_heart_brain_ECs/analysis/all_genes/"
+## opt$figdir <- "/medpop/rgupta/helenk/heart_brain_EC_analysis/240418_snakemake_heart_brain_ECs/figures/all_genes/"
+## opt$sampleName <- "heart_brain_EC"
+## opt$K.val <- 15
+## opt$density.thr <- 2
+## opt$barcode.names <- "/medpop/rgupta/helenk/heart_brain_EC_analysis/240407_combine_heart_brain_ECs/outputs/heart_brain_EC.barcodes.txt"
 
  
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()

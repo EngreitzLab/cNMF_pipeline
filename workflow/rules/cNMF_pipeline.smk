@@ -133,30 +133,30 @@ def get_rule_prepare_cNMF_partition(wildcards):
 # 		' "
 
 
-## convert Seurat Object to h5ad file
-rule Seurat_Object_to_h5ad:
-	input:
-		seurat_object = expand(os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS"), sample = config["sampleName"])
-	output:
-		h5ad_mtx = expand(os.path.join(config["analysisDir"], "data/{sample}.h5ad"), sample = config["sampleName"]),
-		gene_name_txt = expand(os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt"), sample = config["sampleName"])
-	params:
-		time = "2:00:00",
-		mem_gb = "64",
-		partition = "owners,normal",
-		sampleName = config["sampleName"],
-		min_UMIs_per_cell = config["min_UMIs_per_cell"],
-		min_unique_genes_per_cell = config["min_unique_genes_per_cell"]
-	shell:
-		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_analysis_R; \
-		Rscript workflow/scripts/seurat_to_h5ad.R \
-		--sampleName {params.sampleName} \
-		--inputSeuratObject {input.seurat_object} \
-		--output_h5ad {output.h5ad_mtx} \
-		--output_gene_name_txt {output.gene_name_txt} \
-		--minUMIsPerCell {params.min_UMIs_per_cell} \
-		--minUniqueGenesPerCell {params.min_unique_genes_per_cell} ' "
+# ## convert Seurat Object to h5ad file
+# rule Seurat_Object_to_h5ad:
+# 	input:
+# 		seurat_object = expand(os.path.join(config["analysisDir"], "data/{sample}.SeuratObject.RDS"), sample = config["sampleName"])
+# 	output:
+# 		h5ad_mtx = expand(os.path.join(config["analysisDir"], "data/{sample}.h5ad"), sample = config["sampleName"]),
+# 		gene_name_txt = expand(os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt"), sample = config["sampleName"])
+# 	params:
+# 		time = "2:00:00",
+# 		mem_gb = "64",
+# 		partition = "owners,normal",
+# 		sampleName = config["sampleName"],
+# 		min_UMIs_per_cell = config["min_UMIs_per_cell"],
+# 		min_unique_genes_per_cell = config["min_unique_genes_per_cell"]
+# 	shell:
+# 		"bash -c ' source $HOME/.bashrc; \
+# 		conda activate cnmf_analysis_R; \
+# 		Rscript workflow/scripts/seurat_to_h5ad.R \
+# 		--sampleName {params.sampleName} \
+# 		--inputSeuratObject {input.seurat_object} \
+# 		--output_h5ad {output.h5ad_mtx} \
+# 		--output_gene_name_txt {output.gene_name_txt} \
+# 		--minUMIsPerCell {params.min_UMIs_per_cell} \
+# 		--minUniqueGenesPerCell {params.min_unique_genes_per_cell} ' "
 
 
 # def get_raw_h5ad_file(wildcards):
@@ -1055,7 +1055,8 @@ rule analysis:
 		#todo: add input files
 		spectra_tpm = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_tpm.k_{k}.dt_{threshold}.txt"),
 		spectra_zscore = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.gene_spectra_score.k_{k}.dt_{threshold}.txt"),
-		spectra_consensus = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.spectra.k_{k}.dt_{threshold}.consensus.txt")
+		spectra_consensus = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.spectra.k_{k}.dt_{threshold}.consensus.txt"),
+		barcode_names = os.path.join(config["barcodeDir"], "{sample}.barcodes.txt")
 	output:
 		#todo: add output files
 		cNMF_Results = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"),
@@ -1075,7 +1076,6 @@ rule analysis:
 		# barcode = os.path.join(config["barcodeDir"], "{sample}.barcodes.tsv"),
 		organism = config["organism"],
 		threshold = get_cNMF_filter_threshold_double,
-		barcode_names = config["barcodeDir"],
 		partition = "owners,normal"
 		# subsample_type = config["subsample_type"]
 	# resources:
@@ -1089,7 +1089,7 @@ rule analysis:
 		Rscript workflow/scripts/cNMF_analysis.R \
 		--topic.model.result.dir {params.outdir}/ \
 		--sampleName {wildcards.sample} \
-		--barcode.names {params.barcode_names} \
+		--barcode.names {input.barcode_names} \
 		--figdir {params.figdir}/ \
 		--outdir {params.analysisdir}/ \
 		--K.val {wildcards.k} \
@@ -1116,6 +1116,7 @@ rule topic_plot:
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}"),
 		figdir = os.path.join(config["figDir"], "{folder}"), 
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
+		organism = config["organism"],
 		threshold = get_cNMF_filter_threshold_double,
 		partition = "owners,normal"
 	shell:
@@ -1127,13 +1128,14 @@ rule topic_plot:
 		--outdir {params.analysisdir}/ \
 		--K.val {wildcards.k} \
 		--density.thr {params.threshold} \
+		--organism {params.organism} \
 		--recompute F ' "
 
 
 rule batch_topic_correlation:
 	input:
 		cNMF_Results = expand(os.path.join(config["analysisDir"], "{{folder}}/{sample}/K{{k}}/threshold_{{threshold}}/cNMF_results.k_{{k}}.dt_{{threshold}}.RData"), sample = config["sampleName"]),
-		barcode_names = expand(os.path.join(config["barcodeDir"], "{sample}.barcodes.txt"), sample = config["sampleName"])		
+		barcode_names = os.path.join(config["barcodeDir"], "{sample}.barcodes.txt")	
 	output:
 		batch_correlation_mtx_RDS = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/batch.correlation.RDS"),
 		batch_correlation_pdf = os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_batch.correlation.heatmap.pdf"),
@@ -1822,7 +1824,9 @@ rule IGVF_formatting_model_programGenes:
 		' "
 
 rule IGVF_formatting_model_cellxgene:
-	input: cNMF_usage_output = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}/{sample}.usages.k_{k}.dt_{threshold}.consensus.txt")
+	input: 
+		cNMF_usage_output = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}/{sample}.usages.k_{k}.dt_{threshold}.consensus.txt"),
+		barcode_names = os.path.join(config["barcodeDir"], "{sample}.barcodes.txt")
 	output: cellxgene_h5ad = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/{sample}.k_{k}.dt_{threshold}.cellxgene.h5ad")
 	params:
 		time = "1:00:00",
@@ -1830,8 +1834,7 @@ rule IGVF_formatting_model_cellxgene:
 		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/"), # K{k}/threshold_{threshold}
 		cNMF_outdir = os.path.join(config["analysisDir"], "{folder}_acrossK"),
 		partition = "owners,normal",
-		threshold = get_cNMF_filter_threshold_double,
-		barcode_dir = config["barcodeDir"]
+		threshold = get_cNMF_filter_threshold_double
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -1841,7 +1844,7 @@ rule IGVF_formatting_model_cellxgene:
 			--outdir {params.analysisdir} \
 			--k {wildcards.k} \
 			--density_threshold {params.threshold} \
-			--barcode_dir {params.barcode_dir} \
+			--barcode_dir {input.barcode_names} \
 		' "
 
 
