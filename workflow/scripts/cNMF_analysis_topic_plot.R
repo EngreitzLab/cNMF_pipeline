@@ -173,7 +173,7 @@ map.ENSGID.SYMBOL <- function(topFeatures) {
                         "Gene",
                         "ENSGID")
     db <- ifelse(grepl("mouse", SAMPLE) | grepl("mouse", opt$organism), "org.Mm.eg.db", "org.Hs.eg.db")
-    library(!!db)
+    library(db, character.only = T)
     if(gene.type == "Gene") {
         if (nrow(topFeatures) == sum(as.numeric(grepl("^ENS", topFeatures$Gene)))) {
             ## put median spectra zscore into ENSGID format for PoPS
