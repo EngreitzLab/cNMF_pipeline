@@ -655,6 +655,7 @@ if(file.exists(cNMF.result.file)) {
     write.table(theta.raw.ensembl, file=paste0(OUTDIRSAMPLE, "/topic.tpm.ensembl_",SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep="\t")
     write.table(theta.zscore.ensembl.scaled, file=paste0(OUTDIRSAMPLE, "/topic.zscore.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep = "\t")
     write.table(theta.raw.ensembl.scaled, file=paste0(OUTDIRSAMPLE, "/topic.tpm.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep = "\t")
+    write.table(median.spectra, file=paste0(OUTDIRSAMPLE, "/median.spectra_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep="\t")
     write.table(median.spectra.zscore.df, file=paste0(OUTDIRSAMPLE, "/median.spectra.zscore.df_", SUBSCRIPT.SHORT, ".txt"), sep="\t", quote=F, row.names=F)
     write.table(median.spectra.zscore.formatted.scaled, file=paste0(OUTDIRSAMPLE, "/median.spectra.zscore.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), sep="\t", quote=F, row.names=F)
 

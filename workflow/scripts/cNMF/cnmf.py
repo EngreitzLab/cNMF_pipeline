@@ -874,7 +874,7 @@ if __name__=="__main__":
         cnmf_obj.save_norm_counts(norm_counts)
         (replicate_params, run_params) = cnmf_obj.get_nmf_iter_params(ks=args.components, n_iter=args.n_iter, random_state_seed=args.seed, beta_loss=args.beta_loss)
         cnmf_obj.save_nmf_iter_params(replicate_params, run_params)
-
+        
 
     elif args.command == 'factorize':
         cnmf_obj.run_nmf(worker_i=args.worker_index, total_workers=args.total_workers)
