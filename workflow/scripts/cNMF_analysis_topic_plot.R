@@ -100,6 +100,13 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$K.val <- 60
 ## opt$density.thr <- 0.2
 
+## ## PD DA neurons
+## opt$sampleName <- "dan"
+## opt$outdir <- "/broad/macosko/ferris/NMF/240606_snakemake_nurr_da/analysis/top2000VariableGenes/"
+## opt$figdir <- "/broad/macosko/ferris/NMF/240606_snakemake_nurr_da/figures/top2000VariableGenes/"
+## opt$K.val <- 50
+## opt$density.thr <- 0.2
+
 
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
@@ -374,7 +381,7 @@ dev.off()
 
 
 tokeep <- (!is.na(median.spectra)) %>% apply(1, sum) == k ## remove genes with NA ## why is there NA?
-d <- cor(theta.zscore[tokeep,], method="pearson")
+d <- cor(median.spectra[tokeep,], method="pearson")
 m <- as.matrix(d)
 
 pdf(file=paste0(FIGDIRTOP, "topic.median_spectra.Pearson.correlation.pdf"))
