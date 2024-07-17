@@ -15,12 +15,14 @@ conflict_prefer("desc", "dplyr")
 conflict_prefer("Position", "ggplot2")
 conflict_prefer("first", "dplyr")
 
-packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2",
-              "tidyr", "grid", "gtable", "gridExtra","ggrepel","ramify",
-              "ggpubr","gridExtra","RNOmni",
-              "org.Hs.eg.db","limma","fgsea", "conflicted",
-              "cluster","textshape","readxl", 
-              "ggdist", "gghalves", "Seurat", "writexl") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
+packages <- c("optparse","dplyr", "cowplot", "ggplot2", "gplots", "data.table", "reshape2", "tidyr",
+#              "grid", "gtable", "gridExtra","ggrepel","ramify",
+#              "ggpubr","gridExtra","RNOmni",
+              "org.Hs.eg.db", "limma",
+#              "fgsea", "conflicted",
+              "cluster", "textshape", "readxl", 
+#              "ggdist", "gghalves", "Seurat",
+              "writexl") #              "GGally","RNOmni","usedist","GSEA","clusterProfiler","IsoplotR","wesanderson",
 xfun::pkg_attach(packages)
 conflict_prefer("combine", "dplyr")
 conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
@@ -653,6 +655,7 @@ if(file.exists(cNMF.result.file)) {
     write.table(theta.raw.ensembl, file=paste0(OUTDIRSAMPLE, "/topic.tpm.ensembl_",SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep="\t")
     write.table(theta.zscore.ensembl.scaled, file=paste0(OUTDIRSAMPLE, "/topic.zscore.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep = "\t")
     write.table(theta.raw.ensembl.scaled, file=paste0(OUTDIRSAMPLE, "/topic.tpm.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep = "\t")
+    write.table(median.spectra, file=paste0(OUTDIRSAMPLE, "/median.spectra_", SUBSCRIPT.SHORT, ".txt"), row.names=F, quote=F, sep="\t")
     write.table(median.spectra.zscore.df, file=paste0(OUTDIRSAMPLE, "/median.spectra.zscore.df_", SUBSCRIPT.SHORT, ".txt"), sep="\t", quote=F, row.names=F)
     write.table(median.spectra.zscore.formatted.scaled, file=paste0(OUTDIRSAMPLE, "/median.spectra.zscore.ensembl.scaled_", SUBSCRIPT.SHORT, ".txt"), sep="\t", quote=F, row.names=F)
 

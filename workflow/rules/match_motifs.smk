@@ -6,12 +6,14 @@ rule get_ABC_enhancer_fasta:
 	output:
 		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa")
 	params:
+		folder = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo"),
 		time = "3:00:00",
 		mem_gb = "16",
 		partition = "owners,normal"
 	shell:
 		"bash -c ' source ~/.bashrc; \
 		conda activate cnmf_env; \
+		mkdir -p {params.folder}; \
 		bash workflow/scripts/fimo_motif_match.sh {input.coord} {input.fasta} {output.fasta} ' "
 
 
@@ -20,7 +22,7 @@ rule FIMO_ABC_enhancers:
 		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa"),
 		motif_meme = os.path.join(config["motif_meme"])
 	output:
-		fimo_result = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.txt")
+		fimo_result = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.tsv")
 	params:
 		time = "12:00:00",
 		mem_gb = "128",

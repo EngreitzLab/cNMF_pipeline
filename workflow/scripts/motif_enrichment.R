@@ -138,6 +138,19 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$motif.enhancer.background <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes/IGVF_b01_LeftCortex/fimo/fimo_out/fimo.txt"
 ## opt$motif.promoter.background <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes/IGVF_b01_LeftCortex/fimo/fimo_out/fimo.txt"
 
+## ## PD DA neuron
+## opt$sampleName <- "dan"
+## opt$figdir <- "/broad/macosko/ferris/NMF/240606_snakemake_nurr_da/figures/top2000VariableGenes/"
+## opt$outdir <- "/broad/macosko/ferris/NMF/240606_snakemake_nurr_da/analysis/top2000VariableGenes/"
+## opt$K.val <- 5
+## opt$density.thr <- 0.2
+## opt$ep.type <- "promoter"
+## opt$organism <- "human"
+## opt$motif.match.thr.str <- "pval1e-6"
+## opt$motif.enhancer.background <- "/broad/macosko/ferris/NMF/240606_snakemake_nurr_da/analysis/top2000VariableGenes/dan/fimo/fimo_out/fimo.tsv"
+## opt$motif.promoter.background <- "/broad/macosko/ferris/NMF/240606_snakemake_nurr_da/analysis/top2000VariableGenes/dan/fimo/fimo_out/fimo.tsv"
+
+
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
 
@@ -205,7 +218,7 @@ if(file.exists(cNMF.result.file)) {
 if (ep.type == "promoter") {
     ## load promoter motif matches
     motif.background <- read.delim(file=paste0(ifelse(opt$motif.promoter.background!="", opt$motif.promoter.background, "/oak/stanford/groups/engreitz/Users/kangh/2009_endothelial_perturbseq_analysis/topicModel/2104_remove_lincRNA/data/fimo_out_all_promoters_thresh1.0E-4/fimo.tsv")), header=F, stringsAsFactors=F) ## %>% filter(!grepl("#", motif_id))  # 30 seconds
-        if(ncol(motif.background) > 9) {
+    if(ncol(motif.background) > 9) {
         motif.background <- motif.background %>%
             `colnames<-`(c("motif_id", "motif_alt_id", "enhancer_region", "enhancer_type", "gene_region","sequence_name","start","stop","motif.matched.strand","score","p.value","q.value","matched_sequence")) %>% filter(!grepl("#|motif_id", motif_id))  # more than 30 seconds, minutes?
         motif.background <- motif.background %>% filter(grepl("promoter", enhancer_type))

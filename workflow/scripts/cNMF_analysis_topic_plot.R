@@ -17,7 +17,10 @@ library(conflicted)
 conflict_prefer("Position", "base")
 packages <- c("optparse","dplyr", "ggplot2", "reshape2", "ggrepel", "conflicted", "gplots", "org.Hs.eg.db")
 ## library(Seurat)
-xfun::pkg_attach(packages)
+loadPackages <- function(package) suppressPackageStartupMessages(require(package, character.only=T))
+loadedPackages.boolean <- lapply(packages, loadPackages)
+if(loadedPackages.boolean %>% as.numeric %>% sum != length(loadedPackages.boolean)) warning(paste0(packages[!(loadedPackages.boolean %>% unlist())] %>% paste0(collapse = ", "), " are not loaded"))
+## xfun::pkg_attach(packages)
 conflict_prefer("select","dplyr") # multiple packages have select(), prioritize dplyr
 conflict_prefer("melt", "reshape2") 
 conflict_prefer("slice", "dplyr")
@@ -61,7 +64,8 @@ option.list <- list(
   #summary plot parameters
   make_option("--test.type", type="character", default="per.guide.wilcoxon", help="Significance test to threshold perturbation results"),
   make_option("--adj.p.value.thr", type="numeric", default=0.1, help="adjusted p-value threshold"),
-  make_option("--recompute", type="logical", default=F, help="T for recomputing statistical tests and F for not recompute")
+  make_option("--recompute", type="logical", default=F, help="T for recomputing statistical tests and F for not recompute"),
+  make_option("--organism", type="character", default="human", help="Identify organism to load database for ENSEMBL and Gene Symbol conversion")
   
 )
 opt <- parse_args(OptionParser(option_list=option.list))
@@ -88,6 +92,21 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$sampleName <- "WeissmanK562gwps"
 ## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/analysis/top2000VariableGenes/"
 ## opt$K.val <- 20
+
+## ## brain cell data MB
+## opt$sampleName <- "DopEx_Sox6_Aldh1a1"
+## opt$outdir <- "/broad/macosko/helenk/brain_cell_data/240417_snakemake_MB/analysis/all_genes/"
+## opt$figdir <- "/broad/macosko/helenk/brain_cell_data/240417_snakemake_MB/figures/all_genes/"
+## opt$K.val <- 60
+## opt$density.thr <- 0.2
+
+## ## PD DA neurons
+## opt$sampleName <- "dan"
+## opt$outdir <- "/broad/macosko/ferris/NMF/240606_snakemake_nurr_da/analysis/top2000VariableGenes/"
+## opt$figdir <- "/broad/macosko/ferris/NMF/240606_snakemake_nurr_da/figures/top2000VariableGenes/"
+## opt$K.val <- 50
+## opt$density.thr <- 0.2
+
 
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
@@ -160,8 +179,8 @@ map.ENSGID.SYMBOL <- function(topFeatures) {
                         ##(median.spectra.zscore.df) == sum(as.numeric(grepl("^ENS", median.spectra.zscore %>% rownames))),
                         "Gene",
                         "ENSGID")
-    db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
-    library(!!db)
+    db <- ifelse(grepl("mouse", SAMPLE) | grepl("mouse", opt$organism), "org.Mm.eg.db", "org.Hs.eg.db")
+    library(db, character.only = T)
     if(gene.type == "Gene") {
         if (nrow(topFeatures) == sum(as.numeric(grepl("^ENS", topFeatures$Gene)))) {
             ## put median spectra zscore into ENSGID format for PoPS
@@ -359,4 +378,12 @@ plotHeatmap <- function(mtx, labCol, title, margins=c(12,6), ...) { #original
 pdf(file=paste0(FIGDIRTOP, "topic.Pearson.correlation.pdf"))
 plotHeatmap(m, labCol=rownames(m), margins=c(3,3), title=paste0("cNMF, topic zscore clustering by Pearson Correlation"))
 dev.off()
- 
+
+
+tokeep <- (!is.na(median.spectra)) %>% apply(1, sum) == k ## remove genes with NA ## why is there NA?
+d <- cor(median.spectra[tokeep,], method="pearson")
+m <- as.matrix(d)
+
+pdf(file=paste0(FIGDIRTOP, "topic.median_spectra.Pearson.correlation.pdf"))
+plotHeatmap(m, labCol=rownames(m), margins=c(3,3), title=paste0("cNMF, Program median spectra clustering by Pearson Correlation"))
+dev.off()

@@ -782,7 +782,7 @@ if __name__=="__main__":
     import sys, argparse
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('command', type=str, choices=['prepare', 'factorize', 'combine', 'consensus', 'k_selection_plot'])
+    parser.add_argument('command', type=str, choices=['prepare', 'prepare_generalize', 'factorize', 'combine', 'consensus', 'k_selection_plot'])
     parser.add_argument('--name', type=str, help='[all] Name for analysis. All output will be placed in [output-dir]/[name]/...', nargs='?', default='cNMF')
     parser.add_argument('--output-dir', type=str, help='[all] Output directory. All output will be placed in [output-dir]/[name]/...', nargs='?', default='.')
 
@@ -884,6 +884,9 @@ if __name__=="__main__":
         (replicate_params, run_params) = cnmf_obj.get_nmf_iter_params(ks=args.components, n_iter=args.n_iter, random_state_seed=args.seed, beta_loss=args.beta_loss)
         cnmf_obj.save_nmf_iter_params(replicate_params, run_params)
 
+    elif args.command == 'prepare_generalize':
+        (replicate_params, run_params) = cnmf_obj.get_nmf_iter_params(ks=args.components, n_iter=args.n_iter, random_state_seed=args.seed, beta_loss=args.beta_loss)
+        cnmf_obj.save_nmf_iter_params(replicate_params, run_params)
 
     elif args.command == 'factorize':
         cnmf_obj.run_nmf(worker_i=args.worker_index, total_workers=args.total_workers)

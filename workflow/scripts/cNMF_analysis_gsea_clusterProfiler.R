@@ -108,6 +108,17 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$GSEA.type <- "GOEnrichment"
 ## opt$organism <- "human"
 
+## ## heart_brain_EC
+## opt$topic.model.result.dir <- "/medpop/rgupta/helenk/heart_brain_EC_analysis/240418_snakemake_heart_brain_ECs/analysis/all_genes_acrossK/heart_brain_EC"
+## opt$sampleName <- "heart_brain_EC"
+## opt$figdir <- "/medpop/rgupta/helenk/heart_brain_EC_analysis/240418_snakemake_heart_brain_ECs/figures/all_genes/"
+## opt$outdir <- "/medpop/rgupta/helenk/heart_brain_EC_analysis/240418_snakemake_heart_brain_ECs/analysis/all_genes/"
+## opt$K.val <- 60
+## opt$density.thr <- 2
+## opt$ranking.type <- "median_spectra_zscore"
+## opt$GSEA.type <- "GSEA"
+## opt$organism <- "human"
+
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"
@@ -226,6 +237,11 @@ median.spectra.rank.df <- do.call(rbind, median.spectra.rank.list) %>%  ## combi
     as.data.frame %>% map.ENSGID.SYMBOL
 ## median.spectra.zscore.df <- median.spectra.zscore.df %>% mutate(Gene = ENSGID) ## quick fix, need to add "Gene" column to this dataframe in analysis script
 
+## prepare median.spectra.zscore.df to have ENSGID and Gene columns
+
+
+
+
 ######################################################################
 ## run cluster profiler GSEA on top 300 genes
 
@@ -258,7 +274,14 @@ getData <- function(t) {
     }
     gene.df <- get(ranking.type.varname.here) %>%
         subset(ProgramID == programID.here)
-    gene.type <- ifelse(nrow(gene.df) == sum(as.numeric(grepl("^ENS", gene.df$Gene))), "ENSGID", "Gene")
+    if("Gene" %in% colnames(gene.df)){
+        gene.type <- ifelse(nrow(gene.df) == sum(as.numeric(grepl("^ENS", gene.df$Gene))), "ENSGID", "Gene")
+    } else if ("ENSGID" %in% colnames(gene.df)) {
+        gene.type <- "ENSGID"
+        gene.df <- gene.df %>% mutate(Gene = ENSGID)
+    } else {
+        stop("Check column names of cell x protram matrix. There needs to be at least one of Symbol (column 'Gene') and Ensembl ID (column 'ENSGID'")
+    }
     mapped.genes <- mapIds(get(db),
                            keys=gene.df$Gene,
                            keytype = ifelse(gene.type == "Gene", "SYMBOL", "ENSEMBL"),

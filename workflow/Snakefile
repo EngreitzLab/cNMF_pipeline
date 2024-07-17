@@ -1,10 +1,13 @@
+# shell.executable("/bin/bash")
+# shell.prefix("source ~/.bashrc")
+
 # The main entry point of your workflow.
 # After configuring, running snakemake -n in a clone of this repository should successfully execute a dry-run of the workflow.
 import os
 import pandas as pd
 # from sympy import expand
 
-# configfile: "config/config.json"
+configfile: "config/config.json"
 
 # report: "report/workflow.rst"
 
@@ -17,7 +20,7 @@ import pandas as pd
 
 # include: "/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/workflow/rules/cNMF_pipeline.smk"
 include: "rules/cNMF_pipeline.smk"
-include: "rules/program_prioritization.smk"
+# include: "rules/program_prioritization.smk"
 if config["Perturb-seq"] == "True":
 	include: "rules/cNMF_Perturb-seq_analysis.smk"
 
@@ -47,7 +50,7 @@ def get_output_files(wildcards):
 	Var_k_summary_txt = expand(os.path.join(config["analysisDir"],"{folder}/{sample}/K{k}/threshold_{threshold}/summary.varianceExplained.df.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 
 	## motif enrichment preparation
-	fimo_result = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
+	fimo_result = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.tsv"), folder = config["cNMF_gene_selection"], sample=config["sampleName"]),
 
 	## main results
 	cNMF_Results = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/cNMF_results.k_{k}.dt_{threshold}.RData"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
