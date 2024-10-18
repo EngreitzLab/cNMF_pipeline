@@ -47,7 +47,9 @@ option.list <- list(
     make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
     make_option("--perturbSeq", type="logical", default=TRUE, help="Whether this is a Perturb-seq experiment"),
     make_option("--level", type="character", default="cell line", help="Sample type (e.g. tissue, cell line, primary cells"),
-    make_option("--cell.type", type="character", default="teloHAEC", help="Cell type description (e.g. brain, teloHAEC, K562)")
+    make_option("--cell.type", type="character", default="teloHAEC", help="Cell type description (e.g. brain, teloHAEC, K562)"),
+    make_option("--technology", type="character", default="10x", help="Technology used to generate this library (e.g. 10x, split-seq)"),
+    make_option("--organism", type="character", default="human", help="The organism of this library (e.g. human, mouse)") 
 )
 opt <- parse_args(OptionParser(option_list=option.list))
 
@@ -59,6 +61,8 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$perturbSeq <- FALSE
 ## opt$level <- "tissue"
 ## opt$cell.type <- "brain"
+## opt$organism <- "mouse"
+## opt$technology <- "10x"
 
 
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
@@ -87,18 +91,23 @@ if(file.exists(cNMF.result.file)) {
     print(paste0("file ", cNMF.result.file, " not found"))
 }
 
-db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
+db <- ifelse(opt$organism == "mouse", "org.Mm.eg.db", "org.Hs.eg.db")
 library(!!db) ## load the appropriate database
-topic.gene.names <- rownames(theta.zscore)
-topic.gene.name.type <- ifelse(grepl("^ENSG", topic.gene.names) %>% as.numeric %>% sum == length(topic.gene.names), "ENSGID", "SYMBOL")
-if(topic.gene.name.type == "ENSGID") {
-    ENSGID.gene.names <- topic.gene.names
-    SYMBOL.gene.names <- mapIds(get(db), keys=topic.gene.names, keytype = "ENSEMBL", column = "SYMBOL")
-    SYMBOL.gene.names[is.na(SYMBOL.gene.names)] <- ENSGID.gene.names[is.na(SYMBOL.gene.names)]
-} else {
-    SYMBOL.gene.names <- topic.gene.names
-    ENSGID.gene.names <- mapIds(get(db), keys=topic.gene.names, keytype = "SYMBOL", column = "ENSEMBL")
-    ENSGID.gene.names[is.na(ENSGID.gene.names)] <- SYMBOL.gene.names[is.na(ENSGID.gene.names)]
+getGeneNames <- function(df) {
+    topic.gene.names <- rownames(df)
+    topic.gene.name.type <- ifelse(grepl("^ENS", topic.gene.names) %>% as.numeric %>% sum == length(topic.gene.names), "ENSGID", "SYMBOL")
+    if(topic.gene.name.type == "ENSGID") {
+        ENSGID.gene.names <- topic.gene.names
+        SYMBOL.gene.names <- mapIds(get(db), keys=topic.gene.names, keytype = "ENSEMBL", column = "SYMBOL")
+        SYMBOL.gene.names[is.na(SYMBOL.gene.names)] <- ENSGID.gene.names[is.na(SYMBOL.gene.names)]
+    } else {
+        SYMBOL.gene.names <- topic.gene.names
+        ## ENSGID.terms <- which(grepl("^ENS", SYMBOL.gene.names)) ## find ENSEMBL ID among the symbol IDs
+        ## SYMBOL.conversion <- mapIds(get(db), keys=SYMBOL.gene.names[ENSGID.terms], keytype = "ENSEMBL", column = "SYMBOL") ## convert the left over ENSMBL ID to symbol ID ## none of the keys enetered are valid keys for 'ENSEMBL' in IGVF b01 LeftCortex case.
+        ENSGID.gene.names <- mapIds(get(db), keys=topic.gene.names, keytype = "SYMBOL", column = "ENSEMBL")
+        ENSGID.gene.names[is.na(ENSGID.gene.names)] <- SYMBOL.gene.names[is.na(ENSGID.gene.names)]
+    }
+    return(list(SYMBOL.gene.names, ENSGID.gene.names))
 }
 
 ## load variance explained
@@ -110,7 +119,7 @@ out <- list("Assay" = NULL,
             "Experiment ID" = SAMPLE,
             "Name of method" = "cNMF",
             "Number of topics" = k,
-            "Technology" = "10x",
+            "Technology" = opt$technology,
             "cNMF spectra threshold" = opt$density.thr,
             "Topic IDs" = paste0(SAMPLE, "_K", k, "_", 1:k),
             "level" = opt$level,
@@ -118,6 +127,9 @@ out <- list("Assay" = NULL,
 write_yaml(out, paste0(OUTDIRSAMPLEIGVF, SAMPLE, ".", SUBSCRIPT.SHORT, ".modelYAML.yaml"))
 
 ## 2. Topics YAML files: Capture all the information about Topics including Topic_ID, gene_weight, gene_id and gene_name and any other information that suits your data
+geneNamesList <- getGeneNames(theta.zscore)
+SYMBOL.gene.names <- geneNamesList[[1]]
+ENSGID.gene.names <- geneNamesList[[2]]
 theta.zscore.long <- theta.zscore %>%
     as.data.frame %>%
     `colnames<-`(paste0(SAMPLE, "_K", k, "_", colnames(.))) %>%
@@ -126,12 +138,29 @@ theta.zscore.long <- theta.zscore %>%
     melt(id.vars=c("Gene", "ENSGID"), value.name="Gene weights", variable.name="Topic ID") %>%
     rename("gene_id" = "ENSGID")
 
+geneNameList <- getGeneNames(median.spectra)
+SYMBOL.gene.names <- geneNamesList[[1]]
+ENSGID.gene.names <- geneNamesList[[2]]
+median.spectra.long <- median.spectra %>%
+    as.data.frame %>%
+    `colnames<-`(paste0(SAMPLE, "_K", k, "_", colnames(.))) %>%
+    mutate(Gene = SYMBOL.gene.names,
+           ENSGID = ENSGID.gene.names) %>%
+    melt(id.vars=c("Gene", "ENSGID"), value.name="Gene weights", variable.name="Topic ID") %>%
+    rename("gene_id" = "ENSGID")
+    
+
 for( t in 1:k ) {
     theta.zscore.long.here <- theta.zscore.long %>%
         subset(grepl(paste0("_", t, "$"), `Topic ID`))
     duplicated.index <- duplicated(theta.zscore.long.here$Gene)
     theta.zscore.long.here$Gene[duplicated.index] <- paste0(theta.zscore.long.here$Gene[duplicated.index], "_", theta.zscore.long.here$ENSGID[duplicated.index])
 
+    median.spectra.long.here <- median.spectra.long %>%
+        subset(grepl(paste0("_", t, "$"), `Topic ID`))
+    duplicated.index <- duplicated(median.spectra.long.here$Gene)
+    if(duplicated.index %>% which %>% length > 0)    median.spectra.long.here$Gene[duplicated.index] <- paste0(median.spectra.long.here$Gene[duplicated.index], "_", median.spectra.long.here$ENSGID[duplicated.index])
+    
     variance.here <- variance.explained.df %>% subset(ProgramID == paste0("K", k, "_", t)) %>% pull(VarianceExplained)
     ## create output list
     ## out <- list("gene_id" = theta.zscore.long.here %>%
@@ -145,7 +174,10 @@ for( t in 1:k ) {
     out <- list("Gene information" = list("gene_id" = theta.zscore.long.here %>%
                                               `rownames<-`(.$Gene) %>%
                                               select(gene_id) %>% t %>% as.data.frame),
-                "Gene weights" = theta.zscore.long.here %>%
+                "Gene weights" = median.spectra.long.here %>%
+                    `rownames<-`(.$Gene) %>%
+                    select(`Gene weights`) %>% t %>% as.data.frame,
+                "Z-score Coefficient" = theta.zscore.long.here %>%
                     `rownames<-`(.$Gene) %>%
                     select(`Gene weights`) %>% t %>% as.data.frame,
                 "Topic ID" = paste0(SAMPLE, "_K", k, "_", t),

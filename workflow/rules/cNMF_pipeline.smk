@@ -1807,6 +1807,7 @@ rule IGVF_formatting_model_programGenes:
 		analysisdir = os.path.join(config["analysisDir"], "{folder}"), # K{k}/threshold_{threshold}
 		level = config["sample_type"],
 		cell_type = config["celltype"],
+		technology = config["technology"],
 		partition = "owners,normal",
 		threshold = get_cNMF_filter_threshold_double
 	shell:
@@ -1819,6 +1820,7 @@ rule IGVF_formatting_model_programGenes:
 			--density.thr {params.threshold} \
 			--level {params.level} \
 			--cell.type {params.cell_type} \
+			--technology {params.technology} \
 		' "
 
 rule IGVF_formatting_model_cellxgene:

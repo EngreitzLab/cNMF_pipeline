@@ -31,6 +31,7 @@
 		"sampleName": "IGVF_b01_LeftCortex",
 		"celltype": "brain",
 		"organism": "mouse",
+		"technology": "10x",
 		"cNMF_gene_selection": ["top2000VariableGenes", "all_genes"],
 		"Perturb-seq": "False",
 		"num_Genes_per_MAST_runGroup": 20,
