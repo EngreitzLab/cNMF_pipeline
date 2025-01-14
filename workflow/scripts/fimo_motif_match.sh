@@ -35,7 +35,9 @@ OUTFASTA=$3
 ############################################################
 ## get fasta for the enhancer regions
 # chr, start, end, name, class, activity_base, TargetGene, TargetGeneTSS, TargetGeneExpression, TargetGenePromoterActivityQuantile, TargetGeneIsExpressed, distance, isSelfPromoter, powerlaw_contact, powerlaw_contact_reference, hic_contact, hic_contact_pl_scaled, hic_pseudocount, hic_contact_pl_scaled_adj, ABC.Score.Numerator, ABC.Score, powerlaw.Score.Numerator, powerlaw.Score, CellType
-bedtools getfasta -name -fi ${FASTA} -bed <(awk 'OFS="\t" {print $1,$2,$3,$1":"$2"-"$3"|"$4"|"$7}' ${COORD}) -fo ${OUTFASTA}
+# bedtools getfasta -name -fi ${FASTA} -bed <(awk 'OFS="\t" {print $1,$2,$3,$1":"$2"-"$3"|"$4"|"$6}' ${COORD}) -fo ${OUTFASTA} ## 241205
+# bedtools getfasta -nameOnly -fi ${FASTA} -bed <(awk 'OFS="\t" {print $1,$2,$3,$6"|"$5"|"$1"_"$2"-"$3}' ${COORD}) -fo ${OUTFASTA}
+bedtools getfasta -nameOnly -fi ${FASTA} -bed <(awk 'OFS="\t" {print $1,$2,$3,$4}' ${COORD}) -fo ${OUTFASTA}
 
     # bedtools getfasta -name -fi ${hg19FASTA} -bed <(awk 'OFS="\t" {print $1,$2,$3,$1":"$2"-"$3"|"$4"|"$7}' ${COORD}) -fo ${TOPDATADIRABC}/${sample}_Predictions.AvgHiC.ABC0.015.minus150.fa
 

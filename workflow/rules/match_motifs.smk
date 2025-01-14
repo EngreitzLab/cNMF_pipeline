@@ -20,16 +20,16 @@ rule FIMO_ABC_enhancers:
 		fasta = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fasta_to_fimo.fa"),
 		motif_meme = os.path.join(config["motif_meme"])
 	output:
-		fimo_result = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.txt")
+		fimo_result = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.tsv")
 	params:
-		time = "12:00:00",
-		mem_gb = "128",
+		time = "48:00:00",
+		mem_gb = "160",
 		partition = "owners,normal",
 		fimo_outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out")
 	shell: ## need FIMO wrapper
 		"bash -c ' source ~/.bashrc; \
 		conda activate cnmf_env; \
-		fimo -oc {params.fimo_outdir} --verbosity 1 --thresh 1.0E-4 {input.motif_meme} {input.fasta}' "
+		fimo -oc {params.fimo_outdir} --verbosity 1 --thresh 1.0E-4 --no-pgc {input.motif_meme} {input.fasta}' "
 
 	# shell: ## need FIMO wrapper
 	# 	"bash -c ' source ~/.bashrc; \

@@ -50,6 +50,9 @@ density_threshold = args.density_threshold
 output_directory = args.path_to_topics
 run_name = args.topic_sampleName
 
+import re
+density_threshold_str = re.sub("[.]", "_", str(density_threshold))
+
 if not os.path.exists(OUTDIR):
     raise Exception("Output directory does not exist")
 
@@ -76,11 +79,11 @@ def compute_Var(X):
 
 # X = X_norm.X.todense() ## 221203
 X = X_norm.X
-H_path = cnmf_obj.paths['consensus_spectra__txt'] % (selected_K, '0_2') ## median_spectra_file
+H_path = cnmf_obj.paths['consensus_spectra__txt'] % (selected_K, density_threshold_str) ## median_spectra_file
 H_df = pd.read_csv(H_path, sep='\t', index_col=0).T
 H = H_df.to_numpy()
 H = (H/H.sum(0))
-W_path = cnmf_obj.paths['consensus_usages__txt'] % (selected_K, '0_2') ## median_spectra_file
+W_path = cnmf_obj.paths['consensus_usages__txt'] % (selected_K, density_threshold_str) ## median_spectra_file
 W_df = pd.read_csv(W_path, sep='\t', index_col=0)
 W = W_df.to_numpy()
 WH = W @ H.T

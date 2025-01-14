@@ -66,6 +66,15 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$scriptdir <- "/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/Perturb-seq/workflow/scripts"
 ## opt$K.val <- 35
 
+## ## sdev HCASM MAST keepAll
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/241202_perturbation_groups/outputs/HCASM.library.barcodes.keepAll.txt"
+## opt$outdirsample <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/241015_snakemake_HCASM/analysis/top2000VariableGenes/HCASM.library/K90/threshold_0_2/"
+## opt$scatteroutput <- "/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/241015_V2G2P_HCASM/top2000VariableGenes/HCASM.library/MAST/"
+## opt$numCtrl <- 35000
+## opt$sampleName <- "HCASM.library"
+## opt$K.val <- 90
+## opt$density.thr <- 0.2
+
 
 k <- opt$K.val 
 SAMPLE <- opt$sampleName
@@ -77,10 +86,10 @@ OUTDIRSAMPLE <- opt$outdirsample
 SCATTEROUTDIR <- opt$scatteroutput
 SCATTERINDEX <- opt$scatter.gene.group
 
-INPUTDIR <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220217_MAST/inputs/"
-OUTDIR <- OUTDIRSAMPLE
-check.dir <- c(INPUTDIR, OUTDIR)
-invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
+## ## INPUTDIR <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220217_MAST/inputs/"
+## OUTDIR <- OUTDIRSAMPLE
+## check.dir <- c(INPUTDIR, OUTDIR)
+## invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
 
 
 
@@ -97,16 +106,27 @@ if(file.exists(cNMF.result.file)) {
 
 barcode.names <- read.delim(opt$barcode.names, stringsAsFactors=F)
 ## separate out control cells
-omega.ctrl.index <- barcode.names %>% mutate(rowindex = 1:n()) %>% filter(Gene == "negative-control") %>% pull(rowindex)
-omega.ptb.index <- barcode.names %>% mutate(rowindex = 1:n()) %>% filter(Gene != "negative-control") %>% pull(rowindex)
+
+if("Control" %in% colnames(barcode.names)) {
+    omega.ctrl.index <- barcode.names %>% filter(Control) %>% pull(CBC) %>% unique
+    omega.ptb.index <- barcode.names %>% filter(!Control) %>% pull(CBC) %>% unique
+    ## barcode.names.ctrl <- barcode.names %>% subset(CBC %in% omega.ctrl.index)
+    ## barcode.names.ptb <- barcode.names %>% subset(CBC %in% omega.ptb.index)
+} else {
+    omega.ctrl.index <- barcode.names %>% mutate(rowindex = 1:n()) %>% filter(Gene == "negative-control") %>% pull(rowindex)
+    omega.ptb.index <- barcode.names %>% mutate(rowindex = 1:n()) %>% filter(Gene != "negative-control") %>% pull(rowindex)
+    ## barcode.names.ctrl <- barcode.names[omega.ctrl.index,]
+    ## barcode.names.ptb <- barcode.names[omega.ptb.index,]
+}
+
+barcode.names.ctrl <- barcode.names %>% subset(CBC %in% omega.ctrl.index)
+barcode.names.ptb <- barcode.names %>% subset(CBC %in% omega.ptb.index)
 omega.ctrl <- omega[omega.ctrl.index,]
 omega.ptb <- omega[omega.ptb.index,]
-barcode.names.ctrl <- barcode.names[omega.ctrl.index,]
-barcode.names.ptb <- barcode.names[omega.ptb.index,]
 ## randomly subset to 5000 cells
-ctrl.subset.index <- sample(1:length(omega.ctrl.index), min(length(omega.ctrl.index), opt$numCtrl), replace=FALSE)
+ctrl.subset.index <- sample(omega.ctrl.index, min(length(omega.ctrl.index), opt$numCtrl), replace=FALSE)
 omega.ctrl.subset <- omega.ctrl[ctrl.subset.index,]
-barcode.names.ctrl.subset <- barcode.names.ctrl[ctrl.subset.index,]
+barcode.names.ctrl.subset <- barcode.names.ctrl %>% subset(CBC %in% ctrl.subset.index)
 
 omega.new <- rbind(omega.ptb, omega.ctrl.subset)
 barcode.names.subset <- rbind(barcode.names.ptb, barcode.names.ctrl.subset)

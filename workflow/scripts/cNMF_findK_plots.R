@@ -72,6 +72,13 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## ## K562 gwps 2k overdispersed genes
 ## opt$figdir <- ""
 
+## ## HCASM 2k overdispersed genes
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/241015_snakemake_HCASM/figures/top2000VariableGenes/HCASM.library/acrossK/"
+## opt$outdir <-"/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/241015_snakemake_HCASM/analysis/top2000VariableGenes/HCASM.library/acrossK/"
+## opt$sampleName <- "HCASM.library"
+## opt$aggregated.data <- ""
+
+
 ## Directories and Constants
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 threshold <- opt$p.adj.threshold

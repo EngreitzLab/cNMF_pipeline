@@ -47,6 +47,7 @@ option.list <- list(
     make_option("--coding.variant.df", type="character", default="/oak/stanford/groups/engreitz/Users/rosaxma/2111_pipeline_output/UKB/SBP/SBPvariant.list.1.coordinate.txt", help="Data frame with coding variant information for GWAS trait"),
     make_option("--regulator.analysis.type", type="character", default="GWASWide", help="path to statistical test recipe"),
     make_option("--perturbSeq", type="logical", default=FALSE, help="Whether this is a Perturb-seq experiment"),
+    make_option("--organism", type="character", default="human", help="Specify organism for loading EnsemblID"),
     make_option("--TPM.table", type="character", default="", help="Path to TPM table for the correct cell type")
 )
 opt <- parse_args(OptionParser(option_list=option.list))
@@ -151,7 +152,7 @@ Gene.ENSEMBL.10X.df <- gtf.10X.df %>%
     unique
 ## gtf <- importGTF("/home/groups/engreitz/Software/cellranger-arc-1.0.1/refdata-cellranger-arc-GRCh38-2020-A/genes/genes.gtf")
 
-db <- ifelse(grepl("mouse", SAMPLE), "org.Mm.eg.db", "org.Hs.eg.db")
+db <- ifelse(grepl("mouse", opt$organism), "org.Mm.eg.db", "org.Hs.eg.db")
 library(!!db) ## load the appropriate database
 ## helper function to map between ENSGID and SYMBOL
 map.ENSGID.SYMBOL <- function(df) {

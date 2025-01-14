@@ -50,6 +50,7 @@ option.list <- list(
     make_option("--scatteroutput", type="character", default="/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/230104_snakemake_WeissmanLabData/top2000VariableGenes/MAST/K80/threshold_0_2/", help="path to gene breakdown table output"),
     make_option("--gene.group.list", type="character", default="/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/230104_snakemake_WeissmanLabData/top2000VariableGenes/MAST/GeneNames_Group43.txt"),
     make_option("--scatter.gene.group", type="numeric", default=50, help="Gene group index"),
+    make_option("--ctrl.ary", type="character", default="negative-control|0Safe|non-targerting|negative|safe-targeting", help="String for perturbation control identifier, separated by '|' "),
     
     ## script dir
     make_option("--scriptdir", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/Perturb-seq/workflow/scripts/", help="location for this script and functions script")
@@ -79,6 +80,17 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$density.thr <- 0.2
 ## opt$scriptdir <- "/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/Perturb-seq/workflow/scripts"
 
+
+## ## sdev debug HCASM
+## opt$sampleName <- "HCASM.library"
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/240927_QC/outputs/HCASM.library.barcodes.txt"
+## opt$outdirsample <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/241015_snakemake_HCASM/analysis/top2000VariableGenes/HCASM.library/K90/threshold_0_2/"
+## opt$scatteroutput <- "/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/241015_V2G2P_HCASM/top2000VariableGenes/MAST/"
+## opt$scriptdir <- "/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/Perturb-seq/workflow/scripts"
+## opt$gene.group.list <- "/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/241015_V2G2P_HCASM/top2000VariableGenes/MAST/GeneNames_Group9.txt"
+## opt$scatter.gene.group <- 9
+## opt$K.val <- 90
+## opt$ctrl.ary <- "negative-control|0Safe|non-targerting|negative|safe-targeting"
 
 
 k <- opt$K.val 
@@ -147,6 +159,9 @@ invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recur
 ## load gene list
 gene.ary <- read.delim(opt$gene.group.list, header=F, stringsAsFactors=F) %>% unlist %>% as.character
 
+
+
+
 ## load log2(TPM + 1)
 load(paste0(opt$scatteroutput, "/", SAMPLE, "_MAST_log2TPM_barcodes.RDS"))
 
@@ -180,7 +195,8 @@ if( grepl("2kG.library|Perturb_2kG_dup4", SAMPLE) ) {
     ## print("finished loading barcode names")
     ## print(paste0("omega dimensions: ", dim(omega)))
     ## print(paste0("barcode names dimensions: ", dim(barcode.names)))
-    meta_data <- barcode.names.subset %>% filter(Gene %in% c(gene.ary, "negative-control"))
+    ctrl.ary <- strsplit(opt$ctrl.ary, split="[|]")  %>% `[[`(1)
+    meta_data <- barcode.names.subset %>% filter(Gene %in% c(gene.ary, ctrl.ary)) ## To do: parse in control gene strings
     meta_data <- meta_data %>% mutate(sample = factor(sample))
 }    
 
@@ -234,9 +250,9 @@ cat(paste0("number of genes: ", num.ptb, "\n"))
 MAST.list <- mclapply(1:num.ptb, function(i) {
     gene.here <- gene.list[i]
     out <- tryCatch(
-    { suppressWarnings({ 
+    { suppressWarnings({
         totest.df <- df %>%
-            mutate(Gene = gsub("safe-targeting","negative-control", Gene)) %>% ## combine safe targeting and negative control guide to call them "negative-control"
+            mutate(Gene = gsub(opt$ctrl.ary,"negative-control", Gene)) %>% ## combine safe targeting and negative control guide to call them "negative-control"
             subset(Gene %in% c("negative-control", gene.here)) ## take a small slice of data (one perturbation one control)
 
         scaRaw <- FromMatrix(totest.df %>% select(-any_of(colnames(meta_data))) %>% t)

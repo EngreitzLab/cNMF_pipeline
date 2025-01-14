@@ -57,13 +57,13 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$ranking.type <- "zscore"
 ## opt$GSEA.type <- "GSEA"
 
-## IGVF b01_LeftCortex sdev
-opt$sampleName <- "IGVF_b01_LeftCortex"
-opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/figures/all_genes/"
-opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes"
-opt$K.val <- 10
-opt$ranking.type <- "median_spectra"
-opt$GSEA.type <- "GSEA"
+## ## IGVF b01_LeftCortex sdev
+## opt$sampleName <- "IGVF_b01_LeftCortex"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/figures/all_genes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_snakemake_igvf_b01_LeftCortex/analysis/all_genes"
+## opt$K.val <- 10
+## opt$ranking.type <- "median_spectra"
+## opt$GSEA.type <- "GSEA"
 
 
 
@@ -115,7 +115,7 @@ if(nrow(gsea.df) == 0) {
         unique %>%
         slice(1:10) %>%
         mutate(TruncatedDescription = str_trunc(paste0(ID, "; ", Description), width=50, side="right"),
-               t = gsub("K60_", "", ProgramID) %>% as.numeric) %>%
+               t = gsub(paste0("K", k, "_"), "", ProgramID) %>% as.numeric) %>%
         arrange(t, p.adjust) %>%
         as.data.frame
 }

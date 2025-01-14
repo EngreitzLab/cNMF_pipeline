@@ -47,7 +47,7 @@ option.list <- list(
     make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
     make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
     make_option("--outdirsample", type="character", default="/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/K60/threshold_0_2/", help="path to cNMF analysis results"), ## or for 2n1.99x: "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/211116_snakemake_dup4_cells/analysis/all_genes/Perturb_2kG_dup4/K60/threshold_0_2/"
-    make_option("--num.genes.per.MAST.runGroup", type="numeric", default=494, help="Number of MAST parallel processes to create"), 
+    make_option("--num.genes.per.MAST.runGroup", type="numeric", default=20, help="Number of MAST parallel processes to create"), 
     make_option("--scatteroutput", type="character", default="/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/230104_snakemake_WeissmanLabData/top2000VariableGenes/MAST/", help="path to gene breakdown table output"),
 
     ## script dir
@@ -64,6 +64,15 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$scatteroutput <- "/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/230104_snakemake_WeissmanLabData/top2000VariableGenes/MAST/"
 ## opt$scriptdir <- "/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/Perturb-seq/workflow/scripts"
 ## opt$K.val <- 35
+
+
+## ## sdev debug HCASM
+## opt$sampleName <- "HCASM.library"
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/241202_perturbation_groups/outputs/HCASM.library.barcodes.keepAll.txt"
+## opt$outdirsample <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/241015_snakemake_HCASM/analysis/top2000VariableGenes/HCASM.library/K90/threshold_0_2/"
+## opt$scatteroutput <- "/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/241015_V2G2P_HCASM/top2000VariableGenes/MAST/"
+## opt$scriptdir <- "/oak/stanford/groups/engreitz/Users/kangh/cNMF_pipeline/Perturb-seq/workflow/scripts"
+## opt$K.val <- 90
 
 
 k <- opt$K.val 
