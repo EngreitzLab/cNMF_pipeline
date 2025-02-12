@@ -325,7 +325,9 @@ rule distribute_prepare_varGenes_cNMF:
 		conda activate cnmf_env; \
 		mkdir -p {params.todir}/{wildcards.sample}; \
 		cp -r {params.fromdir}/{wildcards.sample}/cnmf_tmp {params.todir}/{wildcards.sample}/; \
-		cp {params.fromdir}/{wildcards.sample}/{wildcards.sample}.overdispersed_genes.txt {params.todir}/{wildcards.sample}/ ' "
+		cp {params.fromdir}/{wildcards.sample}/{wildcards.sample}.overdispersed_genes.txt {params.todir}/{wildcards.sample}/; \
+		python workflow/scripts/randomize_seed_prepare_cNMF.py \
+			--nmf_params {output.nmf_params}' "
 
 
 
@@ -478,7 +480,8 @@ rule distribute_prepare_geneSet_cNMF:
 		conda activate cnmf_env; \
 		mkdir -p {params.todir}/{wildcards.sample}; \
 		cp -r {params.fromdir}/{wildcards.sample}/cnmf_tmp {params.todir}/{wildcards.sample}/; \
-		cp {params.fromdir}/{wildcards.sample}/{wildcards.sample}.overdispersed_genes.txt {params.todir}/{wildcards.sample}/ ' "
+		cp {params.fromdir}/{wildcards.sample}/{wildcards.sample}.overdispersed_genes.txt {params.todir}/{wildcards.sample}/; \
+		python workflow/scripts/randomize_seed_prepare_cNMF.py --nmf_params {output.nmf_params} ' "
 
 
 
@@ -637,7 +640,7 @@ rule prepare_combine_varGene: # this step causes snakemake hanging at "Building 
 	# 	--numgenes {wildcards.num_genes} ' "
 
 
-rule prepare_combine_geneSet: # this step causes snakemake hanging at "Building DAG of jobs..."
+rule prepare_combine_geneSet: # optimize this step by creating customized script for nmf_params.df.npz and paste in the rest of output files to the intended directory
 	input:
 		# h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
 		pooled_individual_runs = expand(os.path.join(config["scratchDir"],"{{gene_selection_method}}_genes_combined/K{{k}}/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{{k}}.iter_{pooled_run_index}.df.npz"), pooled_run_index = [n for n in range(config["num_runs"])]),
@@ -740,82 +743,82 @@ rule aggregate_combined_runs:
 
 
 
-# rule prepare_findK_varGene:
-# 	input:
-# 		# h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad")
-# 		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad")
-# 		# merged_copied_result = expand(os.path.join(config["scratchDir"],"top{{num_genes}}VariableGenes_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=config["k"])
-# 	output:
-# 		# tpm_h5ad = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/cnmf_tmp/{sample}.tpm.h5ad"), ## potentially add back, why is this rule not outputting this file? (250114)
-# 		tpm_stats = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz"),
-# 		nmf_yaml = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/cnmf_tmp/{sample}.nmf_idvrun_params.yaml"),
-# 		nmf_params = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/cnmf_tmp/{sample}.nmf_params.df.npz"),
-# 		norm_counts = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad"),
-# 		overdispersed_genes = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/{sample}.overdispersed_genes.txt")
-# 	params:
-# 		time = "3:00:00",
-# 		mem_gb = get_rule_prepare_cNMF_memory,
-# 		seed = config["seed"],
-# 		num_runs = config["num_runs"],
-# 		outdir = os.path.join(config["analysisDir"], "top{num_genes}VariableGenes_acrossK"),
-# 		klist = " ".join(str(k) for k in config["k"]),
-# 		partition = get_rule_prepare_cNMF_partition
-# 	threads: config["total_workers"]
-# 	# resources: 
-# 	# 	mem_mb=64*1000,
-# 	# 	time = "3:00:00"
-# 	shell:
-# 		" bash -c ' source $HOME/.bashrc; \
-# 		conda activate cnmf_env; \
-# 		mkdir -p {params.outdir}; \
-# 		cnmf prepare \
-# 		--output-dir {params.outdir} \
-# 		--name {wildcards.sample} \
-# 		-c {input.h5ad_mtx} \
-# 		-k {params.klist} \
-# 		--n-iter {params.num_runs} \
-# 		--total-workers 1 \
-# 		--numgenes {wildcards.num_genes} ' "
+rule prepare_findK_varGene:
+	input:
+		# h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad")
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad")
+		# merged_copied_result = expand(os.path.join(config["scratchDir"],"top{{num_genes}}VariableGenes_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=config["k"])
+	output:
+		tpm_h5ad = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/cnmf_tmp/{sample}.tpm.h5ad"), ## potentially add back, why is this rule not outputting this file? (250114)
+		tpm_stats = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz"),
+		nmf_yaml = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/cnmf_tmp/{sample}.nmf_idvrun_params.yaml"),
+		nmf_params = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/cnmf_tmp/{sample}.nmf_params.df.npz"),
+		norm_counts = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad"),
+		overdispersed_genes = os.path.join(config["analysisDir"],"top{num_genes}VariableGenes_acrossK/{sample}/{sample}.overdispersed_genes.txt")
+	params:
+		time = "3:00:00",
+		mem_gb = get_rule_prepare_cNMF_memory,
+		seed = config["seed"],
+		num_runs = config["num_runs"],
+		outdir = os.path.join(config["analysisDir"], "top{num_genes}VariableGenes_acrossK"),
+		klist = " ".join(str(k) for k in config["k"]),
+		partition = get_rule_prepare_cNMF_partition
+	threads: config["total_workers"]
+	# resources: 
+	# 	mem_mb=64*1000,
+	# 	time = "3:00:00"
+	shell:
+		" bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		mkdir -p {params.outdir}; \
+		cnmf prepare \
+		--output-dir {params.outdir} \
+		--name {wildcards.sample} \
+		-c {input.h5ad_mtx} \
+		-k {params.klist} \
+		--n-iter {params.num_runs} \
+		--total-workers 1 \
+		--numgenes {wildcards.num_genes} ' "
 
 
-# rule prepare_findK_geneSet:
-# 	input:
-# 		# h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
-# 		# genes = os.path.join(config["dataDir"],"{sample}.h5ad.{gene_selection_method}.genes.txt")
-# 		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
-# 		genes = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
-# 		# merged_copied_result = expand(os.path.join(config["scratchDir"],"top{{num_genes}}VariableGenes_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=config["k"])
-# 	output:
-# 		tpm_h5ad = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
-# 		tpm_stats = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz"),
-# 		nmf_yaml = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/cnmf_tmp/{sample}.nmf_idvrun_params.yaml"),
-# 		nmf_params = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/cnmf_tmp/{sample}.nmf_params.df.npz"),
-# 		norm_counts = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad"),
-# 		overdispersed_genes = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/{sample}.overdispersed_genes.txt")
-# 	params:
-# 		time = "3:00:00",
-# 		mem_gb = get_rule_prepare_cNMF_memory, #"200",
-# 		seed = config["seed"],
-# 		num_runs = config["num_runs"],
-# 		outdir = os.path.join(config["analysisDir"], "{gene_selection_method}_genes_acrossK"),
-# 		klist = " ".join(str(k) for k in config["k"]),
-# 		partition = get_rule_prepare_cNMF_partition
-# 	threads: config["total_workers"]
-# 	# resources: 
-# 	# 	mem_mb=128*1000,
-# 	# 	time = "3:00:00"
-# 	shell:
-# 		" bash -c ' source $HOME/.bashrc; \
-# 		conda activate cnmf_env; \
-# 		mkdir -p {params.outdir}; \
-# 		cnmf prepare \
-# 		--output-dir {params.outdir} \
-# 		--name {wildcards.sample} \
-# 		-c {input.h5ad_mtx} \
-# 		-k {params.klist} \
-# 		--n-iter {params.num_runs} \
-# 		--total-workers 1 \
-# 		--genes-file {input.genes} ' "
+rule prepare_findK_geneSet:
+	input:
+		# h5ad_mtx = os.path.join(config["input_h5ad_mtxDir"], "{sample}.h5ad"),
+		# genes = os.path.join(config["dataDir"],"{sample}.h5ad.{gene_selection_method}.genes.txt")
+		h5ad_mtx = os.path.join(config["analysisDir"], "data/{sample}.h5ad"),
+		genes = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
+		# merged_copied_result = expand(os.path.join(config["scratchDir"],"top{{num_genes}}VariableGenes_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=config["k"])
+	output:
+		tpm_h5ad = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
+		tpm_stats = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz"),
+		nmf_yaml = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/cnmf_tmp/{sample}.nmf_idvrun_params.yaml"),
+		nmf_params = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/cnmf_tmp/{sample}.nmf_params.df.npz"),
+		norm_counts = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad"),
+		overdispersed_genes = os.path.join(config["analysisDir"],"{gene_selection_method}_genes_acrossK/{sample}/{sample}.overdispersed_genes.txt")
+	params:
+		time = "3:00:00",
+		mem_gb = get_rule_prepare_cNMF_memory, #"200",
+		seed = config["seed"],
+		num_runs = config["num_runs"],
+		outdir = os.path.join(config["analysisDir"], "{gene_selection_method}_genes_acrossK"),
+		klist = " ".join(str(k) for k in config["k"]),
+		partition = get_rule_prepare_cNMF_partition
+	threads: config["total_workers"]
+	# resources: 
+	# 	mem_mb=128*1000,
+	# 	time = "3:00:00"
+	shell:
+		" bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		mkdir -p {params.outdir}; \
+		cnmf prepare \
+		--output-dir {params.outdir} \
+		--name {wildcards.sample} \
+		-c {input.h5ad_mtx} \
+		-k {params.klist} \
+		--n-iter {params.num_runs} \
+		--total-workers 1 \
+		--genes-file {input.genes} ' "
 
 
 def get_findK_cNMF_partition(wildcards):
@@ -839,32 +842,32 @@ def get_findK_cNMF_mem_gb_slurm(wildcards):
 		return 96000
 
 
-# rule findK_cNMF:
-# 	input:
-# 		tpm_h5ad = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.tpm.h5ad")),
-# 		tpm_stats = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz")),
-# 		nmf_yaml = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.nmf_idvrun_params.yaml")),
-# 		nmf_params = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.nmf_params.df.npz")),
-# 		norm_counts = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad")),
-# 		overdispersed_genes = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.overdispersed_genes.txt")),
-# 		merged_copied_result = ancient(expand(os.path.join(config["analysisDir"],"{{folder}}_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=[str(k) for k in config["k"]]))
-# 	output:
-# 		plot = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.k_selection.png"),
-# 		plot_new_location = os.path.join(config["figDir"],"{folder}/{sample}/acrossK/{sample}.k_selection.png")
-# 	# resources: mem_mb=32000
-# 	params:
-# 		time = "24:00:00",
-# 		mem_gb = get_findK_cNMF_mem_gb,
-# 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK"),
-# 		partition = get_findK_cNMF_partition
-# 	# resources: 
-# 	# 	mem_mb=get_findK_cNMF_mem_gb_slurm,
-# 	# 	time = "24:00:00"
-# 	shell:
-# 		"bash -c ' source $HOME/.bashrc; \
-# 		conda activate cnmf_env; \
-# 		cnmf k_selection_plot --output-dir {params.outdir} --name {wildcards.sample}; \
-# 		cp {output.plot} {output.plot_new_location} ' "
+rule findK_cNMF:
+	input:
+		tpm_h5ad = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
+		tpm_stats = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz"),
+		nmf_yaml = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.nmf_idvrun_params.yaml"),
+		nmf_params = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.nmf_params.df.npz"),
+		norm_counts = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad"),
+		overdispersed_genes = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.overdispersed_genes.txt"),
+		merged_copied_result = expand(os.path.join(config["analysisDir"],"{{folder}}_acrossK/{{sample}}/cnmf_tmp/{{sample}}.spectra.k_{k}.merged.df.npz"), k=[str(k) for k in config["k"]])
+	output:
+		plot = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.k_selection.png"),
+		plot_new_location = os.path.join(config["figDir"],"{folder}/{sample}/acrossK/{sample}.k_selection.png")
+	# resources: mem_mb=32000
+	params:
+		time = "24:00:00",
+		mem_gb = get_findK_cNMF_mem_gb,
+		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK"),
+		partition = get_findK_cNMF_partition
+	# resources: 
+	# 	mem_mb=get_findK_cNMF_mem_gb_slurm,
+	# 	time = "24:00:00"
+	shell:
+		"bash -c ' source $HOME/.bashrc; \
+		conda activate cnmf_env; \
+		cnmf k_selection_plot --output-dir {params.outdir} --name {wildcards.sample}; \
+		cp {output.plot} {output.plot_new_location} ' "
 
 
 def get_concensus_factors_time(wildcards):
@@ -913,13 +916,13 @@ def get_concensus_factors_partition(wildcards):
 ## need to add back
 rule get_concensus_factors:
 	input:
-		tpm_h5ad = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.tpm.h5ad")),
-		tpm_stats = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz")),
-		nmf_yaml = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.nmf_idvrun_params.yaml")),
-		nmf_params = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.nmf_params.df.npz")),
-		norm_counts = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad")),
-		overdispersed_genes = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.overdispersed_genes.txt")),
-		individual_k = ancient(os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.spectra.k_{k}.merged.df.npz"))
+		tpm_h5ad = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.tpm.h5ad"),
+		tpm_stats = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.tpm_stats.df.npz"),
+		nmf_yaml = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.nmf_idvrun_params.yaml"),
+		nmf_params = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.nmf_params.df.npz"),
+		norm_counts = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad"),
+		overdispersed_genes = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/{sample}.overdispersed_genes.txt"),
+		individual_k = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.spectra.k_{k}.merged.df.npz")
 		# dummy_file = os.path.join(config["scratchDir"],"{sample}/cnmf_tmp/{sample}.dummy.k_{k}.dt_{threshold}.txt")
 	output:
 		tmp_spectra_tpm = os.path.join(config["analysisDir"],"{folder}_acrossK/{sample}/cnmf_tmp/{sample}.gene_spectra_tpm.k_{k}.dt_{threshold}.df.npz"),
@@ -1219,7 +1222,8 @@ def get_fimo_results(wildcards):
 
 rule prepare_motif_enrichment:
 	input:
-		fimo_formatted = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.tsv")
+		fimo_formatted = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/fimo_out/fimo.tsv"),
+		all_genes_txt = os.path.join(config["analysisDir"], "data/{sample}.h5ad.all.genes.txt")
 	output:
 		motif_background = os.path.join(config["analysisDir"], "{folder}/{sample}/fimo/motif.background.txt")
 	params:
@@ -1236,7 +1240,9 @@ rule prepare_motif_enrichment:
 		--sampleName {wildcards.sample} \
 		--outdir {params.analysisdir} \
 		--recompute F \
+		--motif.promoter.background {input.fimo_formatted} \
 		--ABC.enhancers {params.ABC_enhancer} \
+		--expressed.genes {input.all_genes_txt} \
 		--organism {params.organism} '"
 
 
@@ -1463,7 +1469,7 @@ rule TopicSummary:
 		clusterProfiler_result = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/clusterProfiler_GeneRankingTypezscore_EnrichmentTypeGOEnrichment.txt"),
 		motif_table = expand(os.path.join(config["analysisDir"], "{{folder}}/{{sample}}/K{{k}}/threshold_{{threshold}}/{ep_type}.topic.top.300.zscore.gene_motif.count.ttest.enrichment_motif.thr.{motif_match_thr}_k_{{k}}.dt_{{threshold}}.txt"), ep_type=["promoter", "enhancer"], motif_match_thr = "pval1e-4")
 	output:
-		ProgramSummary = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_ProgramSummary_k_{k}.dt_{threshold}.txt")
+		ProgramSummary = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_ProgramSummary_k_{k}.dt_{threshold}.xlsx")
 	params:
 		time = "1:00:00",
 		mem_gb = "16",
@@ -1497,6 +1503,7 @@ rule TopicAnnotationTemplateTable:
 		mem_gb = "16",
 		analysisdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"), # K{k}/threshold_{threshold}
 		scratch_outdir = os.path.join(config["scratchDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
+		barcode_names = config["barcodeDir"],
 		threshold = get_cNMF_filter_threshold_double,
 		perturbseq = "T" if config["Perturb-seq"] == "True" else "F",
 		partition = "owners,normal"
@@ -1509,6 +1516,7 @@ rule TopicAnnotationTemplateTable:
 			--scratch.outdir {params.scratch_outdir} \
 			--K.val {wildcards.k} \
 			--density.thr {params.threshold} \
+			--barcodeDir {} \
 			--perturbSeq {params.perturbseq} '"
 
 

@@ -40,6 +40,7 @@ option.list <- list(
     make_option("--scratch.outdir", type="character", default="", help="Scratch space for temporary files"),
     make_option("--K.val", type="numeric", default=60, help="K value to analyze"),
     make_option("--density.thr", type="character", default="0.2", help="concensus cluster threshold, 2 for no filtering"),
+    make_option("--barcodeDir", type="character", default="", help="path to barcodes"),
     ## make_option("--cell.count.thr", type="numeric", default=2, help="filter threshold for number of cells per guide (greater than the input number)"),
     ## make_option("--guide.count.thr", type="numeric", default=1, help="filter threshold for number of guide per perturbation (greater than the input number)"),
     make_option("--perturbSeq", type="logical", default=TRUE, help="Whether this is a Perturb-seq experiment")
@@ -56,6 +57,17 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$perturbSeq <- TRUE
 ## opt$scratch.outdir <- "/scratch/groups/engreitz/Users/kangh/Perturb-seq_CAD/230104_snakemake_WeissmanLabData/top2000VariableGenes/K90/analysis/comprehensive_program_summary/"
 ## opt$barcodeDir <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/230104_snakemake_WeissmanLabData/data/K562_gwps_raw_singlecell_01_metadata.txt"
+
+## ## HCASM top2000VariableGenes K=50
+## opt$sampleName <- "HCASM.library"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250118_snakemake_HCASM_top2000VariableGenes/analysis/top2000VariableGenes/HCASM.library/K50/threshold_0_2/"
+## opt$scratch.outdir <- "/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/250118_snakemake_HCASM_top2000VariableGenes/top2000VariableGenes/HCASM.library/K50/threshold_0_2/"
+## opt$K.val <- 50
+## opt$density.thr <- 0.2
+## opt$perturbSeq <- 'T'
+## opt$barcodeDir <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/241202_perturbation_groups/outputs/HCASM.library.barcodes.keepAll.txt"
+
+
 
 ## OUTDIR <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220316_regulator_topic_definition_table/outputs/"
 ## FIGDIR <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220316_regulator_topic_definition_table/figures/"
@@ -160,10 +172,10 @@ create_topic_definition_table <- function(theta.zscore, t) {
     out <- theta.zscore[,t] %>%
         as.data.frame %>%
         `colnames<-`(c("zscore")) %>%
-        mutate(Perturbation = rownames(theta.zscore), .before="zscore") %>%
-        merge(gene.summary, by.x="Perturbation", by.y="Gene", all.x=T) %>%
+        mutate(Gene = rownames(theta.zscore), .before="zscore") %>%
+        merge(gene.summary, by="Gene", all.x=T) %>%
         arrange(desc(zscore)) %>%
-        mutate(Rank = 1:n(), .before="Perturbation") %>%
+        mutate(Rank = 1:n(), .before="Gene") %>%
         mutate(ProgramID = paste0("K", k, "_", t), .before="zscore") %>%
         arrange(Rank) %>%
         mutate(My_summary = "", .after = "zscore") %>%

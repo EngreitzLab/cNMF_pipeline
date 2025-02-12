@@ -21,9 +21,9 @@ include: "rules/program_prioritization.smk"
 if config["Perturb-seq"] == "True":
 	include: "rules/cNMF_Perturb-seq_analysis.smk"
 
-## Need to add back for the overall pipeline (250113)
-# if not os.path.isfile(config["fimo_formatted"]):
-# 	include: "rules/match_motifs.smk"
+# Need to add back for the overall pipeline (250113)
+if not os.path.isfile(config["fimo_formatted"]):
+	include: "rules/match_motifs.smk"
 
 if os.path.isfile(config["input_h5ad_mtxDir"]):
 	include: "rules/h5ad_start.smk"
@@ -67,7 +67,7 @@ def get_output_files(wildcards):
 	gsea_clusterProfiler_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/{sample}_K{k}_dt_{threshold}_top10EnrichedPathways_GeneRankingType{ranking_type}_EnrichmentType{GSEA_type}.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], ranking_type = ["zscore", "raw", "median_spectra", "median_spectra_zscore"], GSEA_type = ["GOEnrichment", "PosGenesGOEnrichment", "ByWeightGSEA", "GSEA"]),
 
 	## Program Summary Table
-	ProgramSummary = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_ProgramSummary_k_{k}.dt_{threshold}.txt"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+	ProgramSummary = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_ProgramSummary_k_{k}.dt_{threshold}.xlsx"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 	ComprehensiveProgramSummary = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}_k_{k}.dt_{threshold}_ComprehensiveProgramSummary.xlsx"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 
 	## PoPS
