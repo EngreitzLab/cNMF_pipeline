@@ -486,9 +486,9 @@ rule distribute_prepare_geneSet_cNMF:
 
 
 def get_cNMF_memory(wildcards): ## add condition to allot more memory for large matrices
-	if config["num_cells"] > 1e6:
+	if config["num_cells"] > 5e5:
 		if wildcards.folder == "all_genes":
-			if wildcards.k > 30:
+			if int(wildcards.k) > 30:
 				return "196"
 			else:
 				return "128"

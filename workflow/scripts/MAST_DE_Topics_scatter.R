@@ -75,11 +75,19 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$K.val <- 90
 
 
-k <- opt$K.val 
+## sdev debug HCASM NovaSeq2
+opt$sampleName <- "HCASM.library"
+opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/data/HCASM.library.barcodes.keepAll.txt"
+opt$num.genes.per.MAST.runGroup <- 20
+opt$scatteroutput <- "/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/250310_snakemake_HCASM_NovaSeq2/top2000VariableGenes/HCASM.library/MAST/"
+
+
+
+## k <- opt$K.val 
 SAMPLE <- opt$sampleName
 DENSITY.THRESHOLD <- gsub("\\.","_", opt$density.thr)
-SUBSCRIPT=paste0("k_", k,".dt_",DENSITY.THRESHOLD,".minGuidePerPtb_",opt$guide.count.thr,".minCellPerGuide_", opt$cell.count.thr)
-SUBSCRIPT.SHORT=paste0("k_", k, ".dt_", DENSITY.THRESHOLD)
+## SUBSCRIPT=paste0("k_", k,".dt_",DENSITY.THRESHOLD,".minGuidePerPtb_",opt$guide.count.thr,".minCellPerGuide_", opt$cell.count.thr)
+## SUBSCRIPT.SHORT=paste0("k_", k, ".dt_", DENSITY.THRESHOLD)
 ## OUTDIRSAMPLE <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/210707_snakemake_maxParallel/analysis/2kG.library/all_genes/2kG.library/K31/threshold_0_2/"
 ## OUTDIRSAMPLE <- opt$outdirsample
 SCATTEROUTDIR <- opt$scatteroutput
