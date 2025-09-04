@@ -102,6 +102,15 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$K.val <- 50
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/241202_perturbation_groups/outputs/HCASM.library.barcodes.keepAll.txt"
 
+## ## HCASM V2G2P all genes
+## opt$sampleName <- "HCASM.library"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/all_genes"
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/figures/all_genes"
+## opt$K.val <- 50
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/241202_perturbation_groups/outputs/HCASM.library.barcodes.keepAll.txt"
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/data/HCASM.library.barcodes.keepAll.txt"
+
+
  
 SAMPLE=strsplit(opt$sampleName,",") %>% unlist()
 ## DATADIR=opt$olddatadir # "/seq/lincRNA/Gavin/200829_200g_anal/scRNAseq/"

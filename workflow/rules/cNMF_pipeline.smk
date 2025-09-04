@@ -912,6 +912,12 @@ def get_concensus_factors_partition(wildcards):
 	else:
 		return "normal,owners"
 
+def get_refit_usage_boolean(wildcards):
+	if wildcards.folder == "all_genes":
+		return False
+	else:
+		return True
+
 
 ## need to add back
 rule get_concensus_factors:
@@ -939,6 +945,7 @@ rule get_concensus_factors:
 	params:
 		time = get_concensus_factors_time,
 		mem_gb = get_concensus_factors_memory, # 96 for top 3000 genes
+		refit_usage = get_refit_usage_boolean,
 		outdir = os.path.join(config["analysisDir"], "{folder}_acrossK"),
 		partition = get_concensus_factors_partition
 	# resources: 
@@ -953,6 +960,7 @@ rule get_concensus_factors:
 		--name {wildcards.sample} \
 		--components {wildcards.k} \
 		--local-density-threshold {threshold_here} \
+		--refit_usage {params.refit_usage} \
 		--show-clustering ' ") # --show-clustering 
 
 
@@ -1085,13 +1093,13 @@ rule variance_explained:
 		Var_k_summary_txt = os.path.join(config["analysisDir"],"{folder}/{sample}/K{k}/threshold_{threshold}/summary.varianceExplained.df.txt")
 	params:
 		time = "6:00:00",
-		mem_gb = "160",
+		mem_gb = "500", #160
 		path_to_topics = os.path.join(config["analysisDir"], "{folder}_acrossK/"),
 		# tpm_counts_path = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}/cnmf_tmp/"),
 		X_normalized_path = os.path.join(config["analysisDir"], "{folder}_acrossK/{sample}/cnmf_tmp/{sample}.norm_counts.h5ad"),
 		outdir = os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/"),
 		threshold = get_cNMF_filter_threshold_double,
-		partition = "owners,normal"
+		partition = "bigmem,owners" #"owners,normal"
 	shell:
 		"bash -c ' source $HOME/.bashrc; \
 		conda activate cnmf_env; \
@@ -1516,7 +1524,7 @@ rule TopicAnnotationTemplateTable:
 			--scratch.outdir {params.scratch_outdir} \
 			--K.val {wildcards.k} \
 			--density.thr {params.threshold} \
-			--barcodeDir {} \
+			--barcodeDir {params.barcode_names} \
 			--perturbSeq {params.perturbseq} '"
 
 

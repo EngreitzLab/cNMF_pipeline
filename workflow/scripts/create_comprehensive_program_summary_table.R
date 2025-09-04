@@ -68,12 +68,22 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$barcodeDir <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/241202_perturbation_groups/outputs/HCASM.library.barcodes.keepAll.txt"
 
 
+## ## HCASM all_genes K=50
+## opt$sampleName <- "HCASM.library"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/all_genes/HCASM.library/K50/threshold_0_2/"
+## opt$scratch.outdir <- "/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/250310_snakemake_HCASM_NovaSeq2/all_genes/HCASM.library/K50/threshold_0_2/"
+## opt$K.val <- 50
+## opt$density.thr <- 0.2
+## opt$perturbSeq <- 'T'
+## opt$barcodeDir <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/data/HCASM.library.barcodes.keepAll.txt"
+
+
 
 ## OUTDIR <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220316_regulator_topic_definition_table/outputs/"
 ## FIGDIR <- "/oak/stanford/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220316_regulator_topic_definition_table/figures/"
 ## SCRATCHOUTDIR <- "/scratch/groups/engreitz/Users/kangh/TeloHAEC_Perturb-seq_2kG/220316_regulator_topic_definition_table/outputs/"
 OUTDIR <- opt$outdir
-SCRATCHOUTDIR <- opt$scratch.outidr
+SCRATCHOUTDIR <- opt$scratch.outdir
 check.dir <- c(OUTDIR, SCRATCHOUTDIR)
 invisible(lapply(check.dir, function(x) { if(!dir.exists(x)) dir.create(x, recursive=T) }))
 
@@ -179,7 +189,7 @@ create_topic_definition_table <- function(theta.zscore, t) {
         mutate(ProgramID = paste0("K", k, "_", t), .before="zscore") %>%
         arrange(Rank) %>%
         mutate(My_summary = "", .after = "zscore") %>%
-        select(Rank, ProgramID, Perturbation, zscore, My_summary, FullName, Summary)
+        select(Rank, ProgramID, Gene, zscore, My_summary, FullName, Summary)
 }
 
 create_topic_regulator_table <- function(all.test, program.here, fdr.thr = 0.1) {
@@ -219,7 +229,7 @@ create_summary_table <- function(ann.omega, theta.zscore, all.test, meta_data) {
         file.name <- paste0(SCRATCHOUTDIR, program.here, "_table.csv")
         sink(file=file.name) ## open the document
         ## cat("Author,PERTURBATIONS SUMMARIES\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\n\n\nAuthor,TOPIC SUMMARIES\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\nAuthor,TESTABLE HYPOTHESIS IDEAS:\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\nAuthor,OTHER THOUGHTS:\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\nTOPIC DEFINING GENES (TOP 100),\n") ## headers
-        cat("Author,PERTURBATIONS SUMMARIES,,,,,,,,,,,\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\"\nAuthor,TOPIC SUMMARIES\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\"\nAuthor,TESTABLE HYPOTHESIS IDEAS:\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\"\nAuthor,OTHER THOUGHTS:\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\nTOPIC DEFINING GENES (TOP 100),\n") ## headers
+        cat("Author,PERTURBATIONS SUMMARIES,,,,,,,,,,,\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\"\nAuthor,TOPIC SUMMARIES,,,,,,,,,,,\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\"\nAuthor,TESTABLE HYPOTHESIS IDEAS:,,,,,,,,,,,\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\"\nAuthor,OTHER THOUGHTS:,,,,,,,,,,,\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\"\n\nTOPIC DEFINING GENES (TOP 100),,,,,,,,,,,,\n") ## headers
         write.csv(ann.top.theta.zscore, row.names=F) ## topic defining genes
         cat("\n\"\n\"\nPERTURBATIONS REGULATING TOPIC AT FDR < 0.3 (most significant on top),,,,,,,,,,,\n") ## headers
 

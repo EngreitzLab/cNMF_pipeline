@@ -40,6 +40,13 @@ args = parser.parse_args()
 # args.outdir = "/oak/stanford/groups/engreitz/Users/kangh/scratch_space/230612_debug_cNMF_pipeline_variance_explained/"
 
 
+# ## sdev for HCASM V2G2P all_genes K=50
+# args.k = 50
+# args.X_normalized = "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/all_genes_acrossK/HCASM.library/cnmf_tmp/HCASM.library.norm_counts.h5ad"
+# args.outdir = "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/all_genes/HCASM.library/K50/threshold_0_2/"
+# args.path_to_topics = "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/all_genes_acrossK/"
+# args.topic_sampleName = "HCASM.library"
+
 
 sample = args.topic_sampleName
 # output_sample = args.output_sampleName

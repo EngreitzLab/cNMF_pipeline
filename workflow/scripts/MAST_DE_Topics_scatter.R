@@ -75,11 +75,11 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$K.val <- 90
 
 
-## sdev debug HCASM NovaSeq2
-opt$sampleName <- "HCASM.library"
-opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/data/HCASM.library.barcodes.keepAll.txt"
-opt$num.genes.per.MAST.runGroup <- 20
-opt$scatteroutput <- "/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/250310_snakemake_HCASM_NovaSeq2/top2000VariableGenes/HCASM.library/MAST/"
+## ## sdev debug HCASM NovaSeq2
+## opt$sampleName <- "HCASM.library"
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/data/HCASM.library.barcodes.keepAll.txt"
+## opt$num.genes.per.MAST.runGroup <- 20
+## opt$scatteroutput <- "/scratch/groups/engreitz/Users/kangh/cNMF_pipeline/250310_snakemake_HCASM_NovaSeq2/top2000VariableGenes/HCASM.library/MAST/"
 
 
 

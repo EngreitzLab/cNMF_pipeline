@@ -139,6 +139,15 @@ opt <- parse_args(OptionParser(option_list=option.list))
 ## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/IGVF/Cellular_Programs_Networks/230706_igvf_b01_LeftCortex_data/IGVF_b01_LeftCortex.barcodes.txt"
 ## opt$organism <- "mouse"
 
+## ## debug HCASM V2G2P all_genes K = 50
+## opt$figdir <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/figures/all_genes/"
+## opt$outdir <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/all_genes/"
+## opt$topic.model.result.dir <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/all_genes_acrossK/HCASM.library/"
+## opt$K.val <- 50
+## opt$sampleName <- "HCASM.library"
+## opt$barcode.names <- "/oak/stanford/groups/engreitz/Users/kangh/V2G2P_HCASM/250310_snakemake_HCASM_NovaSeq2/analysis/data/HCASM.library.barcodes.keepAll.txt"
+## opt$organism <- "human"
+
 
 
 mytheme <- theme_classic() + theme(axis.text = element_text(size = 9), axis.title = element_text(size = 11), plot.title = element_text(hjust = 0.5, face = "bold"))
@@ -548,7 +557,8 @@ if(file.exists(cNMF.result.file)) {
     ## theta.zscore <- truncate.theta.names(theta.zscore)
     omega.path <- paste0(TMDIR, "/", SAMPLE, ".usages.k_", k, ".dt_", DENSITY.THRESHOLD, ".consensus.txt")
     print(omega.path)
-    omega.original <- omega <- read.delim(omega.path, header=T, stringsAsFactors=F, check.names=F, row.names = 1)  %>% apply(1, function(x) x/sum(x)) %>% t()
+    omega.original <- omega <- read.delim(omega.path, header=T, stringsAsFactors=F, check.names=F, row.names = 1)
+    omega <- omega %>% apply(1, function(x) x/sum(x)) %>% t()
     colnames(omega) <- paste0("topic_",colnames(omega))
     print("finished loading omega")
 
