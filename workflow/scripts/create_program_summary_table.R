@@ -203,7 +203,7 @@ add.ProgramID <- function(df) {
 num.top.genes <- 300
 ## all.ttest.df.path <- paste0(OUTDIRSAMPLE,"/", ep.type, ".topic.top.", num.top.genes, ".zscore.gene_motif.count.ttest.enrichment_motif.thr.", motif.match.thr.str, "_", SUBSCRIPT.SHORT,".txt")
 promoter.ttest.df.path <- paste0(OUTDIR,"/", "promoter", ".topic.top.", num.top.genes, ".zscore.gene_motif.count.ttest.enrichment_motif.thr.", "pval1e-4", "_", SUBSCRIPT.SHORT,".txt")
-enhancer.ttest.df.path <- paste0(OUTDIR,"/", "promoter", ".topic.top.", num.top.genes, ".zscore.gene_motif.count.ttest.enrichment_motif.thr.", "pval1e-6", "_", SUBSCRIPT.SHORT,".txt")
+enhancer.ttest.df.path <- paste0(OUTDIR,"/", "enhancer", ".topic.top.", num.top.genes, ".zscore.gene_motif.count.ttest.enrichment_motif.thr.", "pval1e-6", "_", SUBSCRIPT.SHORT,".txt")
 promoter.ttest.df <- read.delim(promoter.ttest.df.path, stringsAsFactors=F) %>% add.ProgramID
 enhancer.ttest.df <- read.delim(enhancer.ttest.df.path, stringsAsFactors=F) %>% add.ProgramID
 
