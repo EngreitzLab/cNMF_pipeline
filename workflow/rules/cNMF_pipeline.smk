@@ -133,30 +133,30 @@ def get_rule_prepare_cNMF_partition(wildcards):
 # 		' "
 
 
-## convert Seurat Object to h5ad file
-rule Seurat_Object_to_h5ad:
-	input:
-		seurat_object = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".SeuratObject.RDS")
-	output:
-		h5ad_mtx = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".h5ad"),
-		gene_name_txt = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".h5ad.all.genes.txt")
-	params:
-		time = "2:00:00",
-		mem_gb = "64",
-		partition = "owners,normal",
-		sampleName = config["sampleName"],
-		min_UMIs_per_cell = config["min_UMIs_per_cell"],
-		min_unique_genes_per_cell = config["min_unique_genes_per_cell"]
-	shell:
-		"bash -c ' source $HOME/.bashrc; \
-		conda activate cnmf_analysis_R; \
-		Rscript workflow/scripts/seurat_to_h5ad.R \
-		--sampleName {params.sampleName} \
-		--inputSeuratObject {input.seurat_object} \
-		--output_h5ad {output.h5ad_mtx} \
-		--output_gene_name_txt {output.gene_name_txt} \
-		--minUMIsPerCell {params.min_UMIs_per_cell} \
-		--minUniqueGenesPerCell {params.min_unique_genes_per_cell} ' "
+# ## convert Seurat Object to h5ad file
+# rule Seurat_Object_to_h5ad:
+# 	input:
+# 		seurat_object = os.path.join(config["analysisDir"], "data/" + "{sample}.SeuratObject.RDS")
+# 	output:
+# 		h5ad_mtx = os.path.join(config["analysisDir"], "data/" + config["sampleName"] + ".h5ad"),
+# 		gene_name_txt = os.path.join(config["analysisDir"], "data/" + "{sample}.h5ad.all.genes.txt")
+# 	params:
+# 		time = "2:00:00",
+# 		mem_gb = "64",
+# 		partition = "owners,normal",
+# 		sampleName = config["sampleName"],
+# 		min_UMIs_per_cell = config["min_UMIs_per_cell"],
+# 		min_unique_genes_per_cell = config["min_unique_genes_per_cell"]
+# 	shell:
+# 		"bash -c ' source $HOME/.bashrc; \
+# 		conda activate cnmf_analysis_R; \
+# 		Rscript workflow/scripts/seurat_to_h5ad.R \
+# 		--sampleName {params.sampleName} \
+# 		--inputSeuratObject {input.seurat_object} \
+# 		--output_h5ad {output.h5ad_mtx} \
+# 		--output_gene_name_txt {output.gene_name_txt} \
+# 		--minUMIsPerCell {params.min_UMIs_per_cell} \
+# 		--minUniqueGenesPerCell {params.min_unique_genes_per_cell} ' "
 
 
 # def get_raw_h5ad_file(wildcards):
