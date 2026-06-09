@@ -87,7 +87,7 @@ def get_output_files(wildcards):
 	program_prioritization_plot = expand(os.path.join(config["figDir"], "{folder}/{sample}/K{k}/program_prioritization_{regulator_analysis_type}/{GWAS_trait}/{sample}_K{k}_dt_{threshold}_{GWAS_trait}_ProgramGene_EnrichmentBarPlot.pdf"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]], GWAS_trait = config["GWAS_traits"], regulator_analysis_type = ["GWASWide", "GenomeWide"]),
 
 	## IGVF file format outputs
-	model_yaml = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/{sample}.k_{k}.dt_{threshold}.modelYAML.yaml"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
+	# model_yaml = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/{sample}.k_{k}.dt_{threshold}.modelYAML.yaml"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 	# model_yaml = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/{sample}.yaml"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 	cellxgene_h5ad = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/{sample}.k_{k}.dt_{threshold}.cellxgene.h5ad"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
 	# cellxgene_h5ad = expand(os.path.join(config["analysisDir"], "{folder}/{sample}/K{k}/threshold_{threshold}/IGVF_format/{sample}.cellxgene.h5ad"), folder = config["cNMF_gene_selection"], sample=config["sampleName"], k=config["k"], threshold=[n.replace(".","_") for n in config["thresholds"]]),
@@ -169,5 +169,3 @@ rule all:
 
 
 
-
- 	#
