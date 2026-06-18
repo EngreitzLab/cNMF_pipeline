@@ -964,7 +964,7 @@ rule get_concensus_factors:
 		--name {wildcards.sample} \
 		--components {wildcards.k} \
 		--local-density-threshold {threshold_here} \
-		--refit_usage {params.refit_usage} \
+		# --refit_usage {params.refit_usage} \
 		--show-clustering ' ") # --show-clustering 
 
 
